@@ -167,8 +167,9 @@ upstream is content/review; everything downstream is money movement.
 - Automated payout scheduling (release manually in v1 — safer while learning
   fraud patterns).
 - `campaign_updates` feed, push/SMS.
-- **RLS policies** — migration enables RLS but defers policies; author them
-  before public launch (intent documented inline in the migration).
+
+> **Update:** RLS policies are now shipped (`0002_rls.sql`, `0005_rls_remaining.sql`)
+> — they are no longer deferred. See [`docs/security.md`](docs/security.md).
 
 **Orgs are additive, not blocking:** the individual-beneficiary track makes the
 app useful with zero orgs onboarded; partners are a trust upgrade layered on top.
