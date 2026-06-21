@@ -12,6 +12,7 @@ import {
   toMinorUnits,
 } from '@/lib/stripe';
 import { sendPayoutReleased } from '@/lib/email';
+import { logAudit } from '@/lib/audit';
 import { canReleaseFunds } from '@ashfaat/types';
 import type { VerificationStatus } from '@ashfaat/types';
 
@@ -53,13 +54,19 @@ async function requireAdminId(): Promise<string> {
 
 /** Approve a campaign: set status to active and stamp published_at. */
 export async function approveCampaign(id: string): Promise<ActionResult> {
-  await requireAdminId();
+  const adminId = await requireAdminId();
   const supabase = createAdminSupabase();
   const { error } = await supabase
     .from('campaigns')
     .update({ status: 'active', published_at: new Date().toISOString() })
     .eq('id', id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({
+    actorId: adminId,
+    action: 'campaign.approved',
+    entityType: 'campaign',
+    entityId: id,
+  });
   revalidatePath('/admin/campaigns');
   revalidatePath(`/admin/campaigns/${id}`);
   revalidatePath('/admin');
@@ -68,13 +75,19 @@ export async function approveCampaign(id: string): Promise<ActionResult> {
 
 /** Reject a campaign. */
 export async function rejectCampaign(id: string): Promise<ActionResult> {
-  await requireAdminId();
+  const adminId = await requireAdminId();
   const supabase = createAdminSupabase();
   const { error } = await supabase
     .from('campaigns')
     .update({ status: 'rejected' })
     .eq('id', id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({
+    actorId: adminId,
+    action: 'campaign.rejected',
+    entityType: 'campaign',
+    entityId: id,
+  });
   revalidatePath('/admin/campaigns');
   revalidatePath(`/admin/campaigns/${id}`);
   revalidatePath('/admin');
@@ -99,6 +112,13 @@ export async function setVerification(
     .select('campaign_id')
     .single();
   if (error) return { ok: false, error: error.message };
+  await logAudit({
+    actorId: adminId,
+    action: `verification.${status}`,
+    entityType: 'verification',
+    entityId: verificationId,
+    metadata: { campaignId: data?.campaign_id ?? null },
+  });
   if (data?.campaign_id) revalidatePath(`/admin/campaigns/${data.campaign_id}`);
   return { ok: true };
 }
@@ -110,7 +130,7 @@ export async function setVerification(
 export async function ensureOnboarding(
   beneficiaryId: string,
 ): Promise<ActionResult> {
-  await requireAdminId();
+  const adminId = await requireAdminId();
   const supabase = createAdminSupabase();
 
   const { data: beneficiary, error: bErr } = await supabase
@@ -142,6 +162,13 @@ export async function ensureOnboarding(
       if (error) return { ok: false, error: error.message };
     }
     const url = await createOnboardingLink(accountId);
+    await logAudit({
+      actorId: adminId,
+      action: 'beneficiary.onboarding_link',
+      entityType: 'beneficiary',
+      entityId: beneficiary.id,
+      metadata: { campaignId: beneficiary.campaign_id },
+    });
     revalidatePath(`/admin/campaigns/${beneficiary.campaign_id}`);
     return { ok: true, url };
   }
@@ -157,6 +184,13 @@ export async function ensureOnboarding(
     if (error) return { ok: false, error: error.message };
   }
   const url = await createOnboardingLink(accountId);
+  await logAudit({
+    actorId: adminId,
+    action: 'beneficiary.onboarding_link',
+    entityType: 'beneficiary',
+    entityId: beneficiary.id,
+    metadata: { campaignId: beneficiary.campaign_id },
+  });
   revalidatePath(`/admin/campaigns/${beneficiary.campaign_id}`);
   return { ok: true, url };
 }
@@ -293,6 +327,14 @@ export async function releaseFunds(campaignId: string): Promise<ActionResult> {
     released_at: new Date().toISOString(),
   });
   if (payoutErr) return { ok: false, error: payoutErr.message };
+
+  await logAudit({
+    actorId: adminId,
+    action: 'payout.released',
+    entityType: 'campaign',
+    entityId: campaignId,
+    metadata: { amount: releasable, currency: campaign.currency },
+  });
 
   // Notify the beneficiary.
   const profile = Array.isArray(beneficiary.profiles)

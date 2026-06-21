@@ -3,6 +3,16 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { createAdminSupabase, getCurrentUser } from '@/lib/supabase/server';
 
+const NAV = [
+  { href: '/admin', label: 'Overview' },
+  { href: '/admin/campaigns', label: 'Campaigns' },
+  { href: '/admin/donations', label: 'Donations' },
+  { href: '/admin/organizations', label: 'Organizations' },
+  { href: '/admin/accounts', label: 'Accounts' },
+  { href: '/admin/audit', label: 'Audit log' },
+  { href: '/admin/housekeeping', label: 'Housekeeping' },
+];
+
 export default async function AdminLayout({
   children,
 }: {
@@ -21,32 +31,33 @@ export default async function AdminLayout({
   if (!profile || profile.role !== 'admin') redirect('/');
 
   return (
-    <div style={{ minHeight: '100vh' }}>
-      <header
+    <div style={{ minHeight: '60vh' }}>
+      <div
         style={{
-          borderBottom: '1px solid #eee',
-          padding: '1rem 1.5rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1.5rem',
+          background: 'var(--surface)',
+          borderBottom: '1px solid var(--line)',
         }}
       >
-        <strong style={{ fontSize: '1rem' }}>Ashfaat Admin</strong>
-        <nav style={{ display: 'flex', gap: '1rem', fontSize: '0.9rem' }}>
-          <Link href="/admin" style={{ color: '#333' }}>
-            Overview
-          </Link>
-          <Link href="/admin/campaigns" style={{ color: '#333' }}>
-            Review queue
-          </Link>
-        </nav>
-        <span style={{ marginLeft: 'auto', color: '#888', fontSize: '0.85rem' }}>
-          {profile.full_name ?? user.email}
-        </span>
-      </header>
-      <main style={{ maxWidth: 960, margin: '0 auto', padding: '2rem 1.5rem' }}>
+        <div
+          className="container row-between wrap"
+          style={{ paddingTop: '0.85rem', paddingBottom: '0.85rem' }}
+        >
+          <div className="row wrap" style={{ gap: '1.25rem' }}>
+            <strong style={{ fontFamily: 'var(--serif)' }}>Admin</strong>
+            <nav className="row wrap" style={{ gap: '1rem' }}>
+              {NAV.map((n) => (
+                <Link key={n.href} href={n.href} className="nav-link small">
+                  {n.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+          <span className="muted small">{profile.full_name ?? user.email}</span>
+        </div>
+      </div>
+      <div className="container" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
         {children}
-      </main>
+      </div>
     </div>
   );
 }

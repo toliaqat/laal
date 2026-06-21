@@ -1,18 +1,29 @@
 'use client';
 
 import { useState } from 'react';
+import type { Beneficiary, Campaign } from '@ashfaat/types';
 import { Button, Card, Field } from '@/components/ui';
-import { createCampaign } from './actions';
+import { updateCampaign } from './actions';
 
 type OrgOption = { id: string; name: string };
 
-export function StartForm({ orgs }: { orgs: OrgOption[] }) {
-  const [kind, setKind] = useState<'organization' | 'individual'>(
-    orgs.length > 0 ? 'organization' : 'individual',
-  );
+export function EditForm({
+  campaign,
+  beneficiary,
+  orgs,
+}: {
+  campaign: Campaign;
+  beneficiary: Beneficiary | null;
+  orgs: OrgOption[];
+}) {
+  const initialKind: 'organization' | 'individual' =
+    beneficiary?.type === 'organization' ? 'organization' : 'individual';
+  const [kind, setKind] = useState<'organization' | 'individual'>(initialKind);
 
   return (
-    <form action={createCampaign} className="stack">
+    <form action={updateCampaign} className="stack">
+      <input type="hidden" name="campaign_id" value={campaign.id} />
+
       <Card large>
         <div className="stack">
           <Field label="Campaign title">
@@ -21,16 +32,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
               name="title"
               className="input"
               required
-              placeholder="e.g. Bring Ahmed home to Lahore"
-            />
-          </Field>
-
-          <Field label="Name of the deceased">
-            <input
-              id="deceased_name"
-              name="deceased_name"
-              className="input"
-              required
+              defaultValue={campaign.title}
             />
           </Field>
 
@@ -43,6 +45,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
               name="story"
               className="textarea"
               rows={6}
+              defaultValue={campaign.story ?? ''}
             />
           </Field>
 
@@ -57,6 +60,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
                   min="1"
                   step="1"
                   required
+                  defaultValue={campaign.goal_amount}
                 />
               </Field>
             </div>
@@ -66,7 +70,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
                   id="currency"
                   name="currency"
                   className="select"
-                  defaultValue="EUR"
+                  defaultValue={campaign.currency}
                 >
                   <option value="EUR">EUR</option>
                   <option value="USD">USD</option>
@@ -82,7 +86,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
               id="intended_use"
               name="intended_use"
               className="select"
-              defaultValue="mixed"
+              defaultValue={campaign.intended_use}
             >
               <option value="repatriation">Repatriation</option>
               <option value="local_burial">Local burial</option>
@@ -98,12 +102,18 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
                   id="death_country"
                   name="death_country"
                   className="input"
+                  defaultValue={campaign.death_country ?? ''}
                 />
               </Field>
             </div>
             <div style={{ flex: 1, minWidth: 160 }}>
               <Field label="City of death">
-                <input id="death_city" name="death_city" className="input" />
+                <input
+                  id="death_city"
+                  name="death_city"
+                  className="input"
+                  defaultValue={campaign.death_city ?? ''}
+                />
               </Field>
             </div>
           </div>
@@ -138,7 +148,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
               <select
                 name="organization_id"
                 className="select"
-                defaultValue=""
+                defaultValue={beneficiary?.organization_id ?? ''}
               >
                 <option value="" disabled>
                   Select an organisation…
@@ -170,6 +180,11 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
                   id="display_name"
                   name="display_name"
                   className="input"
+                  defaultValue={
+                    beneficiary?.type === 'individual'
+                      ? beneficiary.display_name
+                      : ''
+                  }
                 />
               </Field>
               <Field label="Relationship to the deceased">
@@ -177,6 +192,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
                   id="relationship_to_deceased"
                   name="relationship_to_deceased"
                   className="input"
+                  defaultValue={beneficiary?.relationship_to_deceased ?? ''}
                 />
               </Field>
             </div>
@@ -184,9 +200,14 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
         </div>
       </Card>
 
-      <Button type="submit" variant="primary" block>
-        Submit for review
-      </Button>
+      <div className="row wrap">
+        <Button type="submit" variant="primary">
+          Save changes
+        </Button>
+        <Button href="/dashboard" variant="ghost">
+          Cancel
+        </Button>
+      </div>
     </form>
   );
 }

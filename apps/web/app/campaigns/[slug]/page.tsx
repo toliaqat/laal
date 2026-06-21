@@ -3,8 +3,8 @@ import { notFound } from 'next/navigation';
 import type { Campaign, Beneficiary } from '@ashfaat/types';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { APP_URL } from '@/lib/env';
-import { ProgressBar } from '@/components/progress-bar';
 import { DonateForm } from '@/components/donate-form';
+import { Container, Card, Progress, Badge, formatMoney } from '@/components/ui';
 
 type Params = { slug: string };
 
@@ -100,82 +100,97 @@ export default async function CampaignPage({
   const dates =
     dob && dod ? `${dob} – ${dod}` : dod ? `Died ${dod}` : dob ? `Born ${dob}` : null;
 
+  const pct = campaign.goal_amount
+    ? (campaign.amount_raised / campaign.goal_amount) * 100
+    : 0;
+
   return (
-    <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
-      <p style={{ color: '#888', fontSize: '0.875rem', marginBottom: 0 }}>
-        Memorial fund
-      </p>
-      <h1 style={{ marginTop: '0.25rem', fontSize: '1.875rem', lineHeight: 1.2 }}>
-        {campaign.title}
-      </h1>
-
-      <p style={{ color: '#555', marginTop: '0.5rem' }}>
-        In memory of <strong>{campaign.deceased_name}</strong>
-        {dates ? ` · ${dates}` : ''}
-      </p>
-
-      {campaign.cover_image_url && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={campaign.cover_image_url}
-          alt={campaign.deceased_name}
-          style={{
-            width: '100%',
-            borderRadius: 12,
-            margin: '1.5rem 0',
-            objectFit: 'cover',
-          }}
-        />
-      )}
-
-      <ProgressBar
-        raised={campaign.amount_raised}
-        goal={campaign.goal_amount}
-        currency={campaign.currency}
-        style={{ margin: '1.5rem 0' }}
-      />
-
-      {campaign.story && (
-        <section style={{ margin: '2rem 0' }}>
-          <p style={{ color: '#333', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-            {campaign.story}
+    <main className="section">
+      <Container narrow>
+        <div className="stack" style={{ gap: '0.4rem' }}>
+          <div className="row wrap">
+            <span className="eyebrow">Memorial fund</span>
+            {campaign.status === 'completed' ? (
+              <Badge tone="success">Goal reached</Badge>
+            ) : campaign.status === 'closed' ? (
+              <Badge tone="danger">Closed</Badge>
+            ) : null}
+          </div>
+          <h1 style={{ margin: 0 }}>{campaign.title}</h1>
+          <p className="muted" style={{ margin: 0 }}>
+            In memory of <strong>{campaign.deceased_name}</strong>
+            {dates ? ` · ${dates}` : ''}
           </p>
-        </section>
-      )}
+        </div>
 
-      {beneficiary && (
-        <p
-          style={{
-            color: '#555',
-            fontSize: '0.875rem',
-            borderTop: '1px solid #eee',
-            paddingTop: '1rem',
-          }}
-        >
-          Funds go to <strong>{beneficiary.display_name}</strong>
-          {beneficiary.relationship_to_deceased
-            ? ` (${beneficiary.relationship_to_deceased})`
-            : ''}
-          .
-        </p>
-      )}
+        {campaign.cover_image_url && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={campaign.cover_image_url}
+            alt={campaign.deceased_name}
+            style={{
+              width: '100%',
+              borderRadius: 'var(--radius)',
+              border: '1px solid var(--line)',
+              margin: '1.5rem 0',
+              objectFit: 'cover',
+            }}
+          />
+        )}
 
-      <section
-        style={{
-          marginTop: '2rem',
-          padding: '1.5rem',
-          border: '1px solid #e5e5e5',
-          borderRadius: 12,
-          background: '#fafafa',
-        }}
-      >
-        <DonateForm
-          campaignId={campaign.id}
-          slug={campaign.slug}
-          currency={campaign.currency}
-          campaignTitle={campaign.title}
-        />
-      </section>
+        <Card style={{ margin: '1.5rem 0' }}>
+          <div className="stack" style={{ gap: '0.75rem' }}>
+            <Progress value={pct} />
+            <p style={{ margin: 0 }}>
+              <strong style={{ fontSize: '1.15rem' }}>
+                {formatMoney(campaign.amount_raised, campaign.currency)}
+              </strong>{' '}
+              <span className="muted">
+                raised of {formatMoney(campaign.goal_amount, campaign.currency)} goal
+              </span>
+            </p>
+          </div>
+        </Card>
+
+        {campaign.story && (
+          <section style={{ margin: '2rem 0' }}>
+            <p
+              style={{
+                color: 'var(--ink)',
+                lineHeight: 1.7,
+                whiteSpace: 'pre-wrap',
+              }}
+            >
+              {campaign.story}
+            </p>
+          </section>
+        )}
+
+        {beneficiary && (
+          <p
+            className="small muted"
+            style={{
+              borderTop: '1px solid var(--line)',
+              paddingTop: '1rem',
+            }}
+          >
+            Funds go to <strong>{beneficiary.display_name}</strong>
+            {beneficiary.relationship_to_deceased
+              ? ` (${beneficiary.relationship_to_deceased})`
+              : ''}
+            .
+          </p>
+        )}
+
+        <Card large style={{ marginTop: '2rem' }}>
+          <DonateForm
+            campaignId={campaign.id}
+            slug={campaign.slug}
+            currency={campaign.currency}
+            campaignTitle={campaign.title}
+          />
+        </Card>
+      </Container>
     </main>
   );
 }

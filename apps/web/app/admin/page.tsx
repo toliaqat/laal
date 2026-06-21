@@ -1,91 +1,134 @@
+import Link from 'next/link';
 import { createAdminSupabase } from '@/lib/supabase/server';
-import type { CampaignStatus } from '@ashfaat/types';
+import { Card, Badge, Stat, formatMoney, statusTone } from '@/components/ui';
 
-const STATUS_ORDER: CampaignStatus[] = [
-  'draft',
-  'pending_review',
-  'active',
-  'paused',
-  'completed',
-  'closed',
-  'rejected',
-];
-
-export default async function AdminOverviewPage() {
+export default async function AdminAnalyticsPage() {
   const supabase = createAdminSupabase();
 
-  const [{ data: campaigns }, { data: pendingVerifs }] = await Promise.all([
-    supabase.from('campaigns').select('status, amount_raised, currency'),
+  const [
+    campaignsRes,
+    donationsRes,
+    payoutsRes,
+    verifsRes,
+    recentRes,
+  ] = await Promise.all([
+    supabase.from('campaigns').select('id, status'),
+    supabase.from('donations').select('amount, currency, status'),
+    supabase.from('payouts').select('amount, currency, status'),
     supabase
       .from('verifications')
       .select('id')
       .in('status', ['pending', 'submitted']),
+    supabase
+      .from('campaigns')
+      .select('id, title, status, amount_raised, currency, created_at')
+      .order('created_at', { ascending: false })
+      .limit(8),
   ]);
 
-  const counts: Record<string, number> = {};
+  const campaigns = campaignsRes.data ?? [];
+  const donations = donationsRes.data ?? [];
+  const payouts = payoutsRes.data ?? [];
+  const recent = recentRes.data ?? [];
+
+  const totalCampaigns = campaigns.length;
+  const activeCampaigns = campaigns.filter((c) => c.status === 'active').length;
+  const pendingReview = campaigns.filter(
+    (c) => c.status === 'pending_review',
+  ).length;
+
+  const succeeded = donations.filter((d) => d.status === 'succeeded');
   let totalRaised = 0;
-  let currency = '';
-  for (const c of campaigns ?? []) {
-    counts[c.status] = (counts[c.status] ?? 0) + 1;
-    totalRaised += Number(c.amount_raised ?? 0);
-    if (!currency && c.currency) currency = c.currency;
+  let raisedCurrency = 'EUR';
+  for (const d of succeeded) {
+    totalRaised += Number(d.amount ?? 0);
+    if (d.currency) raisedCurrency = d.currency;
   }
 
-  return (
-    <div>
-      <h1 style={{ fontSize: '1.6rem', marginBottom: '1.5rem' }}>Overview</h1>
+  let totalReleased = 0;
+  let releasedCurrency = raisedCurrency;
+  for (const p of payouts) {
+    if (p.status === 'failed' || p.status === 'cancelled') continue;
+    totalReleased += Number(p.amount ?? 0);
+    if (p.currency) releasedCurrency = p.currency;
+  }
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: '1rem',
-          marginBottom: '2rem',
-        }}
-      >
-        <Card label="Pending verifications" value={String(pendingVerifs?.length ?? 0)} />
-        <Card
-          label="Total raised"
-          value={`${currency || ''} ${totalRaised.toFixed(2)}`.trim()}
-        />
-        <Card
-          label="Total campaigns"
-          value={String((campaigns ?? []).length)}
-        />
+  const donationsCount = succeeded.length;
+  const pendingVerifs = verifsRes.data?.length ?? 0;
+
+  return (
+    <div className="stack">
+      <div className="stack" style={{ gap: '0.25rem' }}>
+        <span className="eyebrow">Admin</span>
+        <h1>Analytics</h1>
+        <p className="muted">Platform-wide overview at a glance.</p>
       </div>
 
-      <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>
-        Campaigns by status
-      </h2>
-      <table style={{ borderCollapse: 'collapse', width: '100%', maxWidth: 420 }}>
-        <tbody>
-          {STATUS_ORDER.map((status) => (
-            <tr key={status} style={{ borderBottom: '1px solid #f0f0f0' }}>
-              <td style={{ padding: '0.5rem 0.5rem 0.5rem 0' }}>{status}</td>
-              <td style={{ padding: '0.5rem 0', textAlign: 'right', fontWeight: 600 }}>
-                {counts[status] ?? 0}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+      <div className="grid">
+        <Card>
+          <Stat value={totalCampaigns} label="Total campaigns" />
+        </Card>
+        <Card>
+          <Stat value={activeCampaigns} label="Active campaigns" />
+        </Card>
+        <Card>
+          <Stat value={pendingReview} label="Pending review" />
+        </Card>
+        <Card>
+          <Stat
+            value={formatMoney(totalRaised, raisedCurrency)}
+            label="Total raised"
+          />
+        </Card>
+        <Card>
+          <Stat
+            value={formatMoney(totalReleased, releasedCurrency)}
+            label="Total released"
+          />
+        </Card>
+        <Card>
+          <Stat value={donationsCount} label="Donations" />
+        </Card>
+        <Card>
+          <Stat value={pendingVerifs} label="Pending verifications" />
+        </Card>
+      </div>
 
-function Card({ label, value }: { label: string; value: string }) {
-  return (
-    <div
-      style={{
-        border: '1px solid #eee',
-        borderRadius: 10,
-        padding: '1.25rem',
-        background: '#fafafa',
-      }}
-    >
-      <div style={{ color: '#888', fontSize: '0.8rem' }}>{label}</div>
-      <div style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '0.25rem' }}>
-        {value}
+      <div className="stack" style={{ gap: '0.75rem' }}>
+        <h2>Recent campaigns</h2>
+        {recent.length === 0 ? (
+          <p className="muted">No campaigns yet.</p>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Status</th>
+                <th style={{ textAlign: 'right' }}>Raised</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recent.map((c) => (
+                <tr key={c.id}>
+                  <td>
+                    <Link href={`/admin/campaigns/${c.id}`}>{c.title}</Link>
+                  </td>
+                  <td>
+                    <Badge tone={statusTone(c.status)}>
+                      {c.status.replace(/_/g, ' ')}
+                    </Badge>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    {formatMoney(
+                      Number(c.amount_raised ?? 0),
+                      c.currency || raisedCurrency,
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

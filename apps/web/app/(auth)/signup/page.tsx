@@ -9,25 +9,25 @@ export default async function SignupPage({
   const { next } = await searchParams;
 
   return (
-    <>
-      <h1 style={{ fontSize: '1.5rem', marginTop: 0, marginBottom: '0.25rem' }}>
-        Create your account
-      </h1>
-      <p style={{ color: '#555', marginTop: 0, marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-        Join Ashfaat to start or support a campaign.
-      </p>
+    <div className="stack">
+      <div className="stack" style={{ gap: '0.25rem' }}>
+        <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Create your account</h1>
+        <p className="small muted" style={{ margin: 0 }}>
+          Join Ashfaat to start or support a campaign.
+        </p>
+      </div>
 
       <SignupForm next={next} />
 
-      <p style={{ marginTop: '1.5rem', fontSize: '0.875rem', color: '#555' }}>
+      <p className="small muted" style={{ margin: 0 }}>
         Already have an account?{' '}
         <Link
           href={next ? `/login?next=${encodeURIComponent(next)}` : '/login'}
-          style={{ color: '#1a1a1a', fontWeight: 500 }}
+          style={{ color: 'var(--accent)', fontWeight: 500 }}
         >
           Sign in
         </Link>
       </p>
-    </>
+    </div>
   );
 }

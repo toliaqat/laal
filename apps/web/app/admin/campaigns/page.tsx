@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { approveCampaignForm, rejectCampaignForm } from '@/app/admin/actions';
+import { Badge, formatMoney, statusTone } from '@/components/ui';
 
 export default async function ReviewQueuePage() {
   const supabase = createAdminSupabase();
@@ -18,102 +19,106 @@ export default async function ReviewQueuePage() {
       .order('published_at', { ascending: false }),
   ]);
 
-  return (
-    <div>
-      <h1 style={{ fontSize: '1.6rem', marginBottom: '1.5rem' }}>Review queue</h1>
+  const pendingRows = pending ?? [];
+  const activeRows = active ?? [];
 
-      <section style={{ marginBottom: '2.5rem' }}>
-        <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>
-          Pending review ({pending?.length ?? 0})
-        </h2>
-        {(pending ?? []).length === 0 ? (
-          <p style={{ color: '#888' }}>Nothing awaiting review.</p>
+  return (
+    <div className="stack">
+      <div className="stack" style={{ gap: '0.25rem' }}>
+        <span className="eyebrow">Admin</span>
+        <h1>Review queue</h1>
+        <p className="muted">Approve or reject campaigns awaiting review.</p>
+      </div>
+
+      <section className="stack" style={{ gap: '0.75rem' }}>
+        <h2>Pending review ({pendingRows.length})</h2>
+        {pendingRows.length === 0 ? (
+          <p className="muted">Nothing awaiting review.</p>
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {(pending ?? []).map((c) => (
-              <li
-                key={c.id}
-                style={{
-                  border: '1px solid #eee',
-                  borderRadius: 10,
-                  padding: '1rem',
-                  marginBottom: '0.75rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '1rem',
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <Link
-                    href={`/admin/campaigns/${c.id}`}
-                    style={{ fontWeight: 600, color: '#111' }}
-                  >
-                    {c.title}
-                  </Link>
-                  <div style={{ color: '#888', fontSize: '0.85rem' }}>
-                    {c.currency} {Number(c.amount_raised ?? 0).toFixed(2)} raised
-                  </div>
-                </div>
-                <form action={approveCampaignForm.bind(null, c.id)}>
-                  <button type="submit" style={btn('#16794a')}>
-                    Approve
-                  </button>
-                </form>
-                <form action={rejectCampaignForm.bind(null, c.id)}>
-                  <button type="submit" style={btn('#b3261e')}>
-                    Reject
-                  </button>
-                </form>
-              </li>
-            ))}
-          </ul>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th style={{ textAlign: 'right' }}>Raised</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pendingRows.map((c) => (
+                <tr key={c.id}>
+                  <td>
+                    <Link href={`/admin/campaigns/${c.id}`}>{c.title}</Link>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    {formatMoney(
+                      Number(c.amount_raised ?? 0),
+                      c.currency || 'EUR',
+                    )}
+                  </td>
+                  <td>
+                    <div
+                      className="row wrap"
+                      style={{ gap: '0.4rem', justifyContent: 'flex-end' }}
+                    >
+                      <form action={approveCampaignForm.bind(null, c.id)}>
+                        <button
+                          type="submit"
+                          className="btn btn-primary btn-sm"
+                        >
+                          Approve
+                        </button>
+                      </form>
+                      <form action={rejectCampaignForm.bind(null, c.id)}>
+                        <button
+                          type="submit"
+                          className="btn btn-danger btn-sm"
+                        >
+                          Reject
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </section>
 
-      <section>
-        <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>
-          Active ({active?.length ?? 0})
-        </h2>
-        {(active ?? []).length === 0 ? (
-          <p style={{ color: '#888' }}>No active campaigns.</p>
+      <section className="stack" style={{ gap: '0.75rem' }}>
+        <h2>Active ({activeRows.length})</h2>
+        {activeRows.length === 0 ? (
+          <p className="muted">No active campaigns.</p>
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {(active ?? []).map((c) => (
-              <li
-                key={c.id}
-                style={{
-                  borderBottom: '1px solid #f0f0f0',
-                  padding: '0.75rem 0',
-                  display: 'flex',
-                  gap: '1rem',
-                }}
-              >
-                <Link
-                  href={`/admin/campaigns/${c.id}`}
-                  style={{ flex: 1, color: '#111' }}
-                >
-                  {c.title}
-                </Link>
-                <span style={{ color: '#888', fontSize: '0.85rem' }}>
-                  {c.currency} {Number(c.amount_raised ?? 0).toFixed(2)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Status</th>
+                <th style={{ textAlign: 'right' }}>Raised</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeRows.map((c) => (
+                <tr key={c.id}>
+                  <td>
+                    <Link href={`/admin/campaigns/${c.id}`}>{c.title}</Link>
+                  </td>
+                  <td>
+                    <Badge tone={statusTone('active')}>active</Badge>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    {formatMoney(
+                      Number(c.amount_raised ?? 0),
+                      c.currency || 'EUR',
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </section>
     </div>
   );
-}
-
-function btn(bg: string): React.CSSProperties {
-  return {
-    background: bg,
-    color: '#fff',
-    border: 'none',
-    borderRadius: 8,
-    padding: '0.5rem 0.9rem',
-    fontSize: '0.85rem',
-    cursor: 'pointer',
-  };
 }

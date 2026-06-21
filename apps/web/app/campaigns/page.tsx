@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Campaign } from '@ashfaat/types';
 import { createServerSupabase } from '@/lib/supabase/server';
-import { CampaignCard } from '@/components/campaign-card';
+import { Container, Card, Button, Progress, formatMoney } from '@/components/ui';
 
 export const metadata = {
   title: 'Campaigns — Ashfaat',
@@ -9,51 +9,78 @@ export const metadata = {
 };
 
 export default async function CampaignsPage() {
-  const supabase = await createServerSupabase();
-  const { data } = await supabase
-    .from('campaigns')
-    .select('*')
-    .eq('status', 'active')
-    .order('published_at', { ascending: false });
-
-  const campaigns: Campaign[] = data ?? [];
+  let campaigns: Campaign[] = [];
+  try {
+    const supabase = await createServerSupabase();
+    const { data } = await supabase
+      .from('campaigns')
+      .select('*')
+      .eq('status', 'active')
+      .order('published_at', { ascending: false });
+    campaigns = (data as Campaign[] | null) ?? [];
+  } catch {
+    campaigns = [];
+  }
 
   return (
-    <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
-      <h1 style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>Campaigns</h1>
-      <p style={{ color: '#555', marginTop: 0 }}>
-        Verified memorial funds you can contribute to.
-      </p>
-
-      {campaigns.length === 0 ? (
-        <div
-          style={{
-            marginTop: '2.5rem',
-            padding: '2rem',
-            border: '1px dashed #d4d4d4',
-            borderRadius: 12,
-            textAlign: 'center',
-            color: '#888',
-          }}
-        >
-          <p style={{ margin: 0 }}>No active campaigns yet.</p>
-          <p style={{ margin: '0.5rem 0 0' }}>
-            <Link href="/start">Start one</Link>
+    <main className="section">
+      <Container>
+        <div className="stack" style={{ gap: '0.25rem', marginBottom: '2rem' }}>
+          <span className="eyebrow">Campaigns</span>
+          <h1 style={{ margin: 0 }}>Memorial funds you can support</h1>
+          <p className="muted" style={{ margin: 0 }}>
+            Each campaign is verified before funds reach a beneficiary.
           </p>
         </div>
-      ) : (
-        <div
-          style={{
-            marginTop: '2rem',
-            display: 'grid',
-            gap: '1rem',
-          }}
-        >
-          {campaigns.map((c) => (
-            <CampaignCard key={c.id} campaign={c} />
-          ))}
-        </div>
-      )}
+
+        {campaigns.length === 0 ? (
+          <Card large>
+            <div className="stack center">
+              <p className="muted" style={{ margin: 0 }}>
+                There are no active campaigns yet.
+              </p>
+              <div className="center">
+                <Button href="/start" variant="primary" size="sm">
+                  Start one
+                </Button>
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <div className="grid grid-cards">
+            {campaigns.map((c) => {
+              const pct = c.goal_amount
+                ? (c.amount_raised / c.goal_amount) * 100
+                : 0;
+              return (
+                <Link
+                  key={c.id}
+                  href={`/campaigns/${c.slug}`}
+                  style={{ textDecoration: 'none', color: 'inherit' }}
+                >
+                  <Card hover>
+                    <div className="stack" style={{ gap: '0.75rem' }}>
+                      <h3 style={{ margin: 0 }}>{c.title}</h3>
+                      <p className="small muted" style={{ margin: 0 }}>
+                        In memory of {c.deceased_name}
+                      </p>
+                      <Progress value={pct} />
+                      <p className="small" style={{ margin: 0 }}>
+                        <strong>
+                          {formatMoney(c.amount_raised, c.currency)}
+                        </strong>{' '}
+                        <span className="muted">
+                          of {formatMoney(c.goal_amount, c.currency)}
+                        </span>
+                      </p>
+                    </div>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </Container>
     </main>
   );
 }

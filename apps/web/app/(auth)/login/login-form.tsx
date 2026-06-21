@@ -3,36 +3,6 @@
 import { useActionState } from 'react';
 import { signIn, type AuthState } from '../actions';
 
-const labelStyle = {
-  display: 'block',
-  fontSize: '0.8rem',
-  fontWeight: 500,
-  marginBottom: '0.35rem',
-  color: '#1a1a1a',
-} as const;
-
-const inputStyle = {
-  width: '100%',
-  padding: '0.6rem 0.7rem',
-  fontSize: '0.95rem',
-  border: '1px solid #d4d4d4',
-  borderRadius: 8,
-  boxSizing: 'border-box' as const,
-  fontFamily: 'inherit',
-};
-
-const buttonStyle = {
-  width: '100%',
-  padding: '0.65rem',
-  fontSize: '0.95rem',
-  fontWeight: 600,
-  color: '#fff',
-  background: '#1a1a1a',
-  border: 'none',
-  borderRadius: 8,
-  cursor: 'pointer',
-};
-
 export function LoginForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(
     signIn,
@@ -40,11 +10,11 @@ export function LoginForm({ next }: { next?: string }) {
   );
 
   return (
-    <form action={formAction}>
+    <form action={formAction} className="stack">
       {next ? <input type="hidden" name="next" value={next} /> : null}
 
-      <div style={{ marginBottom: '1rem' }}>
-        <label htmlFor="email" style={labelStyle}>
+      <div className="field">
+        <label htmlFor="email" className="label">
           Email
         </label>
         <input
@@ -53,12 +23,12 @@ export function LoginForm({ next }: { next?: string }) {
           type="email"
           autoComplete="email"
           required
-          style={inputStyle}
+          className="input"
         />
       </div>
 
-      <div style={{ marginBottom: '1rem' }}>
-        <label htmlFor="password" style={labelStyle}>
+      <div className="field">
+        <label htmlFor="password" className="label">
           Password
         </label>
         <input
@@ -67,17 +37,17 @@ export function LoginForm({ next }: { next?: string }) {
           type="password"
           autoComplete="current-password"
           required
-          style={inputStyle}
+          className="input"
         />
       </div>
 
-      {state?.error ? (
-        <p style={{ color: '#b91c1c', fontSize: '0.85rem', margin: '0 0 1rem' }}>
-          {state.error}
-        </p>
-      ) : null}
+      {state?.error ? <p className="error-text">{state.error}</p> : null}
 
-      <button type="submit" disabled={pending} style={{ ...buttonStyle, opacity: pending ? 0.7 : 1 }}>
+      <button
+        type="submit"
+        disabled={pending}
+        className="btn btn-primary btn-block"
+      >
         {pending ? 'Signing in…' : 'Sign in'}
       </button>
     </form>

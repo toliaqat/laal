@@ -1,4 +1,5 @@
 import { createServerSupabase } from '@/lib/supabase/server';
+import { Container } from '@/components/ui';
 import { StartForm } from './start-form';
 
 export const metadata = {
@@ -19,15 +20,18 @@ export default async function StartPage() {
   const orgs: OrgOption[] = data ?? [];
 
   return (
-    <main style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
-      <h1 style={{ fontSize: '1.75rem', marginBottom: '0.25rem' }}>
-        Start a campaign
-      </h1>
-      <p style={{ color: '#555', marginTop: 0 }}>
-        Create a dignified memorial fund. We review every campaign before it
-        goes live.
-      </p>
-      <StartForm orgs={orgs} />
+    <main className="section">
+      <Container narrow>
+        <div className="stack" style={{ gap: '0.35rem', marginBottom: '2rem' }}>
+          <span className="eyebrow">New campaign</span>
+          <h1 style={{ margin: 0 }}>Start a campaign</h1>
+          <p className="muted" style={{ margin: 0 }}>
+            Create a dignified memorial fund. We review every campaign before it
+            goes live.
+          </p>
+        </div>
+        <StartForm orgs={orgs} />
+      </Container>
     </main>
   );
 }
