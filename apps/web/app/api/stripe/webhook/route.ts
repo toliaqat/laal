@@ -39,8 +39,24 @@ export async function POST(req: Request): Promise<Response> {
   try {
     switch (event.type) {
       case 'checkout.session.completed':
+      case 'checkout.session.async_payment_succeeded':
+        // Async payment methods (SEPA, iDEAL, bank transfers) complete the
+        // session while still 'unpaid' and clear later via
+        // async_payment_succeeded. handleCheckoutCompleted guards on
+        // payment_status === 'paid' and upserts idempotently, so routing both
+        // events through it records the donation exactly once — when the money
+        // actually exists.
         await handleCheckoutCompleted(
           event.data.object as Stripe.Checkout.Session,
+        );
+        break;
+      case 'checkout.session.async_payment_failed':
+        // No donation row was ever recorded (we skip 'unpaid' sessions), so
+        // there is nothing to reconcile — just log for visibility.
+        console.warn(
+          `[stripe webhook] async payment failed for session ${
+            (event.data.object as Stripe.Checkout.Session).id
+          }`,
         );
         break;
       case 'account.updated':

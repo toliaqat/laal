@@ -4,6 +4,11 @@ import type { Campaign, Beneficiary } from '@laal/types';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { APP_URL } from '@/lib/env';
 import { DonateForm } from '@/components/donate-form';
+import { SupporterWall } from '@/components/supporter-wall';
+import {
+  countSupporterMessages,
+  loadSupporterMessages,
+} from './supporters';
 import { Container, Card, Progress, Badge, formatMoney } from '@/components/ui';
 
 type Params = { slug: string };
@@ -95,6 +100,11 @@ export default async function CampaignPage({
 
   const beneficiary = await getActiveBeneficiary(campaign.id);
 
+  const [supporterCount, firstSupporters] = await Promise.all([
+    countSupporterMessages(campaign.id),
+    loadSupporterMessages(campaign.id, 0),
+  ]);
+
   const dob = formatDate(campaign.deceased_dob);
   const dod = formatDate(campaign.deceased_dod);
   const dates =
@@ -163,6 +173,24 @@ export default async function CampaignPage({
             >
               {campaign.story}
             </p>
+          </section>
+        )}
+
+        {supporterCount > 0 && (
+          <section style={{ margin: '2rem 0' }}>
+            <h2 style={{ marginBottom: '1rem' }}>
+              Words of support{' '}
+              <span className="muted" style={{ fontWeight: 400 }}>
+                ({supporterCount})
+              </span>
+            </h2>
+            <Card>
+              <SupporterWall
+                campaignId={campaign.id}
+                initialItems={firstSupporters.items}
+                initialHasMore={firstSupporters.hasMore}
+              />
+            </Card>
           </section>
         )}
 
