@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { Badge, formatMoney, statusTone } from '@/components/ui';
+import { refundDonationForm } from './actions';
 
 const STATUSES = ['pending', 'succeeded', 'refunded', 'failed'] as const;
 
@@ -40,6 +41,22 @@ export default async function AdminDonationsPage({
     for (const c of campaigns ?? []) titles.set(c.id, c.title);
   }
 
+  // A donation is refundable only before any of its campaign's funds are
+  // released. Collect campaigns that already have a live payout so the UI hides
+  // (and the action rejects) refunds for them.
+  const releasedCampaignIds = new Set<string>();
+  if (campaignIds.length > 0) {
+    const { data: payouts } = await supabase
+      .from('payouts')
+      .select('campaign_id, status')
+      .in('campaign_id', campaignIds);
+    for (const p of payouts ?? []) {
+      if (p.status !== 'failed' && p.status !== 'cancelled' && p.campaign_id) {
+        releasedCampaignIds.add(p.campaign_id);
+      }
+    }
+  }
+
   return (
     <div className="stack">
       <div className="stack" style={{ gap: '0.25rem' }}>
@@ -77,6 +94,7 @@ export default async function AdminDonationsPage({
               <th>Donor</th>
               <th style={{ textAlign: 'right' }}>Amount</th>
               <th>Status</th>
+              <th style={{ textAlign: 'right' }}>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -102,6 +120,19 @@ export default async function AdminDonationsPage({
                 </td>
                 <td>
                   <Badge tone={statusTone(d.status)}>{d.status}</Badge>
+                </td>
+                <td style={{ textAlign: 'right' }}>
+                  {d.status === 'succeeded' &&
+                  d.campaign_id &&
+                  !releasedCampaignIds.has(d.campaign_id) ? (
+                    <form action={refundDonationForm.bind(null, d.id)}>
+                      <button type="submit" className="btn btn-sm btn-ghost">
+                        Refund
+                      </button>
+                    </form>
+                  ) : (
+                    <span className="muted">—</span>
+                  )}
                 </td>
               </tr>
             ))}

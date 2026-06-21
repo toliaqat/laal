@@ -155,6 +155,21 @@ export function normalizeCurrency(
     : fallback;
 }
 
+/**
+ * Fully refund a donation's payment. Only valid PRE-release (while the funds
+ * still sit in the platform balance); post-release requires reversing the
+ * transfer instead. Pass a stable idempotencyKey so a retry never double-refunds.
+ */
+export async function refundPayment(
+  paymentIntentId: string,
+  idempotencyKey?: string,
+): Promise<Stripe.Refund> {
+  return stripe().refunds.create(
+    { payment_intent: paymentIntentId },
+    idempotencyKey ? { idempotencyKey } : undefined,
+  );
+}
+
 /** Convert a major-unit amount (e.g. 25.00) to minor units (2500). */
 export function toMinorUnits(amount: number): number {
   return Math.round(amount * 100);
