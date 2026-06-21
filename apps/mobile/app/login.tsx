@@ -13,6 +13,7 @@ import {
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
+import { AuthDivider, GoogleButton } from '@/components/ui';
 import { accentShadow, colors, radius, serif, spacing } from '@/lib/theme';
 
 export default function LoginScreen() {
@@ -61,6 +62,13 @@ export default function LoginScreen() {
         </Text>
 
         <View style={styles.form}>
+          <GoogleButton
+            label="Sign in with Google"
+            onSuccess={() => router.replace('/')}
+            onError={setError}
+          />
+          <AuthDivider />
+
           <TextInput
             style={[styles.input, focused === 'email' && styles.inputFocused]}
             placeholder="Email"

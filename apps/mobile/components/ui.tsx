@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
@@ -8,6 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { accentShadow, colors, radius, serif } from '@/lib/theme';
+import { signInWithGoogle } from '@/lib/google-auth';
 
 /** Circular avatar showing initials over a warm accent fill. */
 export function Avatar({
@@ -111,6 +113,56 @@ export function GhostButton({
   );
 }
 
+/** "Continue with Google" — native sign-in via signInWithGoogle. */
+export function GoogleButton({
+  label = 'Continue with Google',
+  onSuccess,
+  onError,
+}: {
+  label?: string;
+  onSuccess?: () => void;
+  onError?: (message: string) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  const handle = async () => {
+    if (loading) return;
+    setLoading(true);
+    const res = await signInWithGoogle();
+    setLoading(false);
+    if (res.ok) onSuccess?.();
+    else if (!res.cancelled) onError?.(res.message ?? 'Google sign-in failed.');
+  };
+
+  return (
+    <Pressable
+      onPress={handle}
+      disabled={loading}
+      style={({ pressed }) => [styles.googleBtn, pressed && styles.pressedSoft]}
+    >
+      {loading ? (
+        <ActivityIndicator color={colors.ink} />
+      ) : (
+        <>
+          <Text style={styles.gMark}>G</Text>
+          <Text style={styles.googleText}>{label}</Text>
+        </>
+      )}
+    </Pressable>
+  );
+}
+
+/** A labelled "or" rule to separate Google from the email form. */
+export function AuthDivider({ label = 'or' }: { label?: string }) {
+  return (
+    <View style={styles.divider}>
+      <View style={styles.dividerLine} />
+      <Text style={styles.dividerText}>{label}</Text>
+      <View style={styles.dividerLine} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   avatar: {
     backgroundColor: colors.accent,
@@ -174,4 +226,35 @@ const styles = StyleSheet.create({
 
   pressed: { opacity: 0.9, transform: [{ scale: 0.985 }] },
   pressedSoft: { backgroundColor: colors.surface2 },
+
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: colors.lineStrong,
+    borderRadius: radius.pill,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  // Simplified single-color Google "G"; swap for the official 4-color asset
+  // before public launch to follow Google's branding guidelines.
+  gMark: {
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#4285F4',
+    fontFamily: serif,
+  },
+  googleText: { fontSize: 16, fontWeight: '700', color: colors.ink },
+
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginVertical: 4,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.line },
+  dividerText: { fontSize: 13, color: colors.muted, fontWeight: '600' },
 });
