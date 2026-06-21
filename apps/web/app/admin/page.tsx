@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { createAdminSupabase } from '@/lib/supabase/server';
-import { Card, Badge, Stat, formatMoney, statusTone } from '@/components/ui';
+import { Badge, Stat, formatMoney, statusTone } from '@/components/ui';
 
 export default async function AdminAnalyticsPage() {
   const supabase = createAdminSupabase();
@@ -64,34 +64,20 @@ export default async function AdminAnalyticsPage() {
         <p className="muted">Platform-wide overview at a glance.</p>
       </div>
 
-      <div className="grid">
-        <Card>
-          <Stat value={totalCampaigns} label="Total campaigns" />
-        </Card>
-        <Card>
-          <Stat value={activeCampaigns} label="Active campaigns" />
-        </Card>
-        <Card>
-          <Stat value={pendingReview} label="Pending review" />
-        </Card>
-        <Card>
-          <Stat
-            value={formatMoney(totalRaised, raisedCurrency)}
-            label="Total raised"
-          />
-        </Card>
-        <Card>
-          <Stat
-            value={formatMoney(totalReleased, releasedCurrency)}
-            label="Total released"
-          />
-        </Card>
-        <Card>
-          <Stat value={donationsCount} label="Donations" />
-        </Card>
-        <Card>
-          <Stat value={pendingVerifs} label="Fundraisers awaiting review" />
-        </Card>
+      <div className="grid grid-cards">
+        <Stat value={totalCampaigns} label="Total campaigns" />
+        <Stat value={activeCampaigns} label="Active campaigns" />
+        <Stat value={pendingReview} label="Pending review" />
+        <Stat
+          value={formatMoney(totalRaised, raisedCurrency)}
+          label="Total raised"
+        />
+        <Stat
+          value={formatMoney(totalReleased, releasedCurrency)}
+          label="Total released"
+        />
+        <Stat value={donationsCount} label="Donations" />
+        <Stat value={pendingVerifs} label="Fundraisers awaiting review" />
       </div>
 
       <div className="stack" style={{ gap: '0.75rem' }}>
