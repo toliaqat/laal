@@ -90,6 +90,13 @@ manually.
    hand.
 4. Keep user-facing strings within the [`/BRAND.md`](../BRAND.md) glossary.
 
+### A public view of private data
+Need to show a subset of a private (RLS-protected) table publicly — e.g. donor
+messages from `donations`? Don't loosen RLS. Read with the service-role client,
+re-check public visibility yourself, and return an **explicit allow-list** of
+safe columns (never the raw row). See `app/campaigns/[slug]/supporters.ts` and
+the security doc's "Exposing public data from a private table".
+
 ### A new admin action
 Put it in `app/admin/**/actions.ts`. **Always** start with `requireAdminId()`
 (re-checks `profiles.role === 'admin'`) even though middleware guards `/admin` —

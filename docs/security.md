@@ -52,6 +52,25 @@ the service-role key and **bypass all RLS**. Rules:
 - **Beneficiary selection** is validated server-side: only a `verified`,
   `can_be_beneficiary` org can receive funds (see `app/start/actions.ts`).
 
+## Exposing public data from a private table
+
+Some private, RLS-protected tables have a public *subset* — e.g. the supporter
+wall on a campaign page shows donor messages, but `donations` is private (it
+holds `donor_email`). The pattern (`app/campaigns/[slug]/supporters.ts`):
+
+1. Read with the **service-role client** (RLS would hide the rows entirely).
+2. **Re-check public visibility yourself** — only expose data for a campaign in
+   `active`/`completed`/`closed` status, since service-role bypasses the RLS
+   that would normally enforce that.
+3. **Project an explicit allow-list of safe columns** into a dedicated return
+   type — never spread the raw row. The email and other private fields must not
+   leave the function.
+4. **Honor per-row privacy flags** — e.g. return `name: null` when
+   `is_anonymous`, defensively, even if the name column is set.
+
+When adding any "public view of private data," follow all four steps. The risk
+is leaking a column you didn't mean to — start from an allow-list, not a denylist.
+
 ## Money safety
 
 - **Funds are held, not auto-released.** We use separate charges & transfers —
