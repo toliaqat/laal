@@ -2,6 +2,7 @@ import type Stripe from 'stripe';
 import { stripe } from '@/lib/stripe';
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { sendDonationReceipt } from '@/lib/email';
+import { logAudit } from '@/lib/audit';
 import { STRIPE_WEBHOOK_SECRET } from '@/lib/env';
 
 export const runtime = 'nodejs';
@@ -67,6 +68,12 @@ export async function POST(req: Request): Promise<Response> {
         break;
       case 'payout.paid':
         await handlePayoutPaid(event.data.object as Stripe.Payout);
+        break;
+      case 'charge.refunded':
+        // Keeps us consistent when a refund is issued OUT OF BAND (Stripe
+        // Dashboard, or a dispute resolved as a refund). The in-app refund
+        // action already flips the donation; this is idempotent with it.
+        await handleChargeRefunded(event.data.object as Stripe.Charge);
         break;
       default:
         // Unhandled event types are acknowledged with 200 so Stripe stops
@@ -201,4 +208,51 @@ async function handlePayoutPaid(payout: Stripe.Payout): Promise<void> {
     .from('payouts')
     .update({ status: 'paid' })
     .eq('stripe_payout_id', payout.id);
+}
+
+async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
+  // Only act on a FULL refund: the schema has a single 'refunded' state and
+  // amount_raised is gross, so a partial refund can't be represented faithfully.
+  if (!charge.refunded) {
+    console.warn(
+      `[stripe webhook] charge.refunded for ${charge.id} is partial; skipping`,
+    );
+    return;
+  }
+
+  const paymentIntentId =
+    typeof charge.payment_intent === 'string'
+      ? charge.payment_intent
+      : charge.payment_intent?.id ?? null;
+  if (!paymentIntentId) {
+    console.warn('[stripe webhook] charge.refunded missing payment_intent');
+    return;
+  }
+
+  const admin = createAdminSupabase();
+  // Flip only a still-'succeeded' donation. If the in-app refund action already
+  // marked it 'refunded', this updates zero rows (the amount_raised trigger has
+  // then already decremented), which keeps the handler idempotent.
+  const { data, error } = await admin
+    .from('donations')
+    .update({ status: 'refunded' })
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .eq('status', 'succeeded')
+    .select('id, campaign_id');
+  if (error) {
+    console.error(
+      '[stripe webhook] failed to mark donation refunded:',
+      error.message,
+    );
+    return;
+  }
+  if (data && data.length > 0) {
+    await logAudit({
+      actorId: null,
+      action: 'donation.refunded',
+      entityType: 'donation',
+      entityId: data[0]?.id ?? null,
+      metadata: { campaignId: data[0]?.campaign_id ?? null, via: 'stripe_webhook' },
+    });
+  }
 }
