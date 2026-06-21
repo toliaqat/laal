@@ -11,9 +11,11 @@ import { SignOutButton } from '@/components/sign-out-button';
  */
 export function SiteChrome({
   signedIn,
+  isOrgMember = false,
   children,
 }: {
   signedIn: boolean;
+  isOrgMember?: boolean;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -30,16 +32,21 @@ export function SiteChrome({
           </Link>
           <nav className="nav-links">
             <Link href="/campaigns" className="nav-link">
-              Stories
+              Fundraisers
             </Link>
             <Link href="/start" className="nav-link">
-              Share a story
+              Start a fundraiser
             </Link>
             {signedIn ? (
               <>
                 <Link href="/dashboard" className="nav-link">
                   Dashboard
                 </Link>
+                {isOrgMember && (
+                  <Link href="/org" className="nav-link">
+                    Organization
+                  </Link>
+                )}
                 <SignOutButton />
               </>
             ) : (
@@ -56,10 +63,10 @@ export function SiteChrome({
           <span>© {new Date().getFullYear()} Laal. Every life is precious.</span>
           <span className="row wrap" style={{ gap: '1rem' }}>
             <Link href="/campaigns" className="nav-link">
-              Browse stories
+              Browse fundraisers
             </Link>
             <Link href="/start" className="nav-link">
-              Share a story
+              Start a fundraiser
             </Link>
           </span>
         </div>
