@@ -120,7 +120,7 @@ export default async function OrgPortalPage() {
                     </strong>
                   </span>
                 </div>
-                {!org.stripe_onboarding_complete && (
+                {isLead && !org.stripe_onboarding_complete && (
                   <form action={startOrgOnboarding} style={{ marginTop: '0.75rem' }}>
                     <input type="hidden" name="organization_id" value={org.id} />
                     <Button type="submit">

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createAdminSupabase, getCurrentUser } from '@/lib/supabase/server';
-import { requireOrgLead, requireOrgMember } from '@/lib/org-auth';
+import { requireOrgLead } from '@/lib/org-auth';
 import { createConnectAccount, createOnboardingLink } from '@/lib/stripe';
 import { logAudit } from '@/lib/audit';
 
@@ -53,13 +53,15 @@ export async function updateOrgProfile(formData: FormData): Promise<void> {
 
 /**
  * Begin (or resume) Stripe Connect onboarding for the org, then redirect to the
- * hosted KYC flow. Creates the connected account on first use. Any member may
- * start it; the account.updated webhook flips stripe_onboarding_complete.
+ * hosted KYC flow. Creates the connected account on first use. Lead-only — this
+ * binds the org's payout destination, so a view-only staff member must not be
+ * able to start it (mirrors the lead-only guard on updateOrgProfile). The
+ * account.updated webhook flips stripe_onboarding_complete.
  */
 export async function startOrgOnboarding(formData: FormData): Promise<void> {
   const orgId = str(formData, 'organization_id');
   if (!orgId) throw new Error('Missing organization id');
-  const profileId = await requireOrgMember(orgId);
+  const profileId = await requireOrgLead(orgId);
   const supabase = createAdminSupabase();
 
   const { data: org, error } = await supabase
