@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { Beneficiary, Campaign } from '@laal/types';
 import { Button, Card, Field } from '@/components/ui';
+import { CoverImageInput } from '@/components/cover-image-input';
 import { updateCampaign } from './actions';
 
 type OrgOption = { id: string; name: string };
@@ -48,6 +49,12 @@ export function EditForm({
               defaultValue={campaign.story ?? ''}
             />
           </Field>
+
+          <CoverImageInput
+            currentUrl={campaign.cover_image_url}
+            deceasedName={campaign.deceased_name}
+            allowRemove
+          />
 
           <div className="row wrap">
             <div style={{ flex: 2, minWidth: 180 }}>

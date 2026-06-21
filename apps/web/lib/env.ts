@@ -40,7 +40,16 @@ export const RESEND_API_KEY = () => required('RESEND_API_KEY');
 export const R2_ACCOUNT_ID = () => required('R2_ACCOUNT_ID');
 export const R2_ACCESS_KEY_ID = () => required('R2_ACCESS_KEY_ID');
 export const R2_SECRET_ACCESS_KEY = () => required('R2_SECRET_ACCESS_KEY');
+// Private bucket: verification documents (presigned reads only).
 export const R2_BUCKET = () => required('R2_BUCKET');
+// Public bucket: campaign cover images (world-readable via R2_PUBLIC_BASE_URL).
+// Kept separate from the private bucket so a misconfiguration can never make a
+// passport scan public, nor force a cover image behind signed URLs.
+export const R2_PUBLIC_BUCKET = () => required('R2_PUBLIC_BUCKET');
+// The public origin that serves the public bucket (a Cloudflare custom domain
+// or the bucket's r2.dev URL), e.g. https://img.laal.app — no trailing slash.
+export const R2_PUBLIC_BASE_URL = () =>
+  required('R2_PUBLIC_BASE_URL').replace(/\/+$/, '');
 
 // Misc
 export const APP_URL = () =>

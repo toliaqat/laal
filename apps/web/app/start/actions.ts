@@ -6,6 +6,11 @@ import {
   createServerSupabase,
   getCurrentUser,
 } from '@/lib/supabase/server';
+import {
+  assertValidCoverFile,
+  hasCoverFile,
+  uploadCoverImage,
+} from '@/lib/cover-image';
 import type { IntendedUse } from '@laal/types';
 
 const INTENDED_USES: IntendedUse[] = [
@@ -58,6 +63,13 @@ export async function createCampaign(formData: FormData): Promise<void> {
 
   const beneficiaryKind = String(formData.get('beneficiary_kind') ?? '');
 
+  // Optional cover image. Validate type/size up front so a bad file fails
+  // before we create anything; the actual upload happens once we have an id.
+  const coverField = formData.get('cover_image');
+  const coverFile = hasCoverFile(coverField)
+    ? assertValidCoverFile(coverField)
+    : null;
+
   // ---- Validation ----
   if (!title) throw new Error('Title is required.');
   if (!deceasedName) throw new Error('Name of the deceased is required.');
@@ -109,6 +121,20 @@ export async function createCampaign(formData: FormData): Promise<void> {
 
   if (campaignError || !campaign) {
     throw new Error(campaignError?.message ?? 'Failed to create campaign.');
+  }
+
+  // Upload the cover image (best-effort: the campaign already exists and the
+  // image is editable later, so an R2 hiccup must not lose the submission).
+  if (coverFile) {
+    try {
+      const url = await uploadCoverImage(campaign.id, coverFile);
+      await supabase
+        .from('campaigns')
+        .update({ cover_image_url: url })
+        .eq('id', campaign.id);
+    } catch {
+      // Swallow — organizer can add a photo from the edit screen.
+    }
   }
 
   let beneficiaryName = displayName;

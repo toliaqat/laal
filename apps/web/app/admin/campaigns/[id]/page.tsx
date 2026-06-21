@@ -24,7 +24,7 @@ export default async function AdminCampaignDetailPage({
   const { data: campaign } = await supabase
     .from('campaigns')
     .select(
-      'id, title, slug, status, story, amount_raised, currency, deceased_name, created_at, published_at',
+      'id, title, slug, status, story, cover_image_url, amount_raised, currency, deceased_name, created_at, published_at',
     )
     .eq('id', id)
     .single();
@@ -146,6 +146,23 @@ export default async function AdminCampaignDetailPage({
             </button>
           </form>
         </div>
+      )}
+
+      {campaign.cover_image_url && (
+        <Section title="Cover photo">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={campaign.cover_image_url}
+            alt={`Cover photo for ${campaign.deceased_name}`}
+            style={{
+              maxWidth: '100%',
+              maxHeight: 320,
+              objectFit: 'cover',
+              borderRadius: 'var(--radius)',
+              border: '1px solid var(--line)',
+            }}
+          />
+        </Section>
       )}
 
       {campaign.story && (
