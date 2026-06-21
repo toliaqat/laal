@@ -3,7 +3,7 @@ import { Container } from '@/components/ui';
 import { StartForm } from './start-form';
 
 export const metadata = {
-  title: 'Start a campaign — Ashfaat',
+  title: 'Share a story — Laal',
 };
 
 type OrgOption = { id: string; name: string };
@@ -23,11 +23,12 @@ export default async function StartPage() {
     <main className="section">
       <Container narrow>
         <div className="stack" style={{ gap: '0.35rem', marginBottom: '2rem' }}>
-          <span className="eyebrow">New campaign</span>
-          <h1 style={{ margin: 0 }}>Start a campaign</h1>
+          <span className="eyebrow">New story</span>
+          <h1 style={{ margin: 0 }}>Share a story</h1>
           <p className="muted" style={{ margin: 0 }}>
-            Create a dignified memorial fund. We review every campaign before it
-            goes live.
+            Tell us about your loved one and the family who needs support. We
+            carefully review every story before it goes live, with care for
+            their dignity.
           </p>
         </div>
         <StartForm orgs={orgs} />

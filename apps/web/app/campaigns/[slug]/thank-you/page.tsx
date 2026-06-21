@@ -5,7 +5,7 @@ type Params = { slug: string };
 type Search = { session_id?: string };
 
 export const metadata: Metadata = {
-  title: 'Thank you for your donation',
+  title: 'Thank you for your kindness — Laal',
   robots: { index: false },
 };
 
@@ -42,19 +42,19 @@ export default async function ThankYouPage({
             >
               ♥
             </div>
-            <h1 style={{ margin: 0 }}>Thank you for your kindness</h1>
+            <h1 style={{ margin: 0 }}>Thank you for protecting someone precious.</h1>
             <p className="muted" style={{ fontSize: '1.05rem', lineHeight: 1.7 }}>
-              Your donation has been received. Your contribution is held securely
-              and will be released to the verified beneficiary. If you provided an
-              email address, a receipt is on its way to your inbox.
+              Your support has been received. Your contribution is held securely
+              and reaches the family we support. If you provided an email
+              address, a receipt is on its way to your inbox.
             </p>
             <p className="muted" style={{ fontSize: '1.05rem', lineHeight: 1.7 }}>
-              On behalf of the family, thank you for your compassion in this
-              difficult time.
+              You helped remind someone they are not alone. On behalf of the
+              family, thank you.
             </p>
             <div className="center" style={{ marginTop: '0.5rem' }}>
               <Button href={`/campaigns/${slug}`} variant="primary">
-                Return to the campaign
+                Return to the story
               </Button>
             </div>
           </div>

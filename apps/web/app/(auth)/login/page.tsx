@@ -11,16 +11,16 @@ export default async function LoginPage({
   return (
     <div className="stack">
       <div className="stack" style={{ gap: '0.25rem' }}>
-        <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Sign in</h1>
+        <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Welcome back</h1>
         <p className="small muted" style={{ margin: 0 }}>
-          Welcome back to Ashfaat.
+          We're glad you're here. Sign in to continue with Laal.
         </p>
       </div>
 
       <LoginForm next={next} />
 
       <p className="small muted" style={{ margin: 0 }}>
-        No account?{' '}
+        New to Laal?{' '}
         <Link
           href={next ? `/signup?next=${encodeURIComponent(next)}` : '/signup'}
           style={{ color: 'var(--accent)', fontWeight: 500 }}

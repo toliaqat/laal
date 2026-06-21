@@ -25,4 +25,4 @@ export const RESEND_API_KEY = () => required('RESEND_API_KEY');
 export const APP_URL = () =>
   process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 export const EMAIL_FROM = () =>
-  process.env.EMAIL_FROM ?? 'Ashfaat <noreply@ashfaat.app>';
+  process.env.EMAIL_FROM ?? 'Laal <noreply@laal.app>';

@@ -15,7 +15,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
     <form action={createCampaign} className="stack">
       <Card large>
         <div className="stack">
-          <Field label="Campaign title">
+          <Field label="Story title">
             <input
               id="title"
               name="title"
@@ -36,7 +36,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
 
           <Field
             label="Their story"
-            hint="Share who they were and how the funds will help."
+            hint="Tell us who they were and how this support will help their family."
           >
             <textarea
               id="story"
@@ -48,7 +48,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
 
           <div className="row wrap">
             <div style={{ flex: 2, minWidth: 180 }}>
-              <Field label="Fundraising target">
+              <Field label="Support goal">
                 <input
                   id="goal_amount"
                   name="goal_amount"
@@ -113,9 +113,9 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
       <Card large>
         <div className="stack">
           <div className="stack" style={{ gap: '0.25rem' }}>
-            <h3 style={{ margin: 0 }}>Who receives the funds?</h3>
+            <h3 style={{ margin: 0 }}>Who receives the support?</h3>
             <p className="muted small" style={{ margin: 0 }}>
-              Choose a verified partner organisation, or an individual such as
+              Choose a verified partner organisation, or a person such as
               yourself or a family member.
             </p>
           </div>
@@ -165,7 +165,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
 
           {kind === 'individual' && (
             <div className="stack">
-              <Field label="Beneficiary name">
+              <Field label="Name of the person we'll support">
                 <input
                   id="display_name"
                   name="display_name"

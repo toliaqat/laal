@@ -52,14 +52,14 @@ export async function generateMetadata({
 
   if (!campaign) {
     return {
-      title: 'Campaign not found — Ashfaat',
+      title: 'Story not found — Laal',
     };
   }
 
-  const title = `${campaign.title} — Ashfaat`;
+  const title = `${campaign.title} — Laal`;
   const description =
     campaign.story?.slice(0, 200) ??
-    `A verified memorial fund in memory of ${campaign.deceased_name}.`;
+    `A verified story on Laal, in memory of ${campaign.deceased_name}.`;
   const url = `${APP_URL()}/campaigns/${campaign.slug}`;
 
   return {
@@ -109,7 +109,7 @@ export default async function CampaignPage({
       <Container narrow>
         <div className="stack" style={{ gap: '0.4rem' }}>
           <div className="row wrap">
-            <span className="eyebrow">Memorial fund</span>
+            <span className="eyebrow">A story on Laal</span>
             {campaign.status === 'completed' ? (
               <Badge tone="success">Goal reached</Badge>
             ) : campaign.status === 'closed' ? (
@@ -174,7 +174,7 @@ export default async function CampaignPage({
               paddingTop: '1rem',
             }}
           >
-            Funds go to <strong>{beneficiary.display_name}</strong>
+            Your support reaches <strong>{beneficiary.display_name}</strong>
             {beneficiary.relationship_to_deceased
               ? ` (${beneficiary.relationship_to_deceased})`
               : ''}

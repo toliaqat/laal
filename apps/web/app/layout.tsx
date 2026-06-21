@@ -5,9 +5,9 @@ import { getCurrentUser } from '@/lib/supabase/server';
 import { SiteChrome } from '@/components/site-chrome';
 
 export const metadata: Metadata = {
-  title: 'Ashfaat — Support expat families in loss',
+  title: 'Laal — Every life is precious',
   description:
-    'Dignified, verified memorial fundraising for expats and their families. Create a campaign, give with confidence, and see funds reach verified beneficiaries.',
+    'Everyone is someone’s Laal. Support real people facing difficult moments — every story is reviewed, and kindness reaches the right people, with dignity.',
 };
 
 export default async function RootLayout({

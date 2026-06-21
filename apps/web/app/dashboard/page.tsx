@@ -12,7 +12,7 @@ import {
 } from '@/components/ui';
 
 export const metadata = {
-  title: 'Your campaigns — Ashfaat',
+  title: 'Your stories — Laal',
 };
 
 const STATUS_LABELS: Record<Campaign['status'], string> = {
@@ -50,24 +50,24 @@ export default async function DashboardPage() {
         <div className="row-between wrap" style={{ marginBottom: '2rem' }}>
           <div className="stack" style={{ gap: '0.25rem' }}>
             <span className="eyebrow">Dashboard</span>
-            <h1 style={{ margin: 0 }}>Your campaigns</h1>
+            <h1 style={{ margin: 0 }}>Your stories</h1>
           </div>
           <Button href="/start" variant="primary">
-            Start a campaign
+            Share a story
           </Button>
         </div>
 
         {campaigns.length === 0 ? (
           <Card large>
             <div className="stack center">
-              <h3 style={{ margin: 0 }}>No campaigns yet</h3>
+              <h3 style={{ margin: 0 }}>No stories yet</h3>
               <p className="muted" style={{ margin: 0 }}>
-                Create a dignified memorial fund. We review every campaign
-                before it goes live.
+                Share a story to give a family hope and protect their dignity.
+                We carefully review every story before it goes live.
               </p>
               <div>
                 <Button href="/start" variant="primary">
-                  Start your first campaign
+                  Share your first story
                 </Button>
               </div>
             </div>

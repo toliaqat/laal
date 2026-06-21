@@ -26,14 +26,14 @@ export function SiteChrome({
       <header className="nav">
         <div className="container nav-inner">
           <Link href="/" className="brand">
-            Ashfaat
+            Laal
           </Link>
           <nav className="nav-links">
             <Link href="/campaigns" className="nav-link">
-              Campaigns
+              Stories
             </Link>
             <Link href="/start" className="nav-link">
-              Start a campaign
+              Share a story
             </Link>
             {signedIn ? (
               <>
@@ -53,13 +53,13 @@ export function SiteChrome({
       <main>{children}</main>
       <footer className="footer">
         <div className="container row-between wrap">
-          <span>© {new Date().getFullYear()} Ashfaat. Made with care.</span>
+          <span>© {new Date().getFullYear()} Laal. Every life is precious.</span>
           <span className="row wrap" style={{ gap: '1rem' }}>
             <Link href="/campaigns" className="nav-link">
-              Browse campaigns
+              Browse stories
             </Link>
             <Link href="/start" className="nav-link">
-              Start a campaign
+              Share a story
             </Link>
           </span>
         </div>

@@ -5,7 +5,7 @@ import { Container } from '@/components/ui';
 import { EditForm } from './edit-form';
 
 export const metadata = {
-  title: 'Edit campaign — Ashfaat',
+  title: 'Edit story — Laal',
 };
 
 type OrgOption = { id: string; name: string };
@@ -61,7 +61,7 @@ export default async function EditCampaignPage({
     <main className="section">
       <Container narrow>
         <div className="stack" style={{ gap: '0.35rem', marginBottom: '2rem' }}>
-          <span className="eyebrow">Edit campaign</span>
+          <span className="eyebrow">Edit story</span>
           <h1 style={{ margin: 0 }}>{campaign.title}</h1>
           <p className="muted" style={{ margin: 0 }}>
             In memory of {campaign.deceased_name}

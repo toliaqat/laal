@@ -10,9 +10,9 @@ import {
 } from '@/components/ui';
 
 export const metadata = {
-  title: 'Ashfaat — Memorial fundraising for expat families',
+  title: 'Laal — Everyone is someone’s Laal',
   description:
-    'Dignified, verified memorial fundraising for expats and their families.',
+    'Laal brings communities together to support families with dignity. Every need is verified, every act of kindness reaches the people who matter.',
 };
 
 async function getFeaturedCampaigns(): Promise<Campaign[]> {
@@ -32,20 +32,20 @@ async function getFeaturedCampaigns(): Promise<Campaign[]> {
 
 const STEPS = [
   {
-    title: 'Create a campaign',
-    body: 'A friend, colleague, or family member starts a memorial fund in minutes.',
+    title: 'Share a story',
+    body: 'A friend, colleague, or family member shares someone’s story in minutes.',
   },
   {
     title: 'Give with confidence',
-    body: 'Donors contribute securely — no account required to give.',
+    body: 'Supporters contribute securely — no account required to help.',
   },
   {
-    title: 'We verify',
-    body: 'Our team confirms the death and the people involved before funds move.',
+    title: 'Every need is verified',
+    body: 'Our team gently confirms the people and the need before anything moves.',
   },
   {
-    title: 'Funds reach a beneficiary',
-    body: 'Money is released to a verified family member or partner organisation.',
+    title: 'Support reaches the family',
+    body: 'Your contribution reaches a confirmed family member or trusted partner.',
   },
 ];
 
@@ -57,20 +57,20 @@ export default async function HomePage() {
       <section className="hero hero-bg">
         <Container narrow>
           <div className="stack center">
-            <span className="eyebrow">Memorial fundraising</span>
+            <span className="eyebrow">Every life is precious</span>
             <h1 style={{ marginTop: 0 }}>
-              Stand with families when an expat passes away abroad
+              Everyone is someone’s Laal.
             </h1>
             <p className="muted" style={{ fontSize: '1.125rem', maxWidth: '46ch', margin: '0 auto' }}>
-              Ashfaat brings communities together to ease the burden of loss far
-              from home — with dignity, transparency, and verified care.
+              A mother. A father. A child. A dream. Behind every request is a
+              person who matters.
             </p>
             <div className="row wrap center" style={{ justifyContent: 'center', marginTop: '0.5rem' }}>
               <Button href="/start" variant="primary">
-                Start a campaign
+                Support Someone Today
               </Button>
               <Button href="/campaigns" variant="ghost">
-                Browse campaigns
+                Browse stories
               </Button>
             </div>
           </div>
@@ -80,14 +80,13 @@ export default async function HomePage() {
       <section className="section">
         <Container narrow>
           <div className="stack center">
-            <span className="eyebrow">What Ashfaat is</span>
-            <h2 style={{ marginTop: 0 }}>A trusted place to give in grief</h2>
+            <span className="eyebrow">What Laal is</span>
+            <h2 style={{ marginTop: 0 }}>A warm, trusted place to help</h2>
             <p className="muted" style={{ fontSize: '1.05rem', lineHeight: 1.7 }}>
-              When someone dies far from home, families often face repatriation
-              costs, funeral arrangements, and uncertainty all at once. Ashfaat
-              is a calm, verified way for friends and communities to step in —
-              every campaign is checked, and every contribution reaches a
-              confirmed beneficiary.
+              When a family faces a hard moment, they often carry costs, worry,
+              and uncertainty all at once. Laal is a calm, caring way for friends
+              and community to step in — every story is gently verified, and
+              every act of kindness reaches the family who needs it.
             </p>
           </div>
         </Container>
@@ -97,7 +96,7 @@ export default async function HomePage() {
         <Container>
           <div className="stack center" style={{ marginBottom: '2rem' }}>
             <span className="eyebrow">How it works</span>
-            <h2 style={{ marginTop: 0 }}>Four simple steps</h2>
+            <h2 style={{ marginTop: 0 }}>Four gentle steps</h2>
           </div>
           <div className="grid grid-cards">
             {STEPS.map((step, i) => (
@@ -119,8 +118,8 @@ export default async function HomePage() {
         <Container>
           <div className="row-between wrap" style={{ marginBottom: '1.5rem' }}>
             <div className="stack" style={{ gap: '0.25rem' }}>
-              <span className="eyebrow">Featured campaigns</span>
-              <h2 style={{ margin: 0 }}>Memorial funds you can support</h2>
+              <span className="eyebrow">Featured stories</span>
+              <h2 style={{ margin: 0 }}>Stories you can support</h2>
             </div>
             <Button href="/campaigns" variant="ghost" size="sm">
               View all
@@ -131,11 +130,12 @@ export default async function HomePage() {
             <Card large>
               <div className="stack center">
                 <p className="muted" style={{ margin: 0 }}>
-                  There are no active campaigns just yet.
+                  New stories are being reviewed. Check back soon to support
+                  someone precious.
                 </p>
                 <div className="center">
                   <Button href="/start" variant="primary" size="sm">
-                    Start the first one
+                    Share the first story
                   </Button>
                 </div>
               </div>
@@ -180,15 +180,15 @@ export default async function HomePage() {
           <div className="stack center">
             <h2 style={{ marginTop: 0 }}>Be there when it matters most</h2>
             <p className="muted" style={{ fontSize: '1.05rem' }}>
-              Start a campaign for someone you have lost, or support a family in
-              their hardest moment.
+              Share the story of someone you care about, or stand with a family
+              in their hardest moment.
             </p>
             <div className="row wrap center" style={{ justifyContent: 'center', marginTop: '0.5rem' }}>
               <Button href="/start" variant="primary">
-                Start a campaign
+                Support Someone Today
               </Button>
               <Button href="/campaigns" variant="ghost">
-                Browse campaigns
+                Browse stories
               </Button>
             </div>
           </div>

@@ -10,7 +10,7 @@ export function stripe(): Stripe {
   if (!_stripe) {
     _stripe = new Stripe(STRIPE_SECRET_KEY(), {
       typescript: true,
-      appInfo: { name: 'Ashfaat' },
+      appInfo: { name: 'Laal' },
     });
   }
   return _stripe;

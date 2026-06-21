@@ -28,10 +28,10 @@ async function send(to: string, subject: string, html: string): Promise<SendResu
 
 function layout(body: string): string {
   return `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:520px;margin:0 auto;color:#1a1a1a;line-height:1.6">
-    <h2 style="font-weight:700">Ashfaat</h2>
+    <h2 style="font-weight:700">Laal</h2>
     ${body}
     <hr style="border:none;border-top:1px solid #eee;margin:24px 0" />
-    <p style="font-size:12px;color:#888">Ashfaat — dignified memorial fundraising for expat families.</p>
+    <p style="font-size:12px;color:#888">Laal — every life is precious. laal.app</p>
   </div>`;
 }
 
@@ -45,12 +45,13 @@ export function sendDonationReceipt(params: {
 }): Promise<SendResult> {
   const body = `
     <p>Dear ${params.donorName ?? 'friend'},</p>
-    <p>Thank you for your donation of <strong>${params.amount}</strong> to
-    <strong>${params.campaignTitle}</strong>.</p>
-    <p>Your contribution is held securely and will be released to the verified
-    beneficiary. We are grateful for your compassion.</p>
-    <p><a href="${APP_URL()}/campaigns/${params.campaignSlug}">View the campaign</a></p>`;
-  return send(params.to, `Your donation to ${params.campaignTitle}`, layout(body));
+    <p>Thank you for protecting someone precious. Your support of
+    <strong>${params.amount}</strong> for <strong>${params.campaignTitle}</strong>
+    helps remind a family they are not alone.</p>
+    <p>Your contribution is held securely and delivered transparently to the
+    people you're standing with.</p>
+    <p><a href="${APP_URL()}/campaigns/${params.campaignSlug}">See the story you supported</a></p>`;
+  return send(params.to, `Thank you for supporting ${params.campaignTitle}`, layout(body));
 }
 
 /** Notice sent when funds are released to the beneficiary. */
@@ -62,8 +63,9 @@ export function sendPayoutReleased(params: {
 }): Promise<SendResult> {
   const body = `
     <p>Dear ${params.beneficiaryName},</p>
-    <p>Funds totalling <strong>${params.amount}</strong> from
-    <strong>${params.campaignTitle}</strong> have been released and are on their
-    way to your account.</p>`;
-  return send(params.to, `Funds released — ${params.campaignTitle}`, layout(body));
+    <p>Your community stood beside you. Support totalling
+    <strong>${params.amount}</strong> from <strong>${params.campaignTitle}</strong>
+    is on its way to you.</p>
+    <p>You matter, and people showed up for you.</p>`;
+  return send(params.to, `Your community supported you — ${params.campaignTitle}`, layout(body));
 }

@@ -26,14 +26,14 @@ export default async function ReviewQueuePage() {
     <div className="stack">
       <div className="stack" style={{ gap: '0.25rem' }}>
         <span className="eyebrow">Admin</span>
-        <h1>Review queue</h1>
-        <p className="muted">Approve or reject campaigns awaiting review.</p>
+        <h1>Story review queue</h1>
+        <p className="muted">Review the stories families have shared before they go live.</p>
       </div>
 
       <section className="stack" style={{ gap: '0.75rem' }}>
-        <h2>Pending review ({pendingRows.length})</h2>
+        <h2>Awaiting review ({pendingRows.length})</h2>
         {pendingRows.length === 0 ? (
-          <p className="muted">Nothing awaiting review.</p>
+          <p className="muted">No stories awaiting review.</p>
         ) : (
           <table className="table">
             <thead>
@@ -65,7 +65,7 @@ export default async function ReviewQueuePage() {
                           type="submit"
                           className="btn btn-primary btn-sm"
                         >
-                          Approve
+                          Approve story
                         </button>
                       </form>
                       <form action={rejectCampaignForm.bind(null, c.id)}>

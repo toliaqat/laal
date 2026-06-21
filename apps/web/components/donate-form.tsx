@@ -6,6 +6,13 @@ import { startDonation } from '@/app/actions/donations';
 const PRESETS = [10, 25, 50];
 const MAX_DONATION = 50; // launch cap — keep in sync with app/actions/donations.ts
 
+// Per-tier microcopy (Laal voice).
+const TIER_COPY: Record<number, string> = {
+  10: 'Provide a moment of relief',
+  25: 'Create meaningful support',
+  50: 'Make a lasting difference',
+};
+
 function symbolFor(currency: string): string {
   switch (currency.toUpperCase()) {
     case 'EUR':
@@ -49,8 +56,8 @@ export function DonateForm({
 
       <div>
         <div className="label" style={{ marginBottom: '0.5rem' }}>
-          Choose an amount{' '}
-          <span className="hint">(max {sym}{MAX_DONATION} for now)</span>
+          Choose how you’ll help{' '}
+          <span className="hint">(up to {sym}{MAX_DONATION} for now)</span>
         </div>
         <div className="row wrap">
           {PRESETS.map((p) => {
@@ -72,6 +79,11 @@ export function DonateForm({
             );
           })}
         </div>
+        {!custom.trim() && TIER_COPY[selected] ? (
+          <p className="hint" style={{ marginTop: '0.5rem' }}>
+            {TIER_COPY[selected]}
+          </p>
+        ) : null}
       </div>
 
       <div className="field">
@@ -120,7 +132,7 @@ export function DonateForm({
 
       <label className="row" style={{ gap: '0.5rem' }}>
         <input name="isAnonymous" type="checkbox" />
-        <span>Donate anonymously</span>
+        <span>Support anonymously</span>
       </label>
 
       <div className="field">
@@ -134,8 +146,7 @@ export function DonateForm({
       </div>
 
       <button type="submit" className="btn btn-primary btn-block" disabled={invalid}>
-        Donate {sym}
-        {invalid ? '' : effectiveAmount}
+        Help Now{invalid ? '' : ` · ${sym}${effectiveAmount}`}
       </button>
     </form>
   );

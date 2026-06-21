@@ -63,7 +63,7 @@ export function SignupForm({ next }: { next?: string }) {
         disabled={pending}
         className="btn btn-primary btn-block"
       >
-        {pending ? 'Creating account…' : 'Create account'}
+        {pending ? 'Creating your account…' : 'Create account'}
       </button>
     </form>
   );

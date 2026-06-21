@@ -4,8 +4,8 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { Container, Card, Button, Progress, formatMoney } from '@/components/ui';
 
 export const metadata = {
-  title: 'Campaigns — Ashfaat',
-  description: 'Verified memorial funds you can contribute to.',
+  title: 'Stories — Laal',
+  description: 'Verified stories you can support with an act of kindness.',
 };
 
 export default async function CampaignsPage() {
@@ -26,10 +26,11 @@ export default async function CampaignsPage() {
     <main className="section">
       <Container>
         <div className="stack" style={{ gap: '0.25rem', marginBottom: '2rem' }}>
-          <span className="eyebrow">Campaigns</span>
-          <h1 style={{ margin: 0 }}>Memorial funds you can support</h1>
+          <span className="eyebrow">Stories</span>
+          <h1 style={{ margin: 0 }}>Stories you can support</h1>
           <p className="muted" style={{ margin: 0 }}>
-            Each campaign is verified before funds reach a beneficiary.
+            Every story is gently verified before your support reaches the
+            family.
           </p>
         </div>
 
@@ -37,11 +38,12 @@ export default async function CampaignsPage() {
           <Card large>
             <div className="stack center">
               <p className="muted" style={{ margin: 0 }}>
-                There are no active campaigns yet.
+                New stories are being reviewed. Check back soon to support
+                someone precious.
               </p>
               <div className="center">
                 <Button href="/start" variant="primary" size="sm">
-                  Start one
+                  Share a story
                 </Button>
               </div>
             </div>

@@ -62,8 +62,8 @@ export function AdminSidebar({ children }: { children?: ReactNode }) {
   return (
     <aside className="admin-sidebar">
       <Link href="/admin" className="admin-brand">
-        <span className="admin-brand-badge">A</span>
-        Ashfaat
+        <span className="admin-brand-badge">L</span>
+        Laal
       </Link>
       <div className="admin-nav-label">Manage</div>
       <nav className="admin-nav">

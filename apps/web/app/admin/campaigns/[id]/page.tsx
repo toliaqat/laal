@@ -133,7 +133,7 @@ export default async function AdminCampaignDetailPage({
         <div className="row wrap" style={{ gap: '0.5rem' }}>
           <form action={approveCampaignForm.bind(null, campaign.id)}>
             <button type="submit" className="btn btn-primary btn-sm">
-              Approve campaign
+              Approve story
             </button>
           </form>
           <form action={rejectCampaignForm.bind(null, campaign.id)}>
@@ -182,9 +182,9 @@ export default async function AdminCampaignDetailPage({
       </Section>
 
       {/* Verifications */}
-      <Section title="Verifications">
+      <Section title="Story review">
         {(verifications ?? []).length === 0 ? (
-          <p className="muted">No verifications submitted.</p>
+          <p className="muted">Nothing submitted for review yet.</p>
         ) : (
           <div className="stack" style={{ gap: '0.75rem' }}>
             {(verifications ?? []).map((v) => (
@@ -203,12 +203,12 @@ export default async function AdminCampaignDetailPage({
                   <div className="row wrap" style={{ gap: '0.4rem' }}>
                     <form action={setVerificationForm.bind(null, v.id, 'approved')}>
                       <button type="submit" className="btn btn-primary btn-sm">
-                        Approve
+                        Mark need verified
                       </button>
                     </form>
                     <form action={setVerificationForm.bind(null, v.id, 'rejected')}>
                       <button type="submit" className="btn btn-danger btn-sm">
-                        Reject
+                        Needs more info
                       </button>
                     </form>
                   </div>
@@ -260,7 +260,7 @@ export default async function AdminCampaignDetailPage({
       </Section>
 
       {/* Release funds */}
-      <Section title="Release funds">
+      <Section title="Deliver support">
         <Card>
           <div className="stack" style={{ gap: '0.6rem' }}>
             <p style={{ margin: 0 }}>
@@ -286,7 +286,7 @@ export default async function AdminCampaignDetailPage({
                 disabled={!canRelease}
                 className="btn btn-primary btn-sm"
               >
-                Release funds
+                Deliver support
               </button>
             </form>
           </div>
