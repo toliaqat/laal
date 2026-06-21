@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createAdminSupabase, getCurrentUser } from '@/lib/supabase/server';
 import { getMyMemberships } from '@/lib/org-auth';
+import { presignDownload } from '@/lib/r2';
 import { Button, Card, Field } from '@/components/ui';
 import { reviewVerification, startOrgOnboarding, updateOrgProfile } from './actions';
 
@@ -59,6 +60,26 @@ export default async function OrgPortalPage() {
             .order('created_at', { ascending: false })
         : { data: [] };
 
+      // Leads need to see the supporting documents (death certificate, etc.) to
+      // make a real verification decision. Presign short-lived GET URLs from the
+      // private bucket; only fetched for leads (staff get no document access).
+      const isLeadHere = m.orgRole === 'lead';
+      const { data: rawDocs } =
+        isLeadHere && campaignIds.length
+          ? await supabase
+              .from('documents')
+              .select('id, campaign_id, type, storage_path')
+              .in('campaign_id', campaignIds)
+          : { data: [] };
+      const documents = await Promise.all(
+        (rawDocs ?? []).map(async (d) => ({
+          id: d.id as string,
+          campaign_id: d.campaign_id as string,
+          type: d.type as string,
+          url: await presignDownload(d.storage_path as string).catch(() => null),
+        })),
+      );
+
       const { data: payouts } = await supabase
         .from('payouts')
         .select('amount, currency, status, released_at, beneficiaries!inner(organization_id)')
@@ -70,6 +91,7 @@ export default async function OrgPortalPage() {
         org,
         campaigns: campaigns ?? [],
         verifications: verifications ?? [],
+        documents,
         payouts: payouts ?? [],
       };
     }),
@@ -83,7 +105,7 @@ export default async function OrgPortalPage() {
           <h1>Your organization{sections.length > 1 ? 's' : ''}</h1>
         </div>
 
-        {sections.map(({ membership, org, campaigns, verifications, payouts }) => {
+        {sections.map(({ membership, org, campaigns, verifications, documents, payouts }) => {
           if (!org) return null;
           const isLead = membership.orgRole === 'lead';
           const titleByCampaign = new Map<string, string>();
@@ -190,6 +212,35 @@ export default async function OrgPortalPage() {
                     fundraisers designated to your organization. An admin releases
                     funds after verification.
                   </p>
+                  {documents.length > 0 && (
+                    <div className="stack" style={{ gap: '0.4rem', marginBottom: '0.75rem' }}>
+                      <h4 className="small" style={{ margin: 0 }}>Supporting documents</h4>
+                      {documents.map((d) => (
+                        <div
+                          key={d.id}
+                          className="row small"
+                          style={{ justifyContent: 'space-between' }}
+                        >
+                          <span>
+                            {titleByCampaign.get(d.campaign_id) ?? 'Fundraiser'} ·{' '}
+                            {d.type.replace(/_/g, ' ')}
+                          </span>
+                          {d.url ? (
+                            <a
+                              href={d.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="nav-link"
+                            >
+                              View
+                            </a>
+                          ) : (
+                            <span className="muted">unavailable</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <ul className="stack" style={{ listStyle: 'none', padding: 0 }}>
                     {verifications.map((v) => {
                       const decided =
