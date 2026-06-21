@@ -320,6 +320,24 @@ p { margin: 0 0 1rem; }
 .trust-pill:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: var(--line-strong); }
 .trust-pill svg { width: 15px; height: 15px; color: var(--accent); }
 
+/* ---- quiet trust line (flat — must NOT read as buttons) ---- */
+.trust-line {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 0.5rem 1.1rem; color: var(--muted);
+}
+.trust-item {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.85rem; font-weight: 500; color: var(--ink-soft);
+}
+.trust-item svg { width: 15px; height: 15px; color: var(--accent); }
+/* hairline divider between items (not before the first) */
+.trust-item + .trust-item { position: relative; padding-left: 1.1rem; }
+.trust-item + .trust-item::before {
+  content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 1px; height: 0.9rem; background: var(--line-strong);
+}
+@media (max-width: 880px) { .trust-line { justify-content: center; } }
+
 /* ---- value band ---- */
 .value-band {
   background: linear-gradient(135deg, #fbf3ea 0%, var(--surface-2) 100%);

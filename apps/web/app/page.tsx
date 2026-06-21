@@ -116,16 +116,16 @@ export default async function HomePage() {
                 </Button>
               </div>
               <div
-                className="pill-row reveal"
-                style={{ animationDelay: '0.36s', marginTop: '0.5rem' }}
+                className="trust-line reveal"
+                style={{ animationDelay: '0.36s', marginTop: '0.75rem' }}
               >
-                <span className="trust-pill">
+                <span className="trust-item">
                   <ShieldIcon /> Every story verified
                 </span>
-                <span className="trust-pill">
+                <span className="trust-item">
                   <HeartIcon /> Reaches the family
                 </span>
-                <span className="trust-pill">
+                <span className="trust-item">
                   <LockIcon /> Secure giving
                 </span>
               </div>
