@@ -44,6 +44,20 @@ export async function acceptOrgInvite(formData: FormData): Promise<void> {
     .maybeSingle();
 
   if (!invite) throw new Error('Invitation not found');
+
+  // Bind acceptance to the invited address. The token is delivered by email and
+  // is the only secret guarding the invite, so without this check anyone who
+  // obtains the link could accept it while signed in as a different account —
+  // gaining org membership (and, as a lead, the ability to start Stripe
+  // onboarding for that org). Require the logged-in email to match the invite.
+  const inviteEmail = String(invite.email ?? '').trim().toLowerCase();
+  const userEmail = String(user!.email ?? '').trim().toLowerCase();
+  if (!userEmail || userEmail !== inviteEmail) {
+    throw new Error(
+      'This invitation was sent to a different email address. Please sign in with that address to accept it.',
+    );
+  }
+
   if (invite.status !== 'pending') {
     throw new Error('This invitation has already been used or revoked');
   }
