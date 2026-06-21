@@ -23,3 +23,6 @@ coverage/
 # native
 *.keystore
 ios/Pods/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
