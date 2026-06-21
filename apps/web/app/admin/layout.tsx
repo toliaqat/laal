@@ -2,16 +2,8 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { createAdminSupabase, getCurrentUser } from '@/lib/supabase/server';
-
-const NAV = [
-  { href: '/admin', label: 'Overview' },
-  { href: '/admin/campaigns', label: 'Campaigns' },
-  { href: '/admin/donations', label: 'Donations' },
-  { href: '/admin/organizations', label: 'Organizations' },
-  { href: '/admin/accounts', label: 'Accounts' },
-  { href: '/admin/audit', label: 'Audit log' },
-  { href: '/admin/housekeeping', label: 'Housekeeping' },
-];
+import { AdminSidebar } from '@/components/admin-sidebar';
+import { SignOutButton } from '@/components/sign-out-button';
 
 export default async function AdminLayout({
   children,
@@ -30,33 +22,27 @@ export default async function AdminLayout({
 
   if (!profile || profile.role !== 'admin') redirect('/');
 
+  const label = profile.full_name ?? user.email;
+
   return (
-    <div style={{ minHeight: '60vh' }}>
-      <div
-        style={{
-          background: 'var(--surface)',
-          borderBottom: '1px solid var(--line)',
-        }}
-      >
-        <div
-          className="container row-between wrap"
-          style={{ paddingTop: '0.85rem', paddingBottom: '0.85rem' }}
-        >
-          <div className="row wrap" style={{ gap: '1.25rem' }}>
-            <strong style={{ fontFamily: 'var(--serif)' }}>Admin</strong>
-            <nav className="row wrap" style={{ gap: '1rem' }}>
-              {NAV.map((n) => (
-                <Link key={n.href} href={n.href} className="nav-link small">
-                  {n.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          <span className="muted small">{profile.full_name ?? user.email}</span>
+    <div className="admin-shell">
+      <AdminSidebar>
+        <div className="stack" style={{ gap: '0.6rem' }}>
+          <span className="small muted" style={{ paddingLeft: '0.2rem' }}>
+            {label}
+          </span>
+          <SignOutButton />
         </div>
-      </div>
-      <div className="container" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
-        {children}
+      </AdminSidebar>
+
+      <div className="admin-main">
+        <div className="admin-topbar">
+          <span className="admin-topbar-title">Admin</span>
+          <Link href="/" className="nav-link small">
+            View site ↗
+          </Link>
+        </div>
+        <div className="admin-content">{children}</div>
       </div>
     </div>
   );
