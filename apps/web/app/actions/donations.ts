@@ -4,10 +4,10 @@ import { redirect } from 'next/navigation';
 import { createDonationCheckout, toMinorUnits } from '@/lib/stripe';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-// Sanity bounds (major currency units). Prevents card-testing abuse and
-// float corruption from absurd inputs.
+// Donation bounds (major currency units). Capped at 50 for launch to limit
+// risk while the platform is new. Raise this once trust/limits are in place.
 const MIN_DONATION = 1;
-const MAX_DONATION = 1_000_000;
+const MAX_DONATION = 50;
 
 /**
  * Server action invoked from <DonateForm>. Validates the amount, creates a

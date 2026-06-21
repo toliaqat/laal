@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { startDonation } from '@/app/actions/donations';
 
-const PRESETS = [10, 25, 50, 100];
+const PRESETS = [10, 25, 50];
+const MAX_DONATION = 50; // launch cap — keep in sync with app/actions/donations.ts
 
 function symbolFor(currency: string): string {
   switch (currency.toUpperCase()) {
@@ -33,46 +34,37 @@ export function DonateForm({
   const [custom, setCustom] = useState<string>('');
   const sym = symbolFor(currency);
 
-  // The amount sent is the custom value when present, else the selected chip.
   const effectiveAmount = custom.trim() ? custom : String(selected);
+  const numeric = Number.parseFloat(effectiveAmount);
+  const overCap = Number.isFinite(numeric) && numeric > MAX_DONATION;
+  const invalid = !Number.isFinite(numeric) || numeric < 1 || overCap;
 
   return (
-    <form
-      action={startDonation}
-      style={{ display: 'grid', gap: '1rem', maxWidth: 480 }}
-    >
+    <form action={startDonation} className="stack" style={{ gap: '1rem' }}>
       <input type="hidden" name="campaignId" value={campaignId} />
       <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="currency" value={currency} />
       <input type="hidden" name="campaignTitle" value={campaignTitle} />
-      {/* Canonical amount the server reads (preset selection). */}
       <input type="hidden" name="amount" value={effectiveAmount} />
 
-      <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
-        <legend style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
-          Choose an amount
-        </legend>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+      <div>
+        <div className="label" style={{ marginBottom: '0.5rem' }}>
+          Choose an amount{' '}
+          <span className="hint">(max {sym}{MAX_DONATION} for now)</span>
+        </div>
+        <div className="row wrap">
           {PRESETS.map((p) => {
             const active = !custom.trim() && selected === p;
             return (
               <button
                 key={p}
                 type="button"
+                className={`btn ${active ? 'btn-primary' : 'btn-ghost'}`}
                 onClick={() => {
                   setSelected(p);
                   setCustom('');
                 }}
                 aria-pressed={active}
-                style={{
-                  padding: '0.5rem 1rem',
-                  borderRadius: 8,
-                  border: active ? '2px solid #1a1a1a' : '1px solid #ccc',
-                  background: active ? '#1a1a1a' : '#fff',
-                  color: active ? '#fff' : '#1a1a1a',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
               >
                 {sym}
                 {p}
@@ -80,102 +72,70 @@ export function DonateForm({
             );
           })}
         </div>
-      </fieldset>
+      </div>
 
-      <label style={{ display: 'grid', gap: '0.25rem' }}>
-        <span style={{ fontWeight: 600 }}>Or enter a custom amount</span>
+      <div className="field">
+        <label className="label">Or enter a custom amount</label>
         <input
           name="customAmount"
+          className="input"
           inputMode="decimal"
           type="number"
           min="1"
-          step="0.01"
-          placeholder={`${sym}0.00`}
+          max={MAX_DONATION}
+          step="1"
+          placeholder={`${sym}0`}
           value={custom}
           onChange={(e) => setCustom(e.target.value)}
-          style={{
-            padding: '0.5rem 0.75rem',
-            borderRadius: 8,
-            border: '1px solid #ccc',
-            fontSize: '1rem',
-          }}
         />
-      </label>
+        {overCap ? (
+          <span className="error-text">
+            The maximum donation is {sym}
+            {MAX_DONATION} for now.
+          </span>
+        ) : null}
+      </div>
 
-      <label style={{ display: 'grid', gap: '0.25rem' }}>
-        <span style={{ fontWeight: 600 }}>Your name (optional)</span>
+      <div className="field">
+        <label className="label">Your name (optional)</label>
         <input
           name="donorName"
+          className="input"
           type="text"
           autoComplete="name"
           placeholder="Jane Doe"
-          style={{
-            padding: '0.5rem 0.75rem',
-            borderRadius: 8,
-            border: '1px solid #ccc',
-            fontSize: '1rem',
-          }}
         />
-      </label>
+      </div>
 
-      <label style={{ display: 'grid', gap: '0.25rem' }}>
-        <span style={{ fontWeight: 600 }}>Email (optional, for your receipt)</span>
+      <div className="field">
+        <label className="label">Email (optional, for your receipt)</label>
         <input
           name="donorEmail"
+          className="input"
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
-          style={{
-            padding: '0.5rem 0.75rem',
-            borderRadius: 8,
-            border: '1px solid #ccc',
-            fontSize: '1rem',
-          }}
         />
-      </label>
+      </div>
 
-      <label
-        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-      >
+      <label className="row" style={{ gap: '0.5rem' }}>
         <input name="isAnonymous" type="checkbox" />
         <span>Donate anonymously</span>
       </label>
 
-      <label style={{ display: 'grid', gap: '0.25rem' }}>
-        <span style={{ fontWeight: 600 }}>
-          Leave a message of condolence (optional)
-        </span>
+      <div className="field">
+        <label className="label">Leave a message of condolence (optional)</label>
         <textarea
           name="message"
-          rows={3}
+          className="textarea"
           maxLength={450}
           placeholder="A few words for the family…"
-          style={{
-            padding: '0.5rem 0.75rem',
-            borderRadius: 8,
-            border: '1px solid #ccc',
-            fontSize: '1rem',
-            resize: 'vertical',
-            fontFamily: 'inherit',
-          }}
         />
-      </label>
+      </div>
 
-      <button
-        type="submit"
-        style={{
-          padding: '0.75rem 1.25rem',
-          borderRadius: 8,
-          border: 'none',
-          background: '#1a1a1a',
-          color: '#fff',
-          fontWeight: 700,
-          fontSize: '1rem',
-          cursor: 'pointer',
-        }}
-      >
+      <button type="submit" className="btn btn-primary btn-block" disabled={invalid}>
         Donate {sym}
-        {effectiveAmount}
+        {invalid ? '' : effectiveAmount}
       </button>
     </form>
   );
