@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,11 +23,49 @@ const ROLE_LABEL: Record<string, string> = {
   admin: 'Team',
 };
 
+type CampaignRef = { slug: string; title: string; deceased_name: string } | null;
+type FollowItem = { campaign_id: string; campaign: CampaignRef };
+type DonationItem = {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  created_at: string;
+  campaign: CampaignRef;
+};
+
+function formatMoney(amount: number, currency: string) {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${currency} ${amount}`;
+  }
+}
+
+function formatDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return '';
+  }
+}
+
 export default function AccountScreen() {
   const { session, signOut } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [follows, setFollows] = useState<FollowItem[]>([]);
+  const [donations, setDonations] = useState<DonationItem[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
 
   // Signed-out users have no account to show — send them to sign in.
   useEffect(() => {
@@ -37,12 +76,25 @@ export default function AccountScreen() {
     if (!session) return;
     let mounted = true;
     (async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .maybeSingle();
-      if (mounted) setProfile((data as Profile | null) ?? null);
+      const [{ data: prof }, { data: f }, { data: d }] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle(),
+        supabase
+          .from('campaign_follows')
+          .select('campaign_id, campaign:campaigns(slug, title, deceased_name)')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('donations')
+          .select(
+            'id, amount, currency, status, created_at, campaign:campaigns(slug, title, deceased_name)',
+          )
+          .eq('donor_profile_id', session.user.id)
+          .order('created_at', { ascending: false }),
+      ]);
+      if (!mounted) return;
+      setProfile((prof as Profile | null) ?? null);
+      setFollows((f as unknown as FollowItem[]) ?? []);
+      setDonations((d as unknown as DonationItem[]) ?? []);
+      setLoadingData(false);
     })();
     return () => {
       mounted = false;
@@ -90,19 +142,100 @@ export default function AccountScreen() {
         </View>
       </View>
 
-      {/* activity — warm empty states for launch */}
-      <Text style={styles.sectionLabel}>YOUR LAAL</Text>
+      {/* activity — real follows + contributions */}
+      {loadingData ? (
+        <View style={styles.loadingBox}>
+          <ActivityIndicator color={colors.accent} />
+        </View>
+      ) : (
+        <>
+          <View style={styles.subHead}>
+            <Text style={styles.sectionLabel}>STORIES YOU FOLLOW</Text>
+            {follows.length > 0 ? (
+              <Text style={styles.countChip}>{follows.length}</Text>
+            ) : null}
+          </View>
+          {follows.length === 0 ? (
+            <ActivityRow
+              icon="❤"
+              title="No stories yet"
+              body="Tap Follow on a story to save it here, so you can return to the people you care about."
+            />
+          ) : (
+            follows
+              .filter((f) => f.campaign)
+              .map((f) => (
+                <Pressable
+                  key={f.campaign_id}
+                  style={[styles.listRow, cardShadow]}
+                  onPress={() => router.push(`/campaigns/${f.campaign!.slug}`)}
+                >
+                  <View style={styles.listIcon}>
+                    <Text style={styles.listIconText}>♥</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.listTitle} numberOfLines={1}>
+                      {f.campaign!.title}
+                    </Text>
+                    <Text style={styles.listSub} numberOfLines={1}>
+                      In memory of {f.campaign!.deceased_name}
+                    </Text>
+                  </View>
+                  <Text style={styles.chevron}>›</Text>
+                </Pressable>
+              ))
+          )}
 
-      <ActivityRow
-        icon="❤"
-        title="Stories you follow"
-        body="Stories you save will gather here, so you can return to the people you care about."
-      />
-      <ActivityRow
-        icon="✦"
-        title="Your support"
-        body="Every contribution you make will appear here — a quiet record of kindness."
-      />
+          <View style={styles.subHead}>
+            <Text style={styles.sectionLabel}>YOUR SUPPORT</Text>
+            {donations.length > 0 ? (
+              <Text style={styles.countChip}>{donations.length}</Text>
+            ) : null}
+          </View>
+          {donations.length === 0 ? (
+            <ActivityRow
+              icon="✦"
+              title="No support yet"
+              body="Every contribution you make will appear here — a quiet record of kindness."
+            />
+          ) : (
+            donations.map((d) => {
+              const row = (
+                <>
+                  <View style={styles.listIcon}>
+                    <Text style={styles.listIconText}>✦</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.listTitle} numberOfLines={1}>
+                      {d.campaign?.title ?? 'A story you supported'}
+                    </Text>
+                    <Text style={styles.listSub}>
+                      {formatDate(d.created_at)}
+                      {d.status !== 'succeeded' ? ` · ${d.status}` : ''}
+                    </Text>
+                  </View>
+                  <Text style={styles.amount}>
+                    {formatMoney(d.amount, d.currency)}
+                  </Text>
+                </>
+              );
+              return d.campaign ? (
+                <Pressable
+                  key={d.id}
+                  style={[styles.listRow, cardShadow]}
+                  onPress={() => router.push(`/campaigns/${d.campaign!.slug}`)}
+                >
+                  {row}
+                </Pressable>
+              ) : (
+                <View key={d.id} style={[styles.listRow, cardShadow]}>
+                  {row}
+                </View>
+              );
+            })
+          )}
+        </>
+      )}
 
       <Text style={styles.sectionLabel}>DO MORE</Text>
 
@@ -241,6 +374,50 @@ const styles = StyleSheet.create({
   activityIconText: { fontSize: 16, color: colors.accent },
   activityTitle: { fontSize: 15, fontWeight: '700', color: colors.ink },
   activityBody: { fontSize: 13, lineHeight: 19, color: colors.muted, marginTop: 2 },
+
+  loadingBox: { paddingVertical: spacing.xl, alignItems: 'center' },
+  subHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  countChip: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.muted,
+    backgroundColor: colors.surface2,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.pill,
+    paddingHorizontal: 7,
+    paddingVertical: 1,
+    overflow: 'hidden',
+  },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  listIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listIconText: { fontSize: 15, color: colors.accent },
+  listTitle: { fontSize: 14, fontWeight: '700', color: colors.ink },
+  listSub: { fontSize: 12, color: colors.muted, marginTop: 1 },
+  chevron: { fontSize: 22, color: colors.lineStrong, fontWeight: '600' },
+  amount: { fontSize: 14, fontWeight: '700', color: colors.accentHover },
 
   actionRow: {
     flexDirection: 'row',

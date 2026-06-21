@@ -7,11 +7,12 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import type { Beneficiary, Campaign } from '@laal/types';
 import { supabase, WEB_APP_URL } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth';
 import { ProgressBar } from '@/components/progress-bar';
 import { VerifiedChip } from '@/components/ui';
 import { accentShadow, colors, radius, serif, spacing } from '@/lib/theme';
@@ -31,9 +32,13 @@ function formatMoney(amount: number, currency: string) {
 export default function CampaignDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { session } = useAuth();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [beneficiary, setBeneficiary] = useState<Beneficiary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [followed, setFollowed] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -66,6 +71,51 @@ export default function CampaignDetailScreen() {
     };
   }, [slug]);
 
+  // Reflect whether the signed-in user already follows this story.
+  useEffect(() => {
+    if (!campaign || !session) {
+      setFollowed(false);
+      return;
+    }
+    let mounted = true;
+    supabase
+      .from('campaign_follows')
+      .select('campaign_id')
+      .eq('campaign_id', campaign.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (mounted) setFollowed(Boolean(data));
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [campaign, session]);
+
+  const toggleFollow = async () => {
+    if (!session) {
+      router.push('/login'); // gentle nudge — following needs an account
+      return;
+    }
+    if (!campaign || followBusy) return;
+    setFollowBusy(true);
+    const next = !followed;
+    setFollowed(next); // optimistic
+    if (next) {
+      const { error } = await supabase
+        .from('campaign_follows')
+        .insert({ campaign_id: campaign.id, profile_id: session.user.id });
+      if (error) setFollowed(false);
+    } else {
+      const { error } = await supabase
+        .from('campaign_follows')
+        .delete()
+        .eq('campaign_id', campaign.id)
+        .eq('profile_id', session.user.id);
+      if (error) setFollowed(true);
+    }
+    setFollowBusy(false);
+  };
+
   const help = () => {
     WebBrowser.openBrowserAsync(`${WEB_APP_URL}/campaigns/${slug}`);
   };
@@ -94,7 +144,18 @@ export default function CampaignDetailScreen() {
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
-        <VerifiedChip label="Story verified" />
+        <View style={styles.headRow}>
+          <VerifiedChip label="Story verified" />
+          <Pressable
+            onPress={toggleFollow}
+            hitSlop={6}
+            style={[styles.followBtn, followed && styles.followBtnOn]}
+          >
+            <Text style={[styles.followText, followed && styles.followTextOn]}>
+              {followed ? '♥  Following' : '♡  Follow'}
+            </Text>
+          </Pressable>
+        </View>
         <Text style={styles.title}>{campaign.title}</Text>
         <Text style={styles.memory}>In memory of {campaign.deceased_name}</Text>
 
@@ -159,6 +220,22 @@ const styles = StyleSheet.create({
   },
   notFound: { fontSize: 16, color: colors.muted },
   content: { padding: spacing.xl, gap: spacing.md },
+  headRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  followBtn: {
+    borderWidth: 1,
+    borderColor: colors.lineStrong,
+    borderRadius: radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    backgroundColor: colors.surface,
+  },
+  followBtnOn: { backgroundColor: colors.accentSoft, borderColor: '#e6cfbb' },
+  followText: { fontSize: 13, fontWeight: '700', color: colors.inkSoft },
+  followTextOn: { color: colors.accentHover },
   title: {
     fontSize: 26,
     lineHeight: 31,

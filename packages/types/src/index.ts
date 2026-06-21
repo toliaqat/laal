@@ -155,6 +155,13 @@ export interface Donation {
   created_at: string;
 }
 
+/** A supporter following (saving) a campaign. Mirrors campaign_follows. */
+export interface CampaignFollow {
+  profile_id: string;
+  campaign_id: string;
+  created_at: string;
+}
+
 export interface Payout {
   id: string;
   campaign_id: string;
