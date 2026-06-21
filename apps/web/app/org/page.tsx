@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createAdminSupabase, getCurrentUser } from '@/lib/supabase/server';
 import { getMyMemberships } from '@/lib/org-auth';
 import { Button, Card, Field } from '@/components/ui';
-import { startOrgOnboarding, updateOrgProfile } from './actions';
+import { reviewVerification, startOrgOnboarding, updateOrgProfile } from './actions';
 
 function money(amount: number, currency: string): string {
   return `${currency} ${Number(amount).toFixed(2)}`;
@@ -42,10 +42,22 @@ export default async function OrgPortalPage() {
 
       const { data: campaigns } = await supabase
         .from('beneficiaries')
-        .select('campaigns:campaign_id(title, slug, status, amount_raised, goal_amount, currency)')
+        .select('campaign_id, campaigns:campaign_id(id, title, slug, status, amount_raised, goal_amount, currency)')
         .eq('organization_id', orgId)
         .eq('type', 'organization')
         .eq('is_active', true);
+
+      const campaignIds = (campaigns ?? [])
+        .map((c) => c.campaign_id as string)
+        .filter(Boolean);
+
+      const { data: verifications } = campaignIds.length
+        ? await supabase
+            .from('verifications')
+            .select('id, campaign_id, type, status, reviewed_at')
+            .in('campaign_id', campaignIds)
+            .order('created_at', { ascending: false })
+        : { data: [] };
 
       const { data: payouts } = await supabase
         .from('payouts')
@@ -53,7 +65,13 @@ export default async function OrgPortalPage() {
         .eq('beneficiaries.organization_id', orgId)
         .order('released_at', { ascending: false });
 
-      return { membership: m, org, campaigns: campaigns ?? [], payouts: payouts ?? [] };
+      return {
+        membership: m,
+        org,
+        campaigns: campaigns ?? [],
+        verifications: verifications ?? [],
+        payouts: payouts ?? [],
+      };
     }),
   );
 
@@ -65,9 +83,14 @@ export default async function OrgPortalPage() {
           <h1>Your organization{sections.length > 1 ? 's' : ''}</h1>
         </div>
 
-        {sections.map(({ membership, org, campaigns, payouts }) => {
+        {sections.map(({ membership, org, campaigns, verifications, payouts }) => {
           if (!org) return null;
           const isLead = membership.orgRole === 'lead';
+          const titleByCampaign = new Map<string, string>();
+          for (const c of campaigns) {
+            const camp = Array.isArray(c.campaigns) ? c.campaigns[0] : c.campaigns;
+            if (camp?.id) titleByCampaign.set(camp.id as string, camp.title as string);
+          }
           const received = payouts
             .filter((p) => p.status !== 'failed' && p.status !== 'cancelled')
             .reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
@@ -157,6 +180,54 @@ export default async function OrgPortalPage() {
                   </ul>
                 )}
               </Card>
+
+              {/* Verifications to review (lead only) */}
+              {isLead && verifications.length > 0 && (
+                <Card>
+                  <h3>Verifications to review</h3>
+                  <p className="muted small">
+                    Confirm the death (and relationship, for individual cases) for
+                    fundraisers designated to your organization. An admin releases
+                    funds after verification.
+                  </p>
+                  <ul className="stack" style={{ listStyle: 'none', padding: 0 }}>
+                    {verifications.map((v) => {
+                      const decided =
+                        v.status === 'approved' || v.status === 'rejected';
+                      return (
+                        <li
+                          key={v.id}
+                          className="row"
+                          style={{ justifyContent: 'space-between', alignItems: 'center' }}
+                        >
+                          <span className="small">
+                            {titleByCampaign.get(v.campaign_id as string) ?? 'Fundraiser'} ·{' '}
+                            {v.type} · <strong>{v.status}</strong>
+                          </span>
+                          {decided ? (
+                            <span className="small muted">reviewed</span>
+                          ) : (
+                            <span className="row" style={{ gap: '0.5rem' }}>
+                              <form action={reviewVerification}>
+                                <input type="hidden" name="verification_id" value={v.id} />
+                                <input type="hidden" name="status" value="approved" />
+                                <Button type="submit">Approve</Button>
+                              </form>
+                              <form action={reviewVerification}>
+                                <input type="hidden" name="verification_id" value={v.id} />
+                                <input type="hidden" name="status" value="rejected" />
+                                <Button type="submit" variant="ghost">
+                                  Reject
+                                </Button>
+                              </form>
+                            </span>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </Card>
+              )}
 
               {/* Profile (lead only) */}
               {isLead && (
