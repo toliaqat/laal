@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { LoginForm } from './login-form';
+import { GoogleButton } from '../google-button';
 
 export default async function LoginPage({
   searchParams,
@@ -18,6 +19,8 @@ export default async function LoginPage({
       </div>
 
       <LoginForm next={next} />
+
+      <GoogleButton next={next} />
 
       <p className="small muted" style={{ margin: 0 }}>
         New to Laal?{' '}

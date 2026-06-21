@@ -8,11 +8,26 @@ function required(name: string): string {
   return v;
 }
 
-// Public (safe in client bundles)
-export const SUPABASE_URL = () => required('NEXT_PUBLIC_SUPABASE_URL');
-export const SUPABASE_ANON_KEY = () => required('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+// Public (safe in client bundles).
+// IMPORTANT: these MUST be referenced as static `process.env.NEXT_PUBLIC_*`
+// literals so Next.js inlines them into the browser bundle. A dynamic lookup
+// (e.g. `process.env[name]`) is NOT inlined and is `undefined` on the client.
+function requiredValue(name: string, value: string | undefined): string {
+  if (!value) throw new Error(`Missing required environment variable: ${name}`);
+  return value;
+}
+export const SUPABASE_URL = () =>
+  requiredValue('NEXT_PUBLIC_SUPABASE_URL', process.env.NEXT_PUBLIC_SUPABASE_URL);
+export const SUPABASE_ANON_KEY = () =>
+  requiredValue(
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );
 export const STRIPE_PUBLISHABLE_KEY = () =>
-  required('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY');
+  requiredValue(
+    'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+  );
 
 // Server-only
 export const SUPABASE_SERVICE_ROLE_KEY = () =>

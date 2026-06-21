@@ -179,6 +179,13 @@ p { margin: 0 0 1rem; }
 .brand { font-family: var(--serif); font-weight: 700; font-size: 1.35rem; color: var(--ink); letter-spacing: -0.01em; }
 .brand:hover { color: var(--ink); }
 .nav-links { display: flex; align-items: center; gap: 1.25rem; }
+
+@media (max-width: 560px) {
+  /* let the header breathe and wrap instead of overflowing narrow phones */
+  .nav-inner { height: auto; min-height: 64px; flex-wrap: wrap; gap: 0.5rem; padding: 0.6rem 0; }
+  .nav-links { flex-wrap: wrap; gap: 0.75rem 1rem; }
+  .nav-link { font-size: 0.9rem; }
+}
 .nav-link { color: var(--ink-soft); font-weight: 500; font-size: 0.95rem; }
 .nav-link:hover { color: var(--ink); }
 
@@ -189,6 +196,15 @@ p { margin: 0 0 1rem; }
 .table th { text-align: left; font-weight: 600; color: var(--muted); padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--line-strong); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
 .table td { padding: 0.7rem 0.75rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .table tr:hover td { background: var(--surface-2); }
+/* On narrow screens let wide tables scroll horizontally instead of overflowing
+   the viewport. display:block turns the table into its own scroll container;
+   nowrap keeps columns legible rather than crushing them into stacks. */
+@media (max-width: 720px) {
+  .table {
+    display: block; overflow-x: auto; white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+}
 
 /* ---- stat ---- */
 .stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.1rem 1.25rem; }
@@ -254,8 +270,19 @@ p { margin: 0 0 1rem; }
   }
   .admin-brand { padding: 0 0.5rem 0 0; }
   .admin-nav { flex-direction: row; flex-wrap: wrap; gap: 0.3rem; }
-  .admin-nav-label, .admin-sidebar-foot { display: none; }
+  .admin-nav-label { display: none; }
   .admin-link { padding: 0.45rem 0.6rem; font-size: 0.85rem; }
+  /* keep sign-out reachable on mobile: float the foot to the end of the row
+     and drop the desktop-only top border/spacing rather than hiding it. */
+  .admin-sidebar-foot {
+    margin: 0 0 0 auto; padding-top: 0; border-top: none;
+  }
+  .admin-sidebar-foot .small.muted { display: none; }
+}
+
+@media (max-width: 600px) {
+  .admin-topbar { padding: 0 1rem; }
+  .admin-content { padding: 1.1rem 1rem; }
 }
 
 /* ============================================================================

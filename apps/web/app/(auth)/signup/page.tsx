@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { SignupForm } from './signup-form';
+import { GoogleButton } from '../google-button';
 
 export default async function SignupPage({
   searchParams,
@@ -19,6 +20,8 @@ export default async function SignupPage({
       </div>
 
       <SignupForm next={next} />
+
+      <GoogleButton next={next} />
 
       <p className="small muted" style={{ margin: 0 }}>
         Already have an account?{' '}
