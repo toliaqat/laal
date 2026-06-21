@@ -9,6 +9,7 @@ import {
   hasCoverFile,
   uploadCoverImage,
 } from '@/lib/cover-image';
+import { normalizeCurrency } from '@/lib/stripe';
 import type { IntendedUse } from '@laal/types';
 
 const INTENDED_USES: IntendedUse[] = [
@@ -58,9 +59,7 @@ export async function updateCampaign(formData: FormData): Promise<void> {
   // ---- Parse fields ----
   const title = String(formData.get('title') ?? '').trim();
   const story = String(formData.get('story') ?? '').trim();
-  const currency = (String(formData.get('currency') ?? 'EUR').trim() || 'EUR')
-    .toUpperCase()
-    .slice(0, 3);
+  const currency = normalizeCurrency(formData.get('currency'));
   const deathCountry = String(formData.get('death_country') ?? '').trim();
   const deathCity = String(formData.get('death_city') ?? '').trim();
 

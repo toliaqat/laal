@@ -122,6 +122,31 @@ export async function transferToBeneficiary(params: {
   );
 }
 
+/**
+ * Currencies the platform accepts for campaigns/donations. Must stay in sync
+ * with the currency <select> options in the campaign forms. Donations resolve
+ * their currency from the campaign row, so validating here — at the only point
+ * a currency enters the DB — guarantees Stripe never receives an unsupported
+ * code (which would fail checkout/transfer for every donor on that campaign).
+ */
+export const SUPPORTED_CURRENCIES = ['EUR', 'USD', 'GBP', 'AED'] as const;
+export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
+
+/**
+ * Normalize a user-supplied currency to a supported code. Unknown or missing
+ * values fall back to EUR rather than throwing, mirroring how other campaign
+ * fields coerce invalid input to a safe default.
+ */
+export function normalizeCurrency(
+  input: unknown,
+  fallback: SupportedCurrency = 'EUR',
+): SupportedCurrency {
+  const code = String(input ?? '').trim().toUpperCase();
+  return (SUPPORTED_CURRENCIES as readonly string[]).includes(code)
+    ? (code as SupportedCurrency)
+    : fallback;
+}
+
 /** Convert a major-unit amount (e.g. 25.00) to minor units (2500). */
 export function toMinorUnits(amount: number): number {
   return Math.round(amount * 100);
