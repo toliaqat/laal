@@ -34,13 +34,21 @@ export async function createConnectAccount(params: {
   return account.id;
 }
 
-/** Hosted onboarding link where the beneficiary completes KYC + bank details. */
-export async function createOnboardingLink(accountId: string): Promise<string> {
+/**
+ * Hosted onboarding link where the beneficiary completes KYC + bank details.
+ * Defaults to the admin onboarding return/refresh routes; pass a `basePath`
+ * (e.g. '/org') so an org member can self-onboard and land back in their portal.
+ */
+export async function createOnboardingLink(
+  accountId: string,
+  opts?: { basePath?: string },
+): Promise<string> {
+  const base = opts?.basePath ?? '/admin/onboarding';
   const link = await stripe().accountLinks.create({
     account: accountId,
     type: 'account_onboarding',
-    refresh_url: `${APP_URL()}/admin/onboarding/refresh?account=${accountId}`,
-    return_url: `${APP_URL()}/admin/onboarding/return?account=${accountId}`,
+    refresh_url: `${APP_URL()}${base}/refresh?account=${accountId}`,
+    return_url: `${APP_URL()}${base}/return?account=${accountId}`,
   });
   return link.url;
 }

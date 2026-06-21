@@ -1,9 +1,11 @@
 'use server';
 
+import { randomBytes } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createAdminSupabase, getCurrentUser } from '@/lib/supabase/server';
 import { logAudit } from '@/lib/audit';
+import { sendOrgInvite } from '@/lib/email';
 
 const ORG_TYPES = [
   'embassy',
@@ -132,4 +134,101 @@ export async function updateOrganization(formData: FormData): Promise<void> {
   revalidatePath('/admin/organizations');
   revalidatePath(`/admin/organizations/${id}`);
   redirect('/admin/organizations');
+}
+
+const INVITE_TTL_DAYS = 7;
+
+/**
+ * Invite someone (by email) to onboard/manage an organization. If
+ * `organization_id` is provided they will join that org; if omitted, they will
+ * create a brand-new org when they accept. Sends a tokenized accept link.
+ */
+export async function inviteOrgMember(formData: FormData): Promise<void> {
+  const adminId = await requireAdminId();
+  const supabase = createAdminSupabase();
+
+  const email = str(formData, 'email').toLowerCase();
+  if (!email || !email.includes('@')) throw new Error('A valid email is required');
+
+  const organizationId = nullable(formData, 'organization_id');
+  const memberRole = str(formData, 'member_role') === 'staff' ? 'staff' : 'lead';
+
+  // If joining an existing org, confirm it exists (and grab its name for the email).
+  let orgName: string | undefined;
+  if (organizationId) {
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('name')
+      .eq('id', organizationId)
+      .maybeSingle();
+    if (!org) throw new Error('Organization not found');
+    orgName = org.name as string;
+  }
+
+  const token = randomBytes(24).toString('hex');
+  const expiresAt = new Date(
+    Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
+  const { data: invite, error } = await supabase
+    .from('organization_invites')
+    .insert({
+      organization_id: organizationId,
+      email,
+      member_role: memberRole,
+      token,
+      status: 'pending',
+      invited_by: adminId,
+      expires_at: expiresAt,
+    })
+    .select('id')
+    .single();
+  if (error) throw new Error(error.message);
+
+  const sent = await sendOrgInvite({ to: email, orgName, token });
+  if (!sent.ok) {
+    // Roll back the invite so it isn't left dangling with no email delivered.
+    await supabase.from('organization_invites').delete().eq('id', invite.id);
+    throw new Error(`Could not send invite email: ${sent.error}`);
+  }
+
+  await logAudit({
+    actorId: adminId,
+    action: 'organization.invited',
+    entityType: 'organization',
+    entityId: organizationId,
+    metadata: { email, memberRole },
+  });
+
+  revalidatePath('/admin/organizations');
+  if (organizationId) revalidatePath(`/admin/organizations/${organizationId}`);
+}
+
+/** Revoke a pending invite. */
+export async function revokeOrgInvite(formData: FormData): Promise<void> {
+  const adminId = await requireAdminId();
+  const supabase = createAdminSupabase();
+  const inviteId = str(formData, 'invite_id');
+  if (!inviteId) throw new Error('Missing invite id');
+
+  const { data, error } = await supabase
+    .from('organization_invites')
+    .update({ status: 'revoked' })
+    .eq('id', inviteId)
+    .eq('status', 'pending')
+    .select('organization_id')
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+
+  await logAudit({
+    actorId: adminId,
+    action: 'organization.invite_revoked',
+    entityType: 'organization',
+    entityId: data?.organization_id ?? null,
+  });
+
+  revalidatePath('/admin/organizations');
+  if (data?.organization_id) {
+    revalidatePath(`/admin/organizations/${data.organization_id}`);
+  }
 }
