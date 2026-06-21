@@ -114,7 +114,7 @@ export async function reviewVerification(formData: FormData): Promise<void> {
 
   const { data: verification } = await supabase
     .from('verifications')
-    .select('id, campaign_id, type')
+    .select('id, campaign_id, type, status')
     .eq('id', verificationId)
     .maybeSingle();
   if (!verification) throw new Error('Verification not found');
@@ -133,15 +133,29 @@ export async function reviewVerification(formData: FormData): Promise<void> {
   }
   await requireOrgLead(beneficiary.organization_id); // throws unless a lead
 
-  const { error } = await supabase
+  // A verification is decided once. Refuse to flip an already approved/rejected
+  // decision: these feed the fund-release gate, so retroactively changing one
+  // (e.g. after release) would corrupt the trust record.
+  if (verification.status !== 'pending' && verification.status !== 'submitted') {
+    throw new Error('This verification has already been reviewed');
+  }
+
+  // Scope the write to reviewable states and confirm a row changed — this also
+  // closes the read-then-write race if two reviews land at once.
+  const { data: updated, error } = await supabase
     .from('verifications')
     .update({
       status,
       reviewed_by: user.id,
       reviewed_at: new Date().toISOString(),
     })
-    .eq('id', verificationId);
+    .eq('id', verificationId)
+    .in('status', ['pending', 'submitted'])
+    .select('id');
   if (error) throw new Error(error.message);
+  if (!updated || updated.length === 0) {
+    throw new Error('This verification has already been reviewed');
+  }
 
   await logAudit({
     actorId: user.id,
