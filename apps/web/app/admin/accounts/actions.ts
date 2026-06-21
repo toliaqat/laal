@@ -33,6 +33,25 @@ export async function setUserRole(
     return { ok: false, error: 'Invalid role' };
   }
   const supabase = createAdminSupabase();
+
+  // Prevent locking the whole team out: don't demote the last remaining admin.
+  if (role !== 'admin') {
+    const { data: target } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', profileId)
+      .maybeSingle();
+    if (target?.role === 'admin') {
+      const { count } = await supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('role', 'admin');
+      if ((count ?? 0) <= 1) {
+        return { ok: false, error: 'Cannot demote the last remaining admin.' };
+      }
+    }
+  }
+
   const { error } = await supabase
     .from('profiles')
     .update({ role })
