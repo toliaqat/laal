@@ -30,7 +30,7 @@ const PANELS: Panel[] = [
   {
     key: 'verified',
     mark: '✓',
-    title: 'Every story is verified.',
+    title: 'Every fundraiser is verified.',
     body: 'We gently confirm the people and the need, so your kindness reaches the right family.',
   },
   {

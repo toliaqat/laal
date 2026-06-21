@@ -55,7 +55,7 @@ export function PhoneListScreen() {
       <StatusBar />
       <div className="app-body">
         <div className="app-h">
-          <span className="app-title">Stories</span>
+          <span className="app-title">Fundraisers</span>
           <span className="app-pill">✓ Verified</span>
         </div>
         <p className="app-sub">People near you who could use a hand.</p>
@@ -117,7 +117,7 @@ export function PhoneDetailScreen() {
       </div>
       <div className="app-cta">
         <span className="app-cta-btn">Help Now</span>
-        <p className="app-cta-note">Secure · every story reviewed before support</p>
+        <p className="app-cta-note">Secure · every fundraiser reviewed before support</p>
       </div>
     </div>
   );
@@ -150,7 +150,7 @@ export function PhoneHero({ children }: { children?: ReactNode }) {
     <div
       className="phone phone-floating"
       role="img"
-      aria-label="The Laal mobile app showing verified stories you can support"
+      aria-label="The Laal mobile app showing verified fundraisers you can support"
     >
       {children ?? <PhoneListScreen />}
     </div>

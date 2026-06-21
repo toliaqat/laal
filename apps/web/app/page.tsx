@@ -33,7 +33,7 @@ async function getFeaturedCampaigns(): Promise<Campaign[]> {
 
 const STEPS = [
   {
-    title: 'Share a story',
+    title: 'Start a fundraiser',
     body: 'A friend, colleague, or family member shares someone’s story in minutes.',
   },
   {
@@ -53,7 +53,7 @@ const STEPS = [
 const VALUES = [
   {
     icon: <ShieldIcon />,
-    title: 'Every story is reviewed',
+    title: 'Every fundraiser is reviewed',
     body: 'We verify the people and the need before any support is given.',
   },
   {
@@ -69,7 +69,7 @@ const VALUES = [
 ];
 
 const APP_FEATURES = [
-  'Browse verified stories from your community',
+  'Browse verified fundraisers from your community',
   'Follow a family’s journey and see support arrive',
   'Help in seconds — securely, no account needed',
 ];
@@ -112,7 +112,7 @@ export default async function HomePage() {
                   Support Someone Today
                 </Button>
                 <Button href="/campaigns" variant="ghost">
-                  Browse stories
+                  Browse fundraisers
                 </Button>
               </div>
               <div
@@ -120,7 +120,7 @@ export default async function HomePage() {
                 style={{ animationDelay: '0.36s', marginTop: '0.75rem' }}
               >
                 <span className="trust-item">
-                  <ShieldIcon /> Every story verified
+                  <ShieldIcon /> Every fundraiser verified
                 </span>
                 <span className="trust-item">
                   <HeartIcon /> Reaches the family
@@ -170,7 +170,7 @@ export default async function HomePage() {
             <p className="muted" style={{ fontSize: '1.05rem', lineHeight: 1.8 }}>
               When a family faces a hard moment, they often carry costs, worry,
               and uncertainty all at once. Laal is a calm, caring way for friends
-              and community to step in — every story is gently verified, and
+              and community to step in — every fundraiser is gently verified, and
               every act of kindness reaches the family who needs it.
             </p>
           </div>
@@ -226,7 +226,7 @@ export default async function HomePage() {
               </div>
               <div className="row wrap">
                 <Button href="/campaigns" variant="primary">
-                  Explore stories
+                  Explore fundraisers
                 </Button>
                 <span className="trust-pill">
                   <SparkIcon /> iOS &amp; Android — coming soon
@@ -244,8 +244,8 @@ export default async function HomePage() {
         <Container>
           <div className="row-between wrap" style={{ marginBottom: '1.75rem' }}>
             <div className="stack" style={{ gap: '0.25rem' }}>
-              <span className="eyebrow">Featured stories</span>
-              <h2 style={{ margin: 0 }}>Stories you can support</h2>
+              <span className="eyebrow">Featured fundraisers</span>
+              <h2 style={{ margin: 0 }}>Fundraisers you can support</h2>
             </div>
             <Button href="/campaigns" variant="ghost" size="sm">
               View all
@@ -256,12 +256,12 @@ export default async function HomePage() {
             <Card large>
               <div className="stack center">
                 <p className="muted" style={{ margin: 0 }}>
-                  New stories are being reviewed. Check back soon to support
+                  New fundraisers are being reviewed. Check back soon to support
                   someone precious.
                 </p>
                 <div className="center">
                   <Button href="/start" variant="primary" size="sm">
-                    Share the first story
+                    Start the first fundraiser
                   </Button>
                 </div>
               </div>
@@ -323,7 +323,7 @@ export default async function HomePage() {
                 Support Someone Today
               </Button>
               <Button href="/campaigns" variant="ghost">
-                Browse stories
+                Browse fundraisers
               </Button>
             </div>
           </div>

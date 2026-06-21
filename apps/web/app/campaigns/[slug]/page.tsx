@@ -57,14 +57,14 @@ export async function generateMetadata({
 
   if (!campaign) {
     return {
-      title: 'Story not found — Laal',
+      title: 'Fundraiser not found — Laal',
     };
   }
 
   const title = `${campaign.title} — Laal`;
   const description =
     campaign.story?.slice(0, 200) ??
-    `A verified story on Laal, in memory of ${campaign.deceased_name}.`;
+    `A verified fundraiser on Laal, in memory of ${campaign.deceased_name}.`;
   const url = `${APP_URL()}/campaigns/${campaign.slug}`;
 
   return {
@@ -119,7 +119,7 @@ export default async function CampaignPage({
       <Container narrow>
         <div className="stack" style={{ gap: '0.4rem' }}>
           <div className="row wrap">
-            <span className="eyebrow">A story on Laal</span>
+            <span className="eyebrow">A fundraiser on Laal</span>
             {campaign.status === 'completed' ? (
               <Badge tone="success">Goal reached</Badge>
             ) : campaign.status === 'closed' ? (

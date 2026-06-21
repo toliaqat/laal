@@ -90,7 +90,7 @@ export default async function AdminAnalyticsPage() {
           <Stat value={donationsCount} label="Donations" />
         </Card>
         <Card>
-          <Stat value={pendingVerifs} label="Stories awaiting review" />
+          <Stat value={pendingVerifs} label="Fundraisers awaiting review" />
         </Card>
       </div>
 

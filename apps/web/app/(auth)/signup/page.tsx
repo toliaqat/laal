@@ -14,7 +14,7 @@ export default async function SignupPage({
       <div className="stack" style={{ gap: '0.25rem' }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Join Laal</h1>
         <p className="small muted" style={{ margin: 0 }}>
-          Every life is precious. Create your account to share a story or
+          Every life is precious. Create your account to start a fundraiser or
           support a family.
         </p>
       </div>

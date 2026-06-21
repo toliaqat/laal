@@ -25,7 +25,7 @@ export default function RootLayout() {
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="signup" options={{ headerShown: false }} />
           {/* Detail keeps a native header for the back affordance */}
-          <Stack.Screen name="campaigns/[slug]" options={{ title: 'Story' }} />
+          <Stack.Screen name="campaigns/[slug]" options={{ title: 'Fundraiser' }} />
         </Stack>
       </AuthProvider>
     </SafeAreaProvider>

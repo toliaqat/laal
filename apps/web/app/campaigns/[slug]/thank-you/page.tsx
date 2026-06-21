@@ -54,7 +54,7 @@ export default async function ThankYouPage({
             </p>
             <div className="center" style={{ marginTop: '0.5rem' }}>
               <Button href={`/campaigns/${slug}`} variant="primary">
-                Return to the story
+                Return to the fundraiser
               </Button>
             </div>
           </div>

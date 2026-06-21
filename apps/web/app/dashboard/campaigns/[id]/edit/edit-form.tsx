@@ -27,7 +27,7 @@ export function EditForm({
 
       <Card large>
         <div className="stack">
-          <Field label="Story title">
+          <Field label="Fundraiser title">
             <input
               id="title"
               name="title"

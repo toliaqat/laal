@@ -129,7 +129,7 @@ export default function AccountScreen() {
         hitSlop={8}
         style={styles.back}
       >
-        <Text style={styles.backText}>‹ Stories</Text>
+        <Text style={styles.backText}>‹ Fundraisers</Text>
       </Pressable>
 
       {/* identity */}
@@ -150,7 +150,7 @@ export default function AccountScreen() {
       ) : (
         <>
           <View style={styles.subHead}>
-            <Text style={styles.sectionLabel}>STORIES YOU FOLLOW</Text>
+            <Text style={styles.sectionLabel}>FUNDRAISERS YOU FOLLOW</Text>
             {follows.length > 0 ? (
               <Text style={styles.countChip}>{follows.length}</Text>
             ) : null}
@@ -158,8 +158,8 @@ export default function AccountScreen() {
           {follows.length === 0 ? (
             <ActivityRow
               icon="❤"
-              title="No stories yet"
-              body="Tap Follow on a story to save it here, so you can return to the people you care about."
+              title="No fundraisers yet"
+              body="Tap Follow on a fundraiser to save it here, so you can return to the people you care about."
             />
           ) : (
             follows
@@ -207,7 +207,7 @@ export default function AccountScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.listTitle} numberOfLines={1}>
-                      {d.campaign?.title ?? 'A story you supported'}
+                      {d.campaign?.title ?? 'A fundraiser you supported'}
                     </Text>
                     <Text style={styles.listSub}>
                       {formatDate(d.created_at)}
@@ -247,7 +247,7 @@ export default function AccountScreen() {
           <Text style={styles.actionIconText}>＋</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.actionTitle}>Share a story</Text>
+          <Text style={styles.actionTitle}>Start a fundraiser</Text>
           <Text style={styles.actionBody}>Stand up for someone on the web →</Text>
         </View>
       </Pressable>
@@ -261,7 +261,7 @@ export default function AccountScreen() {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.actionTitle}>Manage on the web</Text>
-          <Text style={styles.actionBody}>Your dashboard and stories →</Text>
+          <Text style={styles.actionBody}>Your dashboard and fundraisers →</Text>
         </View>
       </Pressable>
 

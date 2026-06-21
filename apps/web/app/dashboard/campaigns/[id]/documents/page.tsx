@@ -44,7 +44,7 @@ export default async function DocumentsPage({
       <p className="eyebrow">Supporting documents</p>
       <h1 style={{ marginTop: '0.25rem' }}>{campaign.title}</h1>
       <p className="muted">
-        Share documents that help us verify this story — for example a death
+        Share documents that help us verify this fundraiser — for example a death
         certificate or proof of relationship. They are private and only seen by
         our review team.
       </p>

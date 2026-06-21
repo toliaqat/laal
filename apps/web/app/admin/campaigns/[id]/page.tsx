@@ -137,7 +137,7 @@ export default async function AdminCampaignDetailPage({
         <div className="row wrap" style={{ gap: '0.5rem' }}>
           <form action={approveCampaignForm.bind(null, campaign.id)}>
             <button type="submit" className="btn btn-primary btn-sm">
-              Approve story
+              Approve fundraiser
             </button>
           </form>
           <form action={rejectCampaignForm.bind(null, campaign.id)}>
@@ -203,7 +203,7 @@ export default async function AdminCampaignDetailPage({
       </Section>
 
       {/* Verifications */}
-      <Section title="Story review">
+      <Section title="Fundraiser review">
         {(verifications ?? []).length === 0 ? (
           <p className="muted">Nothing submitted for review yet.</p>
         ) : (

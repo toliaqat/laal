@@ -131,7 +131,7 @@ export default function CampaignDetailScreen() {
   if (!campaign) {
     return (
       <View style={styles.center}>
-        <Text style={styles.notFound}>This story could not be found.</Text>
+        <Text style={styles.notFound}>This fundraiser could not be found.</Text>
       </View>
     );
   }
@@ -145,7 +145,7 @@ export default function CampaignDetailScreen() {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.headRow}>
-          <VerifiedChip label="Story verified" />
+          <VerifiedChip label="Verified fundraiser" />
           <Pressable
             onPress={toggleFollow}
             hitSlop={6}

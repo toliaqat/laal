@@ -124,7 +124,7 @@ export default function HomeScreen() {
         <View style={styles.inviteCard}>
           <Text style={styles.inviteTitle}>Follow the families you care about</Text>
           <Text style={styles.inviteBody}>
-            Sign in to save stories and get a gentle note when support arrives.
+            Sign in to save fundraisers and get a gentle note when support arrives.
             You can always help without an account.
           </Text>
           <View style={styles.inviteActions}>
@@ -148,7 +148,7 @@ export default function HomeScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.sharePromptTitle}>Share someone’s story</Text>
             <Text style={styles.sharePromptBody}>
-              Start a story on the web in a few minutes →
+              Start a fundraiser on the web in a few minutes →
             </Text>
           </View>
         </Pressable>
@@ -156,7 +156,7 @@ export default function HomeScreen() {
 
       <View style={styles.sectionRow}>
         <Text style={styles.sectionTitle}>
-          {signedIn ? 'Stories near you' : 'Verified stories'}
+          {signedIn ? 'Fundraisers near you' : 'Verified fundraisers'}
         </Text>
         {campaigns.length > 0 ? (
           <Text style={styles.sectionCount}>{campaigns.length}</Text>
@@ -193,13 +193,13 @@ export default function HomeScreen() {
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>New stories are being reviewed</Text>
+            <Text style={styles.emptyTitle}>New fundraisers are being reviewed</Text>
             <Text style={styles.emptyBody}>
-              Every story is gently verified before it appears here. Check back
+              Every fundraiser is gently verified before it appears here. Check back
               soon to support someone precious.
             </Text>
             <PrimaryButton
-              label="Share the first story"
+              label="Start the first fundraiser"
               onPress={openStart}
               style={{ marginTop: spacing.md }}
             />
