@@ -81,6 +81,10 @@ export default function AccountScreen() {
         supabase
           .from('campaign_follows')
           .select('campaign_id, campaign:campaigns(slug, title, deceased_name)')
+          // Scope to the signed-in user explicitly: the RLS policy also allows
+          // admins to read ALL follows, so without this an admin would see every
+          // user's saved stories in their own list.
+          .eq('profile_id', session.user.id)
           .order('created_at', { ascending: false }),
         supabase
           .from('donations')

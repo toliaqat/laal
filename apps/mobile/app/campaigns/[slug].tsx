@@ -82,6 +82,9 @@ export default function CampaignDetailScreen() {
       .from('campaign_follows')
       .select('campaign_id')
       .eq('campaign_id', campaign.id)
+      // Scope to this user: the RLS policy lets admins read all follows, so
+      // without this maybeSingle() would error on a campaign with >1 follower.
+      .eq('profile_id', session.user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (mounted) setFollowed(Boolean(data));
