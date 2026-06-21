@@ -11,6 +11,27 @@ function resend(): Resend {
 
 type SendResult = { ok: boolean; error?: string };
 
+// Escape user-controlled values before embedding them in HTML email bodies.
+// donorName/campaignTitle/beneficiaryName originate from donor input or
+// organizer-entered campaign data, so interpolating them raw would allow
+// stored HTML/script/phishing-link injection into recipients' inboxes.
+function esc(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => {
+    switch (c) {
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '"':
+        return '&quot;';
+      default:
+        return '&#39;';
+    }
+  });
+}
+
 async function send(to: string, subject: string, html: string): Promise<SendResult> {
   try {
     const { error } = await resend().emails.send({
@@ -44,13 +65,13 @@ export function sendDonationReceipt(params: {
   campaignSlug: string;
 }): Promise<SendResult> {
   const body = `
-    <p>Dear ${params.donorName ?? 'friend'},</p>
+    <p>Dear ${esc(params.donorName ?? 'friend')},</p>
     <p>Thank you for protecting someone precious. Your support of
-    <strong>${params.amount}</strong> for <strong>${params.campaignTitle}</strong>
+    <strong>${esc(params.amount)}</strong> for <strong>${esc(params.campaignTitle)}</strong>
     helps remind a family they are not alone.</p>
     <p>Your contribution is held securely and delivered transparently to the
     people you're standing with.</p>
-    <p><a href="${APP_URL()}/campaigns/${params.campaignSlug}">See the story you supported</a></p>`;
+    <p><a href="${APP_URL()}/campaigns/${encodeURIComponent(params.campaignSlug)}">See the story you supported</a></p>`;
   return send(params.to, `Thank you for supporting ${params.campaignTitle}`, layout(body));
 }
 
@@ -62,9 +83,9 @@ export function sendPayoutReleased(params: {
   campaignTitle: string;
 }): Promise<SendResult> {
   const body = `
-    <p>Dear ${params.beneficiaryName},</p>
+    <p>Dear ${esc(params.beneficiaryName)},</p>
     <p>Your community stood beside you. Support totalling
-    <strong>${params.amount}</strong> from <strong>${params.campaignTitle}</strong>
+    <strong>${esc(params.amount)}</strong> from <strong>${esc(params.campaignTitle)}</strong>
     is on its way to you.</p>
     <p>You matter, and people showed up for you.</p>`;
   return send(params.to, `Your community supported you — ${params.campaignTitle}`, layout(body));
