@@ -16,13 +16,19 @@ export async function logAudit(params: {
 }): Promise<void> {
   try {
     const admin = createAdminSupabase();
-    await admin.from('audit_log').insert({
+    // supabase-js returns { error } for DB-level failures (constraint, RLS,
+    // type) instead of throwing, so this must be inspected explicitly — the
+    // catch below only ever fires for network/client-construction errors.
+    const { error } = await admin.from('audit_log').insert({
       actor_id: params.actorId,
       action: params.action,
       entity_type: params.entityType,
       entity_id: params.entityId ?? null,
       metadata: params.metadata ?? {},
     });
+    if (error) {
+      console.error('[audit] failed to write entry:', params.action, error.message);
+    }
   } catch (err) {
     console.error('[audit] failed to write entry:', params.action, err);
   }
