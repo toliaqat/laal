@@ -51,6 +51,7 @@ export function Button({
   type = 'button',
   disabled,
   style,
+  onClick,
 }: {
   children: ReactNode;
   variant?: ButtonVariant;
@@ -60,6 +61,7 @@ export function Button({
   type?: 'button' | 'submit';
   disabled?: boolean;
   style?: CSSProperties;
+  onClick?: () => void;
 }) {
   const cls = `btn btn-${variant}${size === 'sm' ? ' btn-sm' : ''}${
     block ? ' btn-block' : ''
@@ -72,7 +74,13 @@ export function Button({
     );
   }
   return (
-    <button className={cls} type={type} disabled={disabled} style={style}>
+    <button
+      className={cls}
+      type={type}
+      disabled={disabled}
+      style={style}
+      onClick={onClick}
+    >
       {children}
     </button>
   );

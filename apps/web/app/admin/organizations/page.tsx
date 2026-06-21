@@ -1,15 +1,6 @@
 import { createAdminSupabase } from '@/lib/supabase/server';
-import { Badge, Button, Card, Field } from '@/components/ui';
-import { createOrganization } from './actions';
-
-const ORG_TYPES = [
-  'embassy',
-  'funeral_home',
-  'charity',
-  'employer',
-  'community',
-  'religious',
-] as const;
+import { Badge, Button } from '@/components/ui';
+import { NewOrganizationForm } from './new-org-form';
 
 function statusTone(status: string): 'default' | 'success' | 'warning' | 'danger' {
   switch (status) {
@@ -45,49 +36,7 @@ export default async function OrganizationsPage() {
         </p>
       </div>
 
-      <Card>
-        <h3>New organization</h3>
-        <form action={createOrganization} className="stack">
-          <div className="grid">
-            <Field label="Name">
-              <input className="input" name="name" required />
-            </Field>
-            <Field label="Type">
-              <select className="select" name="type" defaultValue="charity">
-                {ORG_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Country">
-              <input className="input" name="country" />
-            </Field>
-            <Field label="Contact email">
-              <input className="input" type="email" name="contact_email" />
-            </Field>
-            <Field label="Contact phone">
-              <input className="input" name="contact_phone" />
-            </Field>
-          </div>
-          <Field label="Description">
-            <textarea className="textarea" name="description" rows={3} />
-          </Field>
-          <div className="row wrap">
-            <label className="row small">
-              <input type="checkbox" name="can_be_beneficiary" /> Can be
-              beneficiary
-            </label>
-            <label className="row small">
-              <input type="checkbox" name="can_be_verifier" /> Can be verifier
-            </label>
-          </div>
-          <div className="row">
-            <Button type="submit">Create organization</Button>
-          </div>
-        </form>
-      </Card>
+      <NewOrganizationForm />
 
       {rows.length === 0 ? (
         <p className="muted">No organizations yet.</p>
