@@ -1,0 +1,46 @@
+# Fly.io config for the Laal web app (Next.js).
+# Deploy from the repo root:  fly deploy
+# First time:                 fly launch --no-deploy   (or `fly apps create laal`)
+
+app = 'laal'
+primary_region = 'iad'  # US East — close to the Supabase us-east-1 project
+
+[build]
+  dockerfile = 'Dockerfile'
+
+  # Public, client-side values inlined at build time by Next.js. The anon key is
+  # designed to be shipped in the browser bundle, so it is safe here. Server-only
+  # secrets (service role, Stripe secret/webhook, Resend) are set separately with
+  # `fly secrets set ...` and read at runtime — never put those here.
+  [build.args]
+    NEXT_PUBLIC_SUPABASE_URL = 'https://iugdndsmtljihnuhpnkd.supabase.co'
+    NEXT_PUBLIC_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Z2RuZHNtdGxqaWhudWhwbmtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5ODY0MzIsImV4cCI6MjA5NzU2MjQzMn0.9MONxE2OkSxKSwzPO_Bf2jcbpxzCZNDbuXS_0xWVW9g'
+    NEXT_PUBLIC_APP_URL = 'https://laal.app'
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = ''
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0  # scale to zero when idle (cheapest)
+  processes = ['app']
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '10s'
+    method = 'GET'
+    path = '/'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '512mb'
+
+# Runtime env (non-secret). The server (createServerSupabase, middleware) reads
+# these at request time, so they must be present at runtime too — not just as
+# build args. Secrets go via `fly secrets set`, which override/extend this.
+[env]
+  NEXT_PUBLIC_APP_URL = 'https://laal.app'
+  NEXT_PUBLIC_SUPABASE_URL = 'https://iugdndsmtljihnuhpnkd.supabase.co'
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Z2RuZHNtdGxqaWhudWhwbmtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5ODY0MzIsImV4cCI6MjA5NzU2MjQzMn0.9MONxE2OkSxKSwzPO_Bf2jcbpxzCZNDbuXS_0xWVW9g'

@@ -1,0 +1,24 @@
+# deps & build artifacts (reinstalled/rebuilt in the image)
+**/node_modules
+**/.next
+**/.turbo
+**/.expo
+**/dist
+
+# vcs / local
+.git
+.gitignore
+*.log
+.DS_Store
+# all .env files at any depth (incl. the apps/*/.env -> ../../.env dev symlinks)
+**/.env
+**/.env*.local
+
+# the Expo mobile app is not part of the web image — but keep its package.json
+# so the pnpm workspace + frozen lockfile stay consistent during install.
+apps/mobile/**
+!apps/mobile/package.json
+
+# not needed at runtime
+supabase
+*.md
