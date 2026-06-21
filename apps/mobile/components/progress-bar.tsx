@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
+import { colors, radius } from '@/lib/theme';
 
-/** A minimal progress bar showing `value / total` as a filled track. */
+/** A warm progress bar showing `value / total` as a filled track. */
 export function ProgressBar({ value, total }: { value: number; total: number }) {
   const pct = total > 0 ? Math.min(Math.max(value / total, 0), 1) : 0;
   return (
@@ -13,13 +14,15 @@ export function ProgressBar({ value, total }: { value: number; total: number }) 
 const styles = StyleSheet.create({
   track: {
     height: 8,
-    borderRadius: 4,
-    backgroundColor: '#eee',
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface2,
+    borderWidth: 1,
+    borderColor: colors.line,
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
-    borderRadius: 4,
-    backgroundColor: '#1a1a1a',
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
   },
 });

@@ -8,16 +8,20 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import type { Beneficiary, Campaign } from '@laal/types';
 import { supabase, WEB_APP_URL } from '@/lib/supabase';
 import { ProgressBar } from '@/components/progress-bar';
+import { VerifiedChip } from '@/components/ui';
+import { accentShadow, colors, radius, serif, spacing } from '@/lib/theme';
 
 function formatMoney(amount: number, currency: string) {
   try {
     return new Intl.NumberFormat(undefined, {
       style: 'currency',
       currency,
+      maximumFractionDigits: 0,
     }).format(amount);
   } catch {
     return `${currency} ${amount}`;
@@ -26,6 +30,7 @@ function formatMoney(amount: number, currency: string) {
 
 export default function CampaignDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
+  const insets = useSafeAreaInsets();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [beneficiary, setBeneficiary] = useState<Beneficiary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,14 +66,14 @@ export default function CampaignDetailScreen() {
     };
   }, [slug]);
 
-  const donate = () => {
+  const help = () => {
     WebBrowser.openBrowserAsync(`${WEB_APP_URL}/campaigns/${slug}`);
   };
 
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator />
+        <ActivityIndicator color={colors.accent} />
       </View>
     );
   }
@@ -76,14 +81,20 @@ export default function CampaignDetailScreen() {
   if (!campaign) {
     return (
       <View style={styles.center}>
-        <Text style={styles.notFound}>Campaign not found.</Text>
+        <Text style={styles.notFound}>This story could not be found.</Text>
       </View>
     );
   }
 
+  const pct =
+    campaign.goal_amount > 0
+      ? Math.round((campaign.amount_raised / campaign.goal_amount) * 100)
+      : 0;
+
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
+        <VerifiedChip label="Story verified" />
         <Text style={styles.title}>{campaign.title}</Text>
         <Text style={styles.memory}>In memory of {campaign.deceased_name}</Text>
 
@@ -91,77 +102,113 @@ export default function CampaignDetailScreen() {
           <ProgressBar value={campaign.amount_raised} total={campaign.goal_amount} />
           <View style={styles.amounts}>
             <Text style={styles.raised}>
-              {formatMoney(campaign.amount_raised, campaign.currency)} raised
+              {formatMoney(campaign.amount_raised, campaign.currency)}
             </Text>
             <Text style={styles.goal}>
-              of {formatMoney(campaign.goal_amount, campaign.currency)}
+              raised of {formatMoney(campaign.goal_amount, campaign.currency)}
             </Text>
+            <View style={{ flex: 1 }} />
+            <Text style={styles.pct}>{pct}%</Text>
           </View>
         </View>
 
-        {campaign.story ? <Text style={styles.story}>{campaign.story}</Text> : null}
+        {campaign.story ? (
+          <Text style={styles.story}>{campaign.story}</Text>
+        ) : null}
 
         {beneficiary ? (
           <View style={styles.beneficiaryCard}>
+            <Text style={styles.beneficiaryLabel}>WHERE SUPPORT GOES</Text>
             <Text style={styles.beneficiaryText}>
-              Funds go to {beneficiary.display_name}
+              Funds reach {beneficiary.display_name}
               {beneficiary.relationship_to_deceased
                 ? ` (${beneficiary.relationship_to_deceased})`
                 : ''}
+              , a confirmed family member.
             </Text>
           </View>
         ) : null}
       </ScrollView>
 
-      <View style={styles.footer}>
-        <Pressable style={styles.donateButton} onPress={donate}>
-          <Text style={styles.donateText}>Donate</Text>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.helpButton,
+            accentShadow,
+            pressed && styles.pressed,
+          ]}
+          onPress={help}
+        >
+          <Text style={styles.helpText}>Help Now</Text>
         </Pressable>
-        <Text style={styles.donateNote}>You'll be taken to the web to donate securely.</Text>
+        <Text style={styles.helpNote}>
+          Secure · you’ll continue on the web to help safely.
+        </Text>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#fafafa' },
+  screen: { flex: 1, backgroundColor: colors.bg },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fafafa',
+    backgroundColor: colors.bg,
   },
-  notFound: { fontSize: 16, color: '#888' },
-  content: { padding: 20, gap: 12 },
-  title: { fontSize: 26, fontWeight: '700', color: '#1a1a1a' },
-  memory: { fontSize: 16, color: '#666' },
-  progressWrap: { marginTop: 8, gap: 8 },
-  amounts: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
-  raised: { fontSize: 16, fontWeight: '600', color: '#1a1a1a' },
-  goal: { fontSize: 14, color: '#888' },
-  story: { fontSize: 16, lineHeight: 24, color: '#333', marginTop: 8 },
+  notFound: { fontSize: 16, color: colors.muted },
+  content: { padding: spacing.xl, gap: spacing.md },
+  title: {
+    fontSize: 26,
+    lineHeight: 31,
+    fontWeight: '600',
+    color: colors.ink,
+    fontFamily: serif,
+    marginTop: spacing.xs,
+  },
+  memory: { fontSize: 15, color: colors.muted },
+  progressWrap: { marginTop: spacing.sm, gap: spacing.sm },
+  amounts: { flexDirection: 'row', alignItems: 'baseline', gap: 5 },
+  raised: { fontSize: 16, fontWeight: '700', color: colors.ink },
+  goal: { fontSize: 14, color: colors.muted },
+  pct: { fontSize: 14, fontWeight: '700', color: colors.accent },
+  story: {
+    fontSize: 16,
+    lineHeight: 25,
+    color: colors.inkSoft,
+    marginTop: spacing.sm,
+  },
   beneficiaryCard: {
-    marginTop: 8,
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: '#fff',
+    marginTop: spacing.sm,
+    padding: spacing.lg,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: colors.line,
+    gap: 4,
   },
-  beneficiaryText: { fontSize: 15, color: '#444' },
+  beneficiaryLabel: {
+    fontSize: 11,
+    letterSpacing: 1.1,
+    fontWeight: '700',
+    color: colors.muted,
+  },
+  beneficiaryText: { fontSize: 14, lineHeight: 21, color: colors.inkSoft },
   footer: {
-    padding: 20,
+    padding: spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
-    backgroundColor: '#fafafa',
-    gap: 8,
+    borderTopColor: colors.line,
+    backgroundColor: colors.surface,
+    gap: spacing.sm,
   },
-  donateButton: {
-    backgroundColor: '#1a1a1a',
+  helpButton: {
+    backgroundColor: colors.accent,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: radius.pill,
     alignItems: 'center',
   },
-  donateText: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  donateNote: { fontSize: 12, color: '#888', textAlign: 'center' },
+  pressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
+  helpText: { color: colors.accentInk, fontSize: 17, fontWeight: '700' },
+  helpNote: { fontSize: 12, color: colors.muted, textAlign: 'center' },
 });

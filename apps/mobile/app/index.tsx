@@ -1,100 +1,313 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import type { Campaign } from '@laal/types';
 import { supabase, WEB_APP_URL } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { CampaignCard } from '@/components/campaign-card';
+import { Avatar, PrimaryButton } from '@/components/ui';
+import { colors, firstName, initials, radius, serif, spacing } from '@/lib/theme';
 
 export default function HomeScreen() {
-  const { session, signOut } = useAuth();
+  const { session } = useAuth();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase
+      .from('campaigns')
+      .select('*')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
+    setCampaigns((data as Campaign[]) ?? []);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const { data } = await supabase
-        .from('campaigns')
-        .select('*')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
-      if (!mounted) return;
-      setCampaigns((data as Campaign[]) ?? []);
-      setLoading(false);
+      await load();
+      if (mounted) setLoading(false);
     })();
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [load]);
 
-  const openStart = () => {
-    WebBrowser.openBrowserAsync(`${WEB_APP_URL}/start`);
-  };
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
+
+  const openStart = () => WebBrowser.openBrowserAsync(`${WEB_APP_URL}/start`);
+
+  const name = firstName(session?.user.user_metadata?.full_name as string);
+  const signedIn = Boolean(session);
+
+  const header = (
+    <View style={styles.header}>
+      {/* top bar — brand + account affordance */}
+      <View style={styles.topBar}>
+        <Text style={styles.brand}>Laal</Text>
+        {signedIn ? (
+          <Pressable onPress={() => router.push('/account')} hitSlop={8}>
+            <Avatar
+              text={initials(
+                session?.user.user_metadata?.full_name as string,
+                session?.user.email,
+              )}
+              size={38}
+            />
+          </Pressable>
+        ) : (
+          <Link href="/login" asChild>
+            <Pressable style={styles.signInPill} hitSlop={6}>
+              <Text style={styles.signInPillText}>Sign in</Text>
+            </Pressable>
+          </Link>
+        )}
+      </View>
+
+      {/* hero band */}
+      <View style={styles.hero}>
+        <Text style={styles.eyebrow}>EVERY LIFE IS PRECIOUS</Text>
+        {signedIn ? (
+          <>
+            <Text style={styles.heroTitle}>
+              Welcome back{name ? `, ${name}` : ''}.
+            </Text>
+            <Text style={styles.heroSub}>
+              Here are the people your community is standing with today.
+            </Text>
+          </>
+        ) : (
+          <>
+            <Text style={styles.heroTitle}>Everyone is someone’s Laal.</Text>
+            <Text style={styles.heroSub}>
+              Behind every request is a person who matters — and a community
+              ready to stand with them.
+            </Text>
+          </>
+        )}
+      </View>
+
+      {/* gentle, non-blocking sign-in invitation (signed-out only) */}
+      {!signedIn ? (
+        <View style={styles.inviteCard}>
+          <Text style={styles.inviteTitle}>Follow the families you care about</Text>
+          <Text style={styles.inviteBody}>
+            Sign in to save stories and get a gentle note when support arrives.
+            You can always help without an account.
+          </Text>
+          <View style={styles.inviteActions}>
+            <Link href="/login" asChild>
+              <Pressable style={styles.invitePrimary}>
+                <Text style={styles.invitePrimaryText}>Sign in</Text>
+              </Pressable>
+            </Link>
+            <Link href="/signup" asChild>
+              <Pressable hitSlop={6}>
+                <Text style={styles.inviteLink}>Create account</Text>
+              </Pressable>
+            </Link>
+          </View>
+        </View>
+      ) : (
+        <Pressable style={styles.sharePrompt} onPress={openStart}>
+          <View style={styles.sharePromptIcon}>
+            <Text style={styles.sharePromptHeart}>♥</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.sharePromptTitle}>Share someone’s story</Text>
+            <Text style={styles.sharePromptBody}>
+              Start a story on the web in a few minutes →
+            </Text>
+          </View>
+        </Pressable>
+      )}
+
+      <View style={styles.sectionRow}>
+        <Text style={styles.sectionTitle}>
+          {signedIn ? 'Stories near you' : 'Verified stories'}
+        </Text>
+        {campaigns.length > 0 ? (
+          <Text style={styles.sectionCount}>{campaigns.length}</Text>
+        ) : null}
+      </View>
+    </View>
+  );
+
+  if (loading) {
+    return (
+      <View style={[styles.screen, styles.center]}>
+        <ActivityIndicator color={colors.accent} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Text style={styles.title}>Campaigns</Text>
-          {session ? (
-            <Pressable onPress={signOut} hitSlop={8}>
-              <Text style={styles.link}>Sign out</Text>
-            </Pressable>
-          ) : (
-            <Link href="/login" style={styles.link}>
-              Sign in
-            </Link>
-          )}
-        </View>
-        <Pressable onPress={openStart}>
-          <Text style={styles.startNote}>
-            Want to start a campaign? Create one on the web →
-          </Text>
-        </Pressable>
-      </View>
-
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator />
-        </View>
-      ) : (
-        <FlatList
-          data={campaigns}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <CampaignCard campaign={item} />}
-          contentContainerStyle={styles.list}
-          ListEmptyComponent={
-            <View style={styles.center}>
-              <Text style={styles.empty}>No active campaigns yet.</Text>
-            </View>
-          }
-        />
-      )}
+      <FlatList
+        data={campaigns}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => <CampaignCard campaign={item} />}
+        ListHeaderComponent={header}
+        contentContainerStyle={[
+          styles.list,
+          { paddingTop: insets.top + spacing.sm },
+        ]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.accent}
+          />
+        }
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={styles.emptyTitle}>New stories are being reviewed</Text>
+            <Text style={styles.emptyBody}>
+              Every story is gently verified before it appears here. Check back
+              soon to support someone precious.
+            </Text>
+            <PrimaryButton
+              label="Share the first story"
+              onPress={openStart}
+              style={{ marginTop: spacing.md }}
+            />
+          </View>
+        }
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#fafafa' },
-  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8, gap: 8 },
-  headerTop: {
+  screen: { flex: 1, backgroundColor: colors.bg },
+  center: { alignItems: 'center', justifyContent: 'center' },
+  list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
+
+  header: { gap: spacing.lg, marginBottom: spacing.xs },
+  topBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  title: { fontSize: 28, fontWeight: '700', color: '#1a1a1a' },
-  link: { fontSize: 16, color: '#1a1a1a', fontWeight: '600' },
-  startNote: { fontSize: 14, color: '#666' },
-  list: { padding: 20, gap: 12 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  empty: { fontSize: 15, color: '#888' },
+  brand: { fontSize: 24, fontWeight: '700', color: colors.ink, fontFamily: serif },
+  signInPill: {
+    borderWidth: 1,
+    borderColor: colors.lineStrong,
+    borderRadius: radius.pill,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: colors.surface,
+  },
+  signInPillText: { fontSize: 14, fontWeight: '700', color: colors.ink },
+
+  hero: { gap: 6 },
+  eyebrow: {
+    fontSize: 11,
+    letterSpacing: 1.4,
+    fontWeight: '700',
+    color: colors.accent,
+  },
+  heroTitle: {
+    fontSize: 27,
+    lineHeight: 32,
+    fontWeight: '600',
+    color: colors.ink,
+    fontFamily: serif,
+  },
+  heroSub: { fontSize: 14, lineHeight: 21, color: colors.muted },
+
+  inviteCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.md,
+    padding: spacing.lg,
+    gap: 6,
+  },
+  inviteTitle: { fontSize: 16, fontWeight: '700', color: colors.ink, fontFamily: serif },
+  inviteBody: { fontSize: 13, lineHeight: 20, color: colors.muted },
+  inviteActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    marginTop: spacing.sm,
+  },
+  invitePrimary: {
+    backgroundColor: colors.accent,
+    borderRadius: radius.pill,
+    paddingHorizontal: 22,
+    paddingVertical: 11,
+  },
+  invitePrimaryText: { color: colors.accentInk, fontSize: 14, fontWeight: '700' },
+  inviteLink: { color: colors.accentHover, fontSize: 14, fontWeight: '700' },
+
+  sharePrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.accentSoft,
+    borderWidth: 1,
+    borderColor: '#e6cfbb',
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  sharePromptIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sharePromptHeart: { color: colors.accent, fontSize: 18 },
+  sharePromptTitle: { fontSize: 15, fontWeight: '700', color: colors.ink },
+  sharePromptBody: { fontSize: 13, color: colors.accentHover, marginTop: 1 },
+
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.inkSoft },
+  sectionCount: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.muted,
+    backgroundColor: colors.surface2,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 1,
+    overflow: 'hidden',
+  },
+
+  empty: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.md,
+    padding: spacing.xl,
+    alignItems: 'center',
+    gap: 6,
+  },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: colors.ink, fontFamily: serif },
+  emptyBody: { fontSize: 13, lineHeight: 20, color: colors.muted, textAlign: 'center' },
 });
