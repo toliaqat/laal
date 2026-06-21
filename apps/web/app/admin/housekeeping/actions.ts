@@ -24,11 +24,19 @@ async function requireAdminId(): Promise<string> {
 export async function closeCampaign(id: string): Promise<ActionResult> {
   const adminId = await requireAdminId();
   const supabase = createAdminSupabase();
-  const { error } = await supabase
+  // Guard the transition and confirm a row actually changed: a campaign that
+  // is already closed (or a stale/duplicate request) must not write a spurious
+  // 'campaign.closed' entry to the audit log.
+  const { data, error } = await supabase
     .from('campaigns')
     .update({ status: 'closed' })
-    .eq('id', id);
+    .eq('id', id)
+    .neq('status', 'closed')
+    .select('id');
   if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: 'Campaign not found or already closed' };
+  }
   await logAudit({
     actorId: adminId,
     action: 'campaign.closed',
@@ -43,12 +51,16 @@ export async function closeCampaign(id: string): Promise<ActionResult> {
 export async function pauseCampaign(id: string): Promise<ActionResult> {
   const adminId = await requireAdminId();
   const supabase = createAdminSupabase();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('campaigns')
     .update({ status: 'paused' })
     .eq('id', id)
-    .eq('status', 'active');
+    .eq('status', 'active')
+    .select('id');
   if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: 'Campaign is not active' };
+  }
   await logAudit({
     actorId: adminId,
     action: 'campaign.paused',
@@ -63,12 +75,16 @@ export async function pauseCampaign(id: string): Promise<ActionResult> {
 export async function resumeCampaign(id: string): Promise<ActionResult> {
   const adminId = await requireAdminId();
   const supabase = createAdminSupabase();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('campaigns')
     .update({ status: 'active' })
     .eq('id', id)
-    .eq('status', 'paused');
+    .eq('status', 'paused')
+    .select('id');
   if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: 'Campaign is not paused' };
+  }
   await logAudit({
     actorId: adminId,
     action: 'campaign.resumed',
