@@ -3,6 +3,12 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createServerSupabase, getCurrentUser } from '@/lib/supabase/server';
+import {
+  assertValidCoverFile,
+  deleteCoverImage,
+  hasCoverFile,
+  uploadCoverImage,
+} from '@/lib/cover-image';
 import type { IntendedUse } from '@laal/types';
 
 const INTENDED_USES: IntendedUse[] = [
@@ -35,7 +41,7 @@ export async function updateCampaign(formData: FormData): Promise<void> {
   // ---- Server-side authorization ----
   const { data: campaign } = await supabase
     .from('campaigns')
-    .select('id, organizer_id, status')
+    .select('id, organizer_id, status, cover_image_url')
     .eq('id', campaignId)
     .maybeSingle();
 
@@ -66,6 +72,14 @@ export async function updateCampaign(formData: FormData): Promise<void> {
   const goalAmount = Number(formData.get('goal_amount'));
 
   const beneficiaryKind = String(formData.get('beneficiary_kind') ?? '');
+
+  // Optional cover image change: a new file replaces the current one; the
+  // checkbox removes it. Validate the file up front before any writes.
+  const coverField = formData.get('cover_image');
+  const coverFile = hasCoverFile(coverField)
+    ? assertValidCoverFile(coverField)
+    : null;
+  const removeCover = String(formData.get('remove_cover') ?? '') === '1';
 
   // ---- Validation ----
   if (!title) throw new Error('Title is required.');
@@ -123,6 +137,27 @@ export async function updateCampaign(formData: FormData): Promise<void> {
 
   if (campaignError) {
     throw new Error(campaignError.message);
+  }
+
+  // ---- Cover image: replace, remove, or leave as-is ----
+  const oldCover = campaign.cover_image_url as string | null;
+  if (coverFile) {
+    try {
+      const url = await uploadCoverImage(campaignId, coverFile);
+      await supabase
+        .from('campaigns')
+        .update({ cover_image_url: url })
+        .eq('id', campaignId);
+      await deleteCoverImage(oldCover); // drop the replaced object
+    } catch {
+      // Leave the existing image in place if the upload fails.
+    }
+  } else if (removeCover && oldCover) {
+    await supabase
+      .from('campaigns')
+      .update({ cover_image_url: null })
+      .eq('id', campaignId);
+    await deleteCoverImage(oldCover);
   }
 
   // ---- Update the active beneficiary to match the chosen type ----

@@ -1,0 +1,80 @@
+import 'server-only';
+
+import sharp from 'sharp';
+import {
+  coverImageKey,
+  coverKeyFromUrl,
+  deletePublicObject,
+  publicCoverUrl,
+  uploadPublicObject,
+} from '@/lib/r2';
+
+/**
+ * Campaign cover ("hero") images. These are PUBLIC, so every byte an organizer
+ * sends is re-encoded server-side before storage. Re-encoding:
+ *   - strips EXIF/GPS metadata (a death/repatriation context — location leaks
+ *     matter) by not carrying metadata through sharp,
+ *   - neutralizes malicious payloads hidden in image containers,
+ *   - normalizes to a sensible size and format (WebP).
+ * The browser preview is convenience only; this module is the source of truth.
+ */
+
+const MAX_BYTES = 8 * 1024 * 1024; // 8MB
+const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_DIMENSION = 1600;
+
+/** True if the form field holds a non-empty file. */
+export function hasCoverFile(value: FormDataEntryValue | null): boolean {
+  return value instanceof File && value.size > 0;
+}
+
+/**
+ * Validate a cover-image upload by type and size, throwing a user-facing error
+ * if it is unusable. Call this BEFORE any expensive work (e.g. creating the
+ * campaign) so a bad file fails fast. Returns the validated File.
+ */
+export function assertValidCoverFile(value: FormDataEntryValue | null): File {
+  if (!(value instanceof File) || value.size === 0) {
+    throw new Error('Please choose an image to upload.');
+  }
+  if (value.size > MAX_BYTES) {
+    throw new Error('Image is too large (max 8MB).');
+  }
+  if (!ALLOWED.includes(value.type)) {
+    throw new Error('Only JPG, PNG or WebP images are allowed.');
+  }
+  return value;
+}
+
+/**
+ * Re-encode, resize, and upload a cover image to the public bucket. Returns the
+ * stable public URL to store in campaigns.cover_image_url. Caller must have
+ * authorized the upload (campaign ownership).
+ */
+export async function uploadCoverImage(
+  campaignId: string,
+  file: File,
+): Promise<string> {
+  const input = Buffer.from(await file.arrayBuffer());
+  const output = await sharp(input)
+    .rotate() // apply EXIF orientation, then drop all metadata
+    .resize(MAX_DIMENSION, MAX_DIMENSION, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .webp({ quality: 82 })
+    .toBuffer();
+
+  const key = coverImageKey(campaignId);
+  await uploadPublicObject(key, output, 'image/webp');
+  return publicCoverUrl(key);
+}
+
+/** Best-effort delete of a previously stored cover image by its public URL. */
+export async function deleteCoverImage(
+  url: string | null | undefined,
+): Promise<void> {
+  if (!url) return;
+  const key = coverKeyFromUrl(url);
+  if (key) await deletePublicObject(key).catch(() => {});
+}

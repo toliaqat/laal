@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button, Card, Field } from '@/components/ui';
+import { CoverImageInput } from '@/components/cover-image-input';
 import { createCampaign } from './actions';
 
 type OrgOption = { id: string; name: string };
@@ -45,6 +46,8 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
               rows={6}
             />
           </Field>
+
+          <CoverImageInput />
 
           <div className="row wrap">
             <div style={{ flex: 2, minWidth: 180 }}>
