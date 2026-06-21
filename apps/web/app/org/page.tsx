@@ -113,10 +113,19 @@ export default async function OrgPortalPage() {
             const camp = Array.isArray(c.campaigns) ? c.campaigns[0] : c.campaigns;
             if (camp?.id) titleByCampaign.set(camp.id as string, camp.title as string);
           }
-          const received = payouts
-            .filter((p) => p.status !== 'failed' && p.status !== 'cancelled')
-            .reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
-          const currency = (payouts[0]?.currency as string) || 'EUR';
+          // Total received, grouped by currency: an org can be the beneficiary
+          // of fundraisers in different currencies, and summing those into one
+          // number (labelled with a single arbitrary currency) is meaningless.
+          const receivedByCurrency = new Map<string, number>();
+          for (const p of payouts) {
+            if (p.status === 'failed' || p.status === 'cancelled') continue;
+            const cur = (p.currency as string) || 'EUR';
+            receivedByCurrency.set(
+              cur,
+              (receivedByCurrency.get(cur) ?? 0) + Number(p.amount ?? 0),
+            );
+          }
+          const receivedTotals = [...receivedByCurrency.entries()];
 
           return (
             <div key={org.id} className="stack">
@@ -164,7 +173,17 @@ export default async function OrgPortalPage() {
               <Card>
                 <h3>Funds received</h3>
                 <p className="muted">
-                  Total received: <strong>{money(received, currency)}</strong>
+                  Total received:{' '}
+                  {receivedTotals.length === 0 ? (
+                    <strong>{money(0, 'EUR')}</strong>
+                  ) : (
+                    receivedTotals.map(([cur, amt], i) => (
+                      <strong key={cur}>
+                        {i > 0 ? ' · ' : ''}
+                        {money(amt, cur)}
+                      </strong>
+                    ))
+                  )}
                 </p>
                 {payouts.length === 0 ? (
                   <p className="muted small">No payouts yet.</p>
