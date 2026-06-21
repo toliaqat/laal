@@ -75,11 +75,20 @@ async function requireAdminId(): Promise<string> {
 export async function approveCampaign(id: string): Promise<ActionResult> {
   const adminId = await requireAdminId();
   const supabase = createAdminSupabase();
-  const { error } = await supabase
+  // Only a campaign awaiting review may be approved. Without this guard a stale
+  // or crafted request could flip a 'completed' campaign (funds already
+  // released) back to 'active' — re-opening it for donations and a second
+  // release. The affected-row check also prevents a duplicate approval audit.
+  const { data, error } = await supabase
     .from('campaigns')
     .update({ status: 'active', published_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('status', 'pending_review')
+    .select('id');
   if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: 'Campaign is not pending review' };
+  }
   await logAudit({
     actorId: adminId,
     action: 'campaign.approved',
@@ -92,15 +101,23 @@ export async function approveCampaign(id: string): Promise<ActionResult> {
   return { ok: true };
 }
 
-/** Reject a campaign. */
+/** Reject a campaign (only one still awaiting review). */
 export async function rejectCampaign(id: string): Promise<ActionResult> {
   const adminId = await requireAdminId();
   const supabase = createAdminSupabase();
-  const { error } = await supabase
+  // Mirror approveCampaign: only a pending-review campaign may be rejected, so a
+  // stale/crafted request can't reject a completed or active campaign and
+  // corrupt its state. (The UI only offers reject from pending_review.)
+  const { data, error } = await supabase
     .from('campaigns')
     .update({ status: 'rejected' })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('status', 'pending_review')
+    .select('id');
   if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: 'Campaign is not pending review' };
+  }
   await logAudit({
     actorId: adminId,
     action: 'campaign.rejected',
