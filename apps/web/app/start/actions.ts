@@ -1,7 +1,11 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { createServerSupabase, getCurrentUser } from '@/lib/supabase/server';
+import {
+  createAdminSupabase,
+  createServerSupabase,
+  getCurrentUser,
+} from '@/lib/supabase/server';
 import type { IntendedUse } from '@ashfaat/types';
 
 const INTENDED_USES: IntendedUse[] = [
@@ -139,6 +143,34 @@ export async function createCampaign(formData: FormData): Promise<void> {
   if (beneficiaryError) {
     throw new Error(beneficiaryError.message);
   }
+
+  // Seed the verification gate so the admin has something to review. The death
+  // check always applies; individual beneficiaries also need a relationship
+  // check (orgs are vetted at onboarding). Inserted via the service-role client
+  // because verifications are admin-writable only under RLS.
+  const admin = createAdminSupabase();
+  const verifications: {
+    campaign_id: string;
+    type: 'death' | 'relationship';
+    status: 'pending';
+    verifier_type: 'admin';
+  }[] = [
+    {
+      campaign_id: campaign.id,
+      type: 'death',
+      status: 'pending',
+      verifier_type: 'admin',
+    },
+  ];
+  if (beneficiaryKind === 'individual') {
+    verifications.push({
+      campaign_id: campaign.id,
+      type: 'relationship',
+      status: 'pending',
+      verifier_type: 'admin',
+    });
+  }
+  await admin.from('verifications').insert(verifications);
 
   redirect('/dashboard');
 }
