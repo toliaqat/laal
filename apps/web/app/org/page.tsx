@@ -1,0 +1,213 @@
+import { redirect } from 'next/navigation';
+import { createAdminSupabase, getCurrentUser } from '@/lib/supabase/server';
+import { getMyMemberships } from '@/lib/org-auth';
+import { Button, Card, Field } from '@/components/ui';
+import { startOrgOnboarding, updateOrgProfile } from './actions';
+
+function money(amount: number, currency: string): string {
+  return `${currency} ${Number(amount).toFixed(2)}`;
+}
+
+export default async function OrgPortalPage() {
+  const user = await getCurrentUser();
+  if (!user) redirect('/login?next=/org');
+
+  const memberships = await getMyMemberships();
+  if (memberships.length === 0) {
+    return (
+      <div className="container narrow">
+        <Card>
+          <h1>Organization portal</h1>
+          <p className="muted">
+            You’re not part of an organization yet. If you were invited, use the
+            link in your email to accept.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  const supabase = createAdminSupabase();
+
+  const sections = await Promise.all(
+    memberships.map(async (m) => {
+      const orgId = m.organizationId;
+      const { data: org } = await supabase
+        .from('organizations')
+        .select(
+          'id, name, type, country, description, contact_email, contact_phone, logo_url, status, can_be_beneficiary, stripe_connect_account_id, stripe_onboarding_complete',
+        )
+        .eq('id', orgId)
+        .single();
+
+      const { data: campaigns } = await supabase
+        .from('beneficiaries')
+        .select('campaigns:campaign_id(title, slug, status, amount_raised, goal_amount, currency)')
+        .eq('organization_id', orgId)
+        .eq('type', 'organization')
+        .eq('is_active', true);
+
+      const { data: payouts } = await supabase
+        .from('payouts')
+        .select('amount, currency, status, released_at, beneficiaries!inner(organization_id)')
+        .eq('beneficiaries.organization_id', orgId)
+        .order('released_at', { ascending: false });
+
+      return { membership: m, org, campaigns: campaigns ?? [], payouts: payouts ?? [] };
+    }),
+  );
+
+  return (
+    <div className="container">
+      <div className="stack">
+        <div>
+          <p className="eyebrow">Organization portal</p>
+          <h1>Your organization{sections.length > 1 ? 's' : ''}</h1>
+        </div>
+
+        {sections.map(({ membership, org, campaigns, payouts }) => {
+          if (!org) return null;
+          const isLead = membership.orgRole === 'lead';
+          const received = payouts
+            .filter((p) => p.status !== 'failed' && p.status !== 'cancelled')
+            .reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
+          const currency = (payouts[0]?.currency as string) || 'EUR';
+
+          return (
+            <div key={org.id} className="stack">
+              {/* Status */}
+              <Card>
+                <div className="row" style={{ justifyContent: 'space-between' }}>
+                  <h2 style={{ margin: 0 }}>{org.name}</h2>
+                  <span className="small muted">{org.type}</span>
+                </div>
+                <div className="row wrap small" style={{ gap: '1rem', marginTop: '0.5rem' }}>
+                  <span>
+                    Listing:{' '}
+                    <strong>
+                      {org.status === 'verified' ? 'Verified ✓' : org.status}
+                    </strong>
+                  </span>
+                  <span>
+                    Payouts:{' '}
+                    <strong>
+                      {org.stripe_onboarding_complete
+                        ? 'Ready ✓'
+                        : 'Bank not connected'}
+                    </strong>
+                  </span>
+                </div>
+                {!org.stripe_onboarding_complete && (
+                  <form action={startOrgOnboarding} style={{ marginTop: '0.75rem' }}>
+                    <input type="hidden" name="organization_id" value={org.id} />
+                    <Button type="submit">
+                      {org.stripe_connect_account_id
+                        ? 'Finish bank setup (Stripe)'
+                        : 'Connect a bank account (Stripe)'}
+                    </Button>
+                  </form>
+                )}
+                {org.status !== 'verified' && (
+                  <p className="muted small" style={{ marginTop: '0.5rem' }}>
+                    An admin will review your organization before it appears as a
+                    fundraiser designation.
+                  </p>
+                )}
+              </Card>
+
+              {/* Funds received */}
+              <Card>
+                <h3>Funds received</h3>
+                <p className="muted">
+                  Total received: <strong>{money(received, currency)}</strong>
+                </p>
+                {payouts.length === 0 ? (
+                  <p className="muted small">No payouts yet.</p>
+                ) : (
+                  <ul className="stack" style={{ listStyle: 'none', padding: 0 }}>
+                    {payouts.map((p, i) => (
+                      <li key={i} className="row small" style={{ justifyContent: 'space-between' }}>
+                        <span>{money(Number(p.amount), p.currency as string)}</span>
+                        <span className="muted">{p.status}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
+
+              {/* Fundraisers designating this org */}
+              <Card>
+                <h3>Fundraisers designating you</h3>
+                {campaigns.length === 0 ? (
+                  <p className="muted small">No active fundraisers yet.</p>
+                ) : (
+                  <ul className="stack" style={{ listStyle: 'none', padding: 0 }}>
+                    {campaigns.map((c, i) => {
+                      const camp = Array.isArray(c.campaigns) ? c.campaigns[0] : c.campaigns;
+                      if (!camp) return null;
+                      return (
+                        <li key={i} className="row" style={{ justifyContent: 'space-between' }}>
+                          <span>{camp.title}</span>
+                          <span className="small muted">
+                            {money(Number(camp.amount_raised), camp.currency)} · {camp.status}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </Card>
+
+              {/* Profile (lead only) */}
+              {isLead && (
+                <Card>
+                  <h3>Organization profile</h3>
+                  <form action={updateOrgProfile} className="stack">
+                    <input type="hidden" name="organization_id" value={org.id} />
+                    <Field label="Name">
+                      <input className="input" name="name" defaultValue={org.name ?? ''} required />
+                    </Field>
+                    <Field label="Description">
+                      <textarea
+                        className="textarea"
+                        name="description"
+                        rows={4}
+                        defaultValue={org.description ?? ''}
+                      />
+                    </Field>
+                    <div className="grid">
+                      <Field label="Country">
+                        <input className="input" name="country" defaultValue={org.country ?? ''} />
+                      </Field>
+                      <Field label="Contact email">
+                        <input
+                          className="input"
+                          type="email"
+                          name="contact_email"
+                          defaultValue={org.contact_email ?? ''}
+                        />
+                      </Field>
+                      <Field label="Contact phone">
+                        <input
+                          className="input"
+                          name="contact_phone"
+                          defaultValue={org.contact_phone ?? ''}
+                        />
+                      </Field>
+                      <Field label="Logo URL">
+                        <input className="input" name="logo_url" defaultValue={org.logo_url ?? ''} />
+                      </Field>
+                    </div>
+                    <div className="row">
+                      <Button type="submit">Save profile</Button>
+                    </div>
+                  </form>
+                </Card>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

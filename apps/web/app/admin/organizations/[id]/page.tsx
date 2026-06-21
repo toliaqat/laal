@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { Button, Card, Field } from '@/components/ui';
-import { updateOrganization } from '../actions';
+import { inviteOrgMember, revokeOrgInvite, updateOrganization } from '../actions';
 
 const ORG_TYPES = [
   'embassy',
@@ -30,6 +30,17 @@ export default async function EditOrganizationPage({
     .single();
 
   if (!org) notFound();
+
+  const { data: invites } = await supabase
+    .from('organization_invites')
+    .select('id, email, member_role, status, created_at')
+    .eq('organization_id', id)
+    .order('created_at', { ascending: false });
+
+  const { data: members } = await supabase
+    .from('organization_members')
+    .select('id, org_role, profiles:profile_id(full_name, email)')
+    .eq('organization_id', id);
 
   return (
     <div className="stack">
@@ -133,6 +144,78 @@ export default async function EditOrganizationPage({
             </Button>
           </div>
         </form>
+      </Card>
+
+      <Card>
+        <h2>Members</h2>
+        <p className="muted small">
+          People who can sign in and manage this organization.
+        </p>
+        {(members ?? []).length === 0 ? (
+          <p className="muted small">No members yet — invite someone below.</p>
+        ) : (
+          <ul className="stack" style={{ listStyle: 'none', padding: 0 }}>
+            {(members ?? []).map((m) => {
+              const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+              return (
+                <li key={m.id} className="row" style={{ justifyContent: 'space-between' }}>
+                  <span>{p?.full_name || p?.email || 'Unknown'}</span>
+                  <span className="small muted">{m.org_role}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Card>
+
+      <Card>
+        <h2>Invite a member</h2>
+        <p className="muted small">
+          They’ll get an email link to claim this organization, complete its
+          profile, and connect a bank account via Stripe.
+        </p>
+        <form action={inviteOrgMember} className="stack">
+          <input type="hidden" name="organization_id" value={org.id} />
+          <div className="grid">
+            <Field label="Email">
+              <input className="input" type="email" name="email" required />
+            </Field>
+            <Field label="Role">
+              <select className="select" name="member_role" defaultValue="lead">
+                <option value="lead">Lead (manage + onboard)</option>
+                <option value="staff">Staff (view only)</option>
+              </select>
+            </Field>
+          </div>
+          <div className="row">
+            <Button type="submit">Send invite</Button>
+          </div>
+        </form>
+
+        {(invites ?? []).filter((i) => i.status === 'pending').length > 0 && (
+          <div className="stack" style={{ marginTop: '1rem' }}>
+            <h3 className="small">Pending invites</h3>
+            {(invites ?? [])
+              .filter((i) => i.status === 'pending')
+              .map((i) => (
+                <div
+                  key={i.id}
+                  className="row"
+                  style={{ justifyContent: 'space-between' }}
+                >
+                  <span className="small">
+                    {i.email} · {i.member_role}
+                  </span>
+                  <form action={revokeOrgInvite}>
+                    <input type="hidden" name="invite_id" value={i.id} />
+                    <Button type="submit" variant="ghost">
+                      Revoke
+                    </Button>
+                  </form>
+                </div>
+              ))}
+          </div>
+        )}
       </Card>
     </div>
   );
