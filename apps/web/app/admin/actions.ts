@@ -292,6 +292,31 @@ export async function releaseFunds(campaignId: string): Promise<ActionResult> {
     return { ok: false, error: 'Campaign already released or not active' };
   }
 
+  // Durably record the payout *intent* BEFORE any money moves. This is the
+  // ordering that matters: money must never leave the platform balance without
+  // a database record. If this insert fails, no transfer has happened yet, so
+  // we simply release the claim and let an admin retry.
+  const { data: payoutRow, error: insertErr } = await supabase
+    .from('payouts')
+    .insert({
+      campaign_id: campaignId,
+      beneficiary_id: beneficiary.id,
+      amount: releasable,
+      currency: campaign.currency,
+      status: 'scheduled',
+      released_by: adminId,
+      released_at: new Date().toISOString(),
+    })
+    .select('id')
+    .single();
+  if (insertErr || !payoutRow) {
+    await supabase
+      .from('campaigns')
+      .update({ status: 'active' })
+      .eq('id', campaignId);
+    return { ok: false, error: insertErr?.message ?? 'Could not record payout' };
+  }
+
   let transfer;
   try {
     // idempotencyKey is defense-in-depth: even if the claim is somehow bypassed,
@@ -304,7 +329,14 @@ export async function releaseFunds(campaignId: string): Promise<ActionResult> {
       idempotencyKey: `release_${campaignId}_${releasableMinor}`,
     });
   } catch (err) {
-    // Transfer failed — release the claim so an admin can retry.
+    // Transfer failed — mark the payout failed and release the claim so an admin
+    // can retry. A 'failed' payout is excluded from the already-released total,
+    // so the retry recomputes the same amount and reuses the idempotency key
+    // (Stripe will not double-send if the original actually went through).
+    await supabase
+      .from('payouts')
+      .update({ status: 'failed' })
+      .eq('id', payoutRow.id);
     await supabase
       .from('campaigns')
       .update({ status: 'active' })
@@ -315,18 +347,19 @@ export async function releaseFunds(campaignId: string): Promise<ActionResult> {
     };
   }
 
-  // Record the payout.
-  const { error: payoutErr } = await supabase.from('payouts').insert({
-    campaign_id: campaignId,
-    beneficiary_id: beneficiary.id,
-    amount: releasable,
-    currency: campaign.currency,
-    stripe_transfer_id: transfer.id,
-    status: 'in_transit',
-    released_by: adminId,
-    released_at: new Date().toISOString(),
-  });
-  if (payoutErr) return { ok: false, error: payoutErr.message };
+  // Money has moved — attach the transfer id and advance the payout. If this
+  // update fails the funds are still safely recorded as a 'scheduled' payout, so
+  // log loudly for reconciliation rather than dropping the record on the floor.
+  const { error: updateErr } = await supabase
+    .from('payouts')
+    .update({ stripe_transfer_id: transfer.id, status: 'in_transit' })
+    .eq('id', payoutRow.id);
+  if (updateErr) {
+    console.error(
+      `[releaseFunds] transfer ${transfer.id} sent for campaign ${campaignId} but failed to record on payout ${payoutRow.id}:`,
+      updateErr.message,
+    );
+  }
 
   await logAudit({
     actorId: adminId,
