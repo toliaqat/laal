@@ -120,6 +120,11 @@ export async function setVerification(
 ): Promise<ActionResult> {
   const adminId = await requireAdminId();
   const supabase = createAdminSupabase();
+  // A verification is decided once. Scope the write to reviewable states so an
+  // already approved/rejected decision can't be flipped — these feed the
+  // fund-release gate, so a retroactive change (e.g. after release) would
+  // corrupt the trust record — and so re-decisions don't pile up duplicate
+  // audit entries. The affected-row check also closes the concurrent-review race.
   const { data, error } = await supabase
     .from('verifications')
     .update({
@@ -128,17 +133,24 @@ export async function setVerification(
       reviewed_at: new Date().toISOString(),
     })
     .eq('id', verificationId)
-    .select('campaign_id')
-    .single();
+    .in('status', ['pending', 'submitted'])
+    .select('campaign_id');
   if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return {
+      ok: false,
+      error: 'Verification not found or already reviewed',
+    };
+  }
+  const campaignId = (data[0]?.campaign_id as string | null) ?? null;
   await logAudit({
     actorId: adminId,
     action: `verification.${status}`,
     entityType: 'verification',
     entityId: verificationId,
-    metadata: { campaignId: data?.campaign_id ?? null },
+    metadata: { campaignId: campaignId ?? null },
   });
-  if (data?.campaign_id) revalidatePath(`/admin/campaigns/${data.campaign_id}`);
+  if (campaignId) revalidatePath(`/admin/campaigns/${campaignId}`);
   revalidatePath('/admin/verifications');
   revalidatePath('/admin');
   return { ok: true };
