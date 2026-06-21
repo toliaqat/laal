@@ -120,6 +120,8 @@ export async function setVerification(
     metadata: { campaignId: data?.campaign_id ?? null },
   });
   if (data?.campaign_id) revalidatePath(`/admin/campaigns/${data.campaign_id}`);
+  revalidatePath('/admin/verifications');
+  revalidatePath('/admin');
   return { ok: true };
 }
 

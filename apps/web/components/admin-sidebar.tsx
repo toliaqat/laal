@@ -49,11 +49,17 @@ const I = {
       <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
     </svg>
   ),
+  check: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 12l2 2 4-4" /><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />
+    </svg>
+  ),
 };
 
 const ITEMS: Item[] = [
   { href: '/admin', label: 'Overview', icon: I.grid, exact: true },
   { href: '/admin/campaigns', label: 'Campaigns', icon: I.flag },
+  { href: '/admin/verifications', label: 'Verifications', icon: I.check },
   { href: '/admin/donations', label: 'Donations', icon: I.heart },
   { href: '/admin/releases', label: 'Releases', icon: I.send },
   { href: '/admin/organizations', label: 'Organizations', icon: I.building },

@@ -127,6 +127,147 @@ export function Stat({ value, label }: { value: ReactNode; label: string }) {
   );
 }
 
+/**
+ * A {@link Stat} that links to a queue where the count can be acted on. Shows a
+ * call-to-action cue, emphasised when `count > 0` so pending work stands out.
+ */
+export function StatLink({
+  count,
+  label,
+  href,
+  cta = 'Review',
+}: {
+  count: number;
+  label: string;
+  href: string;
+  cta?: string;
+}) {
+  const pending = count > 0;
+  return (
+    <Link
+      href={href}
+      className={`stat stat-link${pending ? ' stat-link-pending' : ''}`}
+    >
+      <div className="stat-value">{count}</div>
+      <div className="stat-label">{label}</div>
+      <span className="stat-cue">{pending ? `${cta} →` : 'All clear'}</span>
+    </Link>
+  );
+}
+
+export type DonutSegment = { label: string; value: number; color: string };
+
+/**
+ * A dependency-free SVG donut chart. Segments are drawn clockwise from 12
+ * o'clock; an empty ring is shown when every value is zero. `centerValue` /
+ * `centerLabel` render stacked in the hole.
+ */
+export function DonutChart({
+  segments,
+  centerValue,
+  centerLabel,
+  size = 140,
+  thickness = 20,
+}: {
+  segments: DonutSegment[];
+  centerValue?: string;
+  centerLabel?: string;
+  size?: number;
+  thickness?: number;
+}) {
+  const total = segments.reduce((sum, s) => sum + Math.max(s.value, 0), 0);
+  const r = (size - thickness) / 2;
+  const c = size / 2;
+  const circ = 2 * Math.PI * r;
+  let acc = 0;
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      role="img"
+      aria-label={segments.map((s) => `${s.label}: ${s.value}`).join(', ')}
+    >
+      <g transform={`rotate(-90 ${c} ${c})`}>
+        <circle
+          cx={c}
+          cy={c}
+          r={r}
+          fill="none"
+          stroke="var(--line)"
+          strokeWidth={thickness}
+        />
+        {total > 0 &&
+          segments.map((seg, i) => {
+            const dash = (Math.max(seg.value, 0) / total) * circ;
+            const node = (
+              <circle
+                key={i}
+                cx={c}
+                cy={c}
+                r={r}
+                fill="none"
+                stroke={seg.color}
+                strokeWidth={thickness}
+                strokeDasharray={`${dash} ${circ - dash}`}
+                strokeDashoffset={-acc}
+              />
+            );
+            acc += dash;
+            return node;
+          })}
+      </g>
+      {centerValue && (
+        <text
+          x={c}
+          y={centerLabel ? c - 4 : c}
+          textAnchor="middle"
+          dominantBaseline="central"
+          style={{
+            fontFamily: 'var(--serif)',
+            fontSize: '1.4rem',
+            fontWeight: 600,
+            fill: 'var(--ink)',
+          }}
+        >
+          {centerValue}
+        </text>
+      )}
+      {centerLabel && (
+        <text
+          x={c}
+          y={c + 16}
+          textAnchor="middle"
+          dominantBaseline="central"
+          style={{ fontSize: '0.7rem', fill: 'var(--muted)' }}
+        >
+          {centerLabel}
+        </text>
+      )}
+    </svg>
+  );
+}
+
+/** A labelled, coloured swatch row for a {@link DonutChart} legend. */
+export function ChartLegend({
+  items,
+}: {
+  items: { label: string; value: string; color: string }[];
+}) {
+  return (
+    <ul className="chart-legend">
+      {items.map((it) => (
+        <li key={it.label}>
+          <span className="chart-dot" style={{ background: it.color }} />
+          <span className="chart-legend-label">{it.label}</span>
+          <strong>{it.value}</strong>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** Format a money amount with its ISO currency. */
 export function formatMoney(amount: number, currency: string): string {
   try {

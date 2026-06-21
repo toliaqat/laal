@@ -1,6 +1,18 @@
 import Link from 'next/link';
 import { createAdminSupabase } from '@/lib/supabase/server';
-import { Badge, Stat, formatMoney, statusTone } from '@/components/ui';
+import {
+  Badge,
+  Card,
+  ChartLegend,
+  DonutChart,
+  Stat,
+  StatLink,
+  formatMoney,
+  statusTone,
+} from '@/components/ui';
+
+const ACTIVE_COLOR = 'var(--accent)';
+const REMAINDER_COLOR = '#d8c4b0';
 
 export default async function AdminAnalyticsPage() {
   const supabase = createAdminSupabase();
@@ -56,6 +68,11 @@ export default async function AdminAnalyticsPage() {
   const donationsCount = succeeded.length;
   const pendingVerifs = verifsRes.data?.length ?? 0;
 
+  // Donut framings: each pair is a subset of a whole, so the second slice is
+  // the remainder (clamped at zero in case of data skew).
+  const inactiveCampaigns = Math.max(totalCampaigns - activeCampaigns, 0);
+  const heldFunds = Math.max(totalRaised - totalReleased, 0);
+
   return (
     <div className="stack">
       <div className="stack" style={{ gap: '0.25rem' }}>
@@ -65,19 +82,69 @@ export default async function AdminAnalyticsPage() {
       </div>
 
       <div className="grid grid-cards">
-        <Stat value={totalCampaigns} label="Total campaigns" />
-        <Stat value={activeCampaigns} label="Active campaigns" />
-        <Stat value={pendingReview} label="Pending review" />
-        <Stat
-          value={formatMoney(totalRaised, raisedCurrency)}
-          label="Total raised"
+        <Card>
+          <div className="stack" style={{ gap: '0.75rem' }}>
+            <span className="stat-label">Campaigns</span>
+            <div className="chart-card">
+              <DonutChart
+                centerValue={String(totalCampaigns)}
+                centerLabel="total"
+                segments={[
+                  { label: 'Active', value: activeCampaigns, color: ACTIVE_COLOR },
+                  { label: 'Inactive', value: inactiveCampaigns, color: REMAINDER_COLOR },
+                ]}
+              />
+              <ChartLegend
+                items={[
+                  { label: 'Active', value: String(activeCampaigns), color: ACTIVE_COLOR },
+                  { label: 'Inactive', value: String(inactiveCampaigns), color: REMAINDER_COLOR },
+                ]}
+              />
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="stack" style={{ gap: '0.75rem' }}>
+            <span className="stat-label">Funds</span>
+            <div className="chart-card">
+              <DonutChart
+                centerValue={formatMoney(totalRaised, raisedCurrency)}
+                centerLabel="raised"
+                segments={[
+                  { label: 'Released', value: totalReleased, color: ACTIVE_COLOR },
+                  { label: 'Held', value: heldFunds, color: REMAINDER_COLOR },
+                ]}
+              />
+              <ChartLegend
+                items={[
+                  {
+                    label: 'Released',
+                    value: formatMoney(totalReleased, releasedCurrency),
+                    color: ACTIVE_COLOR,
+                  },
+                  {
+                    label: 'Held',
+                    value: formatMoney(heldFunds, raisedCurrency),
+                    color: REMAINDER_COLOR,
+                  },
+                ]}
+              />
+            </div>
+          </div>
+        </Card>
+
+        <StatLink
+          count={pendingReview}
+          label="Campaigns pending review"
+          href="/admin/campaigns"
         />
-        <Stat
-          value={formatMoney(totalReleased, releasedCurrency)}
-          label="Total released"
+        <StatLink
+          count={pendingVerifs}
+          label="Verifications pending"
+          href="/admin/verifications"
         />
         <Stat value={donationsCount} label="Donations" />
-        <Stat value={pendingVerifs} label="Fundraisers awaiting review" />
       </div>
 
       <div className="stack" style={{ gap: '0.75rem' }}>
