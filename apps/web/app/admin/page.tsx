@@ -22,6 +22,7 @@ export default async function AdminAnalyticsPage() {
     donationsRes,
     payoutsRes,
     verifsRes,
+    orgsRes,
     recentRes,
   ] = await Promise.all([
     supabase.from('campaigns').select('id, status'),
@@ -31,6 +32,7 @@ export default async function AdminAnalyticsPage() {
       .from('verifications')
       .select('id')
       .in('status', ['pending', 'submitted']),
+    supabase.from('organizations').select('id', { count: 'exact', head: true }),
     supabase
       .from('campaigns')
       .select('id, title, status, amount_raised, currency, created_at')
@@ -67,6 +69,7 @@ export default async function AdminAnalyticsPage() {
 
   const donationsCount = succeeded.length;
   const pendingVerifs = verifsRes.data?.length ?? 0;
+  const totalOrgs = orgsRes.count ?? 0;
 
   // Donut framings: each pair is a subset of a whole, so the second slice is
   // the remainder (clamped at zero in case of data skew).
@@ -81,56 +84,56 @@ export default async function AdminAnalyticsPage() {
         <p className="muted">Platform-wide overview at a glance.</p>
       </div>
 
-      <div className="grid grid-cards">
+      <div className="grid grid-stats">
         <Card>
-          <div className="stack" style={{ gap: '0.75rem' }}>
+          <div className="chart-card">
             <span className="stat-label">Campaigns</span>
-            <div className="chart-card">
-              <DonutChart
-                centerValue={String(totalCampaigns)}
-                centerLabel="total"
-                segments={[
-                  { label: 'Active', value: activeCampaigns, color: ACTIVE_COLOR },
-                  { label: 'Inactive', value: inactiveCampaigns, color: REMAINDER_COLOR },
-                ]}
-              />
-              <ChartLegend
-                items={[
-                  { label: 'Active', value: String(activeCampaigns), color: ACTIVE_COLOR },
-                  { label: 'Inactive', value: String(inactiveCampaigns), color: REMAINDER_COLOR },
-                ]}
-              />
-            </div>
+            <DonutChart
+              size={104}
+              thickness={15}
+              centerValue={String(totalCampaigns)}
+              centerLabel="total"
+              segments={[
+                { label: 'Active', value: activeCampaigns, color: ACTIVE_COLOR },
+                { label: 'Inactive', value: inactiveCampaigns, color: REMAINDER_COLOR },
+              ]}
+            />
+            <ChartLegend
+              items={[
+                { label: 'Active', value: String(activeCampaigns), color: ACTIVE_COLOR },
+                { label: 'Inactive', value: String(inactiveCampaigns), color: REMAINDER_COLOR },
+              ]}
+            />
           </div>
         </Card>
 
         <Card>
-          <div className="stack" style={{ gap: '0.75rem' }}>
+          <div className="chart-card">
             <span className="stat-label">Funds</span>
-            <div className="chart-card">
-              <DonutChart
-                centerValue={formatMoney(totalRaised, raisedCurrency)}
-                centerLabel="raised"
-                segments={[
-                  { label: 'Released', value: totalReleased, color: ACTIVE_COLOR },
-                  { label: 'Held', value: heldFunds, color: REMAINDER_COLOR },
-                ]}
-              />
-              <ChartLegend
-                items={[
-                  {
-                    label: 'Released',
-                    value: formatMoney(totalReleased, releasedCurrency),
-                    color: ACTIVE_COLOR,
-                  },
-                  {
-                    label: 'Held',
-                    value: formatMoney(heldFunds, raisedCurrency),
-                    color: REMAINDER_COLOR,
-                  },
-                ]}
-              />
-            </div>
+            <DonutChart
+              size={104}
+              thickness={15}
+              centerValue={formatMoney(totalRaised, raisedCurrency)}
+              centerLabel="raised"
+              segments={[
+                { label: 'Released', value: totalReleased, color: ACTIVE_COLOR },
+                { label: 'Held', value: heldFunds, color: REMAINDER_COLOR },
+              ]}
+            />
+            <ChartLegend
+              items={[
+                {
+                  label: 'Released',
+                  value: formatMoney(totalReleased, releasedCurrency),
+                  color: ACTIVE_COLOR,
+                },
+                {
+                  label: 'Held',
+                  value: formatMoney(heldFunds, raisedCurrency),
+                  color: REMAINDER_COLOR,
+                },
+              ]}
+            />
           </div>
         </Card>
 
@@ -145,6 +148,7 @@ export default async function AdminAnalyticsPage() {
           href="/admin/verifications"
         />
         <Stat value={donationsCount} label="Donations" />
+        <Stat value={totalOrgs} label="Organizations" />
       </div>
 
       <div className="stack" style={{ gap: '0.75rem' }}>
