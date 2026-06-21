@@ -19,6 +19,7 @@ export default function RootLayout() {
           }}
         >
           {/* Screens with their own custom headers */}
+          <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="account" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />

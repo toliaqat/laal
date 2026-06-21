@@ -14,6 +14,7 @@ import * as WebBrowser from 'expo-web-browser';
 import type { Campaign } from '@laal/types';
 import { supabase, WEB_APP_URL } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
+import { hasSeenOnboarding } from '@/lib/onboarding';
 import { CampaignCard } from '@/components/campaign-card';
 import { Avatar, PrimaryButton } from '@/components/ui';
 import { colors, firstName, initials, radius, serif, spacing } from '@/lib/theme';
@@ -25,6 +26,20 @@ export default function HomeScreen() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [gateReady, setGateReady] = useState(false);
+
+  // First launch → show the onboarding intro once, before Stories renders.
+  useEffect(() => {
+    let mounted = true;
+    hasSeenOnboarding().then((seen) => {
+      if (!mounted) return;
+      if (seen) setGateReady(true);
+      else router.replace('/onboarding');
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
 
   const load = useCallback(async () => {
     const { data } = await supabase
@@ -150,7 +165,7 @@ export default function HomeScreen() {
     </View>
   );
 
-  if (loading) {
+  if (!gateReady || loading) {
     return (
       <View style={[styles.screen, styles.center]}>
         <ActivityIndicator color={colors.accent} />
