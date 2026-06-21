@@ -1,0 +1,140 @@
+'use server';
+
+import { redirect } from 'next/navigation';
+import { createServerSupabase, getCurrentUser } from '@/lib/supabase/server';
+import type { IntendedUse } from '@ashfaat/types';
+
+const INTENDED_USES: IntendedUse[] = [
+  'repatriation',
+  'local_burial',
+  'family_support',
+  'mixed',
+];
+
+function slugify(title: string): string {
+  const base = title
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 60)
+    .replace(/^-+|-+$/g, '');
+  const suffix = Math.random().toString(36).slice(2, 8);
+  return `${base || 'campaign'}-${suffix}`;
+}
+
+/**
+ * Create a campaign (status 'pending_review') for the current user and its
+ * single active beneficiary (a verified org OR an individual). Redirects to
+ * /dashboard on success.
+ */
+export async function createCampaign(formData: FormData): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect('/login');
+  }
+
+  const title = String(formData.get('title') ?? '').trim();
+  const deceasedName = String(formData.get('deceased_name') ?? '').trim();
+  const story = String(formData.get('story') ?? '').trim();
+  const currency = (String(formData.get('currency') ?? 'EUR').trim() || 'EUR')
+    .toUpperCase()
+    .slice(0, 3);
+  const deathCountry = String(formData.get('death_country') ?? '').trim();
+  const deathCity = String(formData.get('death_city') ?? '').trim();
+
+  const intendedUseRaw = String(formData.get('intended_use') ?? '');
+  const intendedUse = INTENDED_USES.includes(intendedUseRaw as IntendedUse)
+    ? (intendedUseRaw as IntendedUse)
+    : 'mixed';
+
+  const goalAmount = Number(formData.get('goal_amount'));
+
+  const beneficiaryKind = String(formData.get('beneficiary_kind') ?? '');
+
+  // ---- Validation ----
+  if (!title) throw new Error('Title is required.');
+  if (!deceasedName) throw new Error('Name of the deceased is required.');
+  if (!Number.isFinite(goalAmount) || goalAmount <= 0) {
+    throw new Error('Goal amount must be a positive number.');
+  }
+
+  let organizationId: string | null = null;
+  let displayName = '';
+  let relationship: string | null = null;
+
+  if (beneficiaryKind === 'organization') {
+    organizationId = String(formData.get('organization_id') ?? '').trim();
+    if (!organizationId) {
+      throw new Error('Please select a partner organisation.');
+    }
+  } else if (beneficiaryKind === 'individual') {
+    displayName = String(formData.get('display_name') ?? '').trim();
+    relationship =
+      String(formData.get('relationship_to_deceased') ?? '').trim() || null;
+    if (!displayName) {
+      throw new Error('Beneficiary display name is required.');
+    }
+  } else {
+    throw new Error('Please choose who receives the funds.');
+  }
+
+  const supabase = await createServerSupabase();
+
+  const slug = slugify(title);
+
+  const { data: campaign, error: campaignError } = await supabase
+    .from('campaigns')
+    .insert({
+      slug,
+      organizer_id: user!.id,
+      title,
+      story: story || null,
+      deceased_name: deceasedName,
+      death_country: deathCountry || null,
+      death_city: deathCity || null,
+      intended_use: intendedUse,
+      goal_amount: goalAmount,
+      currency,
+      status: 'pending_review',
+    })
+    .select('id')
+    .single();
+
+  if (campaignError || !campaign) {
+    throw new Error(campaignError?.message ?? 'Failed to create campaign.');
+  }
+
+  let beneficiaryName = displayName;
+  if (beneficiaryKind === 'organization') {
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('name')
+      .eq('id', organizationId)
+      .single();
+    beneficiaryName = org?.name ?? 'Partner organisation';
+  }
+
+  const { error: beneficiaryError } = await supabase
+    .from('beneficiaries')
+    .insert({
+      campaign_id: campaign.id,
+      type: beneficiaryKind === 'organization' ? 'organization' : 'individual',
+      organization_id:
+        beneficiaryKind === 'organization' ? organizationId : null,
+      individual_profile_id:
+        beneficiaryKind === 'individual' ? user!.id : null,
+      display_name: beneficiaryName,
+      relationship_to_deceased:
+        beneficiaryKind === 'individual' ? relationship : null,
+      is_active: true,
+    });
+
+  if (beneficiaryError) {
+    throw new Error(beneficiaryError.message);
+  }
+
+  redirect('/dashboard');
+}

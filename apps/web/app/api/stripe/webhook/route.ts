@@ -1,0 +1,176 @@
+import type Stripe from 'stripe';
+import { stripe } from '@/lib/stripe';
+import { createAdminSupabase } from '@/lib/supabase/server';
+import { sendDonationReceipt } from '@/lib/email';
+import { STRIPE_WEBHOOK_SECRET } from '@/lib/env';
+
+export const runtime = 'nodejs';
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  eur: '€',
+  usd: '$',
+  gbp: '£',
+};
+
+function formatAmount(amount: number, currency: string): string {
+  const sym = CURRENCY_SYMBOLS[currency.toLowerCase()] ?? '';
+  return `${sym}${amount.toFixed(2)}`;
+}
+
+export async function POST(req: Request): Promise<Response> {
+  const body = await req.text();
+  const sig = req.headers.get('stripe-signature');
+
+  if (!sig) {
+    return new Response('Missing stripe-signature header', { status: 400 });
+  }
+
+  let event: Stripe.Event;
+  try {
+    event = stripe().webhooks.constructEvent(body, sig, STRIPE_WEBHOOK_SECRET());
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'unknown';
+    console.error('[stripe webhook] signature verification failed:', msg);
+    return new Response(`Webhook signature verification failed: ${msg}`, {
+      status: 400,
+    });
+  }
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutCompleted(
+          event.data.object as Stripe.Checkout.Session,
+        );
+        break;
+      case 'account.updated':
+        await handleAccountUpdated(event.data.object as Stripe.Account);
+        break;
+      case 'transfer.created':
+        await handleTransferCreated(event.data.object as Stripe.Transfer);
+        break;
+      case 'payout.paid':
+        await handlePayoutPaid(event.data.object as Stripe.Payout);
+        break;
+      default:
+        // Unhandled event types are acknowledged with 200 so Stripe stops
+        // retrying.
+        break;
+    }
+  } catch (err) {
+    // Handlers are best-effort. Log and still return 200 to avoid Stripe
+    // hammering us with retries for application-level errors.
+    console.error(`[stripe webhook] handler error for ${event.type}:`, err);
+  }
+
+  return new Response(null, { status: 200 });
+}
+
+async function handleCheckoutCompleted(
+  session: Stripe.Checkout.Session,
+): Promise<void> {
+  const campaignId = session.metadata?.campaign_id;
+  if (!campaignId) {
+    console.warn('[stripe webhook] checkout.session.completed missing campaign_id');
+    return;
+  }
+
+  const paymentIntentId =
+    typeof session.payment_intent === 'string'
+      ? session.payment_intent
+      : session.payment_intent?.id ?? null;
+
+  if (!paymentIntentId) {
+    console.warn('[stripe webhook] checkout.session.completed missing payment_intent');
+    return;
+  }
+
+  const donorEmail = session.customer_details?.email ?? null;
+  const donorName = session.customer_details?.name ?? null;
+  const amount = (session.amount_total ?? 0) / 100;
+  const currency = (session.currency ?? 'eur').toUpperCase();
+  const isAnonymous = session.metadata?.is_anonymous === 'true';
+  const message = session.metadata?.message?.trim() || null;
+
+  const admin = createAdminSupabase();
+
+  // Idempotent: stripe_payment_intent_id is UNIQUE, so re-delivery of the same
+  // event upserts the same row rather than duplicating the donation.
+  const { error: upsertError } = await admin.from('donations').upsert(
+    {
+      campaign_id: campaignId,
+      donor_profile_id: null,
+      donor_name: isAnonymous ? null : donorName,
+      donor_email: donorEmail,
+      amount,
+      currency,
+      platform_fee: 0,
+      net_amount: amount,
+      is_anonymous: isAnonymous,
+      message,
+      stripe_payment_intent_id: paymentIntentId,
+      status: 'succeeded',
+    },
+    { onConflict: 'stripe_payment_intent_id' },
+  );
+
+  if (upsertError) {
+    console.error('[stripe webhook] failed to upsert donation:', upsertError);
+    return;
+  }
+
+  // Look up the campaign for the receipt (title + slug).
+  const { data: campaign } = await admin
+    .from('campaigns')
+    .select('title, slug')
+    .eq('id', campaignId)
+    .maybeSingle();
+
+  if (donorEmail && campaign) {
+    const result = await sendDonationReceipt({
+      to: donorEmail,
+      donorName: donorName ?? undefined,
+      amount: formatAmount(amount, currency),
+      campaignTitle: campaign.title,
+      campaignSlug: campaign.slug,
+    });
+    if (!result.ok) {
+      console.error('[stripe webhook] failed to send receipt:', result.error);
+    }
+  }
+}
+
+async function handleAccountUpdated(account: Stripe.Account): Promise<void> {
+  if (!account.payouts_enabled) return;
+
+  const admin = createAdminSupabase();
+
+  await Promise.all([
+    admin
+      .from('organizations')
+      .update({ stripe_onboarding_complete: true })
+      .eq('stripe_connect_account_id', account.id),
+    admin
+      .from('beneficiaries')
+      .update({ stripe_onboarding_complete: true })
+      .eq('stripe_connect_account_id', account.id),
+  ]);
+}
+
+async function handleTransferCreated(transfer: Stripe.Transfer): Promise<void> {
+  const admin = createAdminSupabase();
+  // Best-effort: only updates rows that exist for this transfer.
+  await admin
+    .from('payouts')
+    .update({ status: 'in_transit' })
+    .eq('stripe_transfer_id', transfer.id);
+}
+
+async function handlePayoutPaid(payout: Stripe.Payout): Promise<void> {
+  const admin = createAdminSupabase();
+  // Best-effort: only updates rows that exist for this payout.
+  await admin
+    .from('payouts')
+    .update({ status: 'paid' })
+    .eq('stripe_payout_id', payout.id);
+}
