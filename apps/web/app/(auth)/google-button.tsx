@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { APP_URL } from '@/lib/env';
 
 export function GoogleButton({ next }: { next?: string }) {
   const [loading, setLoading] = useState(false);
@@ -13,7 +12,9 @@ export function GoogleButton({ next }: { next?: string }) {
     setError(null);
 
     const supabase = createClient();
-    const callback = new URL('/auth/callback', APP_URL());
+    // Use the real browser origin so the OAuth callback always returns to the
+    // host the user is actually on (e.g. laal.app), not a build-time env value.
+    const callback = new URL('/auth/callback', window.location.origin);
     if (next) callback.searchParams.set('next', next);
 
     const { error } = await supabase.auth.signInWithOAuth({
