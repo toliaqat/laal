@@ -160,3 +160,12 @@ app-level errors so Stripe stops retrying).
   document must never land in the public bucket. See `lib/r2.ts`.
 - **Scale-to-zero cold starts.** Fly runs `min_machines_running = 0`; the first
   request after idle is slow. Not a bug. Stripe webhook retries absorb it.
+- **Column-immutability lives in triggers, not RLS.** RLS `WITH CHECK` can't see
+  the OLD row, so `profiles.role` immutability and other "can't change this
+  field" rules are enforced by `BEFORE UPDATE` triggers
+  (`0008_security_hardening.sql`). Triggers scoped to API roles still let
+  service-role/`postgres` through — keep that in mind when a write "mysteriously"
+  succeeds from a migration but fails from the app. See
+  [`security.md`](./security.md).
+- **Escape user input in emails.** Anything interpolated into email HTML
+  (`lib/email.ts`) must go through `esc()`. See [`security.md`](./security.md).

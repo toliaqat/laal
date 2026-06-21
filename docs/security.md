@@ -28,6 +28,25 @@ certificates, NOCs). Read this before touching auth, money, storage, or RLS.
   but an RLS-disabled table is wide open (fails *open*). Never ship a table
   with RLS off.
 
+### Privilege-escalation guards (`0008_security_hardening.sql`)
+
+RLS `WITH CHECK` validates the *new* row but **cannot reference the OLD row** —
+so column-immutability rules need a trigger, not a policy. Two such guards exist;
+know them before changing the `profiles` or `campaigns` update paths:
+
+- **Role immutability** — `profiles_update_self` lets a user update their own
+  row, which would otherwise allow `set role = 'admin'` → instant admin. A
+  `BEFORE UPDATE` trigger (`prevent_role_self_escalation`) blocks role changes
+  from the API roles (`authenticated`/`anon`) unless the caller `is_admin()`.
+  It is **SECURITY INVOKER** on purpose (so `current_user` is the real caller),
+  and triggers are **not** bypassed by service-role — so it's scoped to API
+  roles, letting `service_role`/`postgres` still set roles. This is *why* the
+  README's "make a user admin via SQL" works (it runs as `postgres`) but the app
+  can't escalate a user.
+- **Campaign status pinning** — `campaigns_update_own_or_admin`'s `WITH CHECK`
+  pins the resulting status to `draft`/`pending_review` for organizers, so an
+  organizer can't self-publish (`status='active'`) and skip admin review.
+
 ## The service-role key
 
 `createAdminSupabase()` (web) / `createServiceClient()` (`@laal/supabase`) use
@@ -105,6 +124,15 @@ is leaking a column you didn't mean to — start from an allow-list, not a denyl
   type/size before processing (`assertValidCoverFile`). Apply the same hygiene
   to any future user-uploaded image.
 - **Object keys are randomized**, so URLs aren't guessable/enumerable.
+
+## Outbound email (HTML injection)
+
+Transactional emails (`apps/web/lib/email.ts`) build raw HTML strings. **Every
+user-controlled value interpolated into email HTML must go through `esc()`**
+(escapes `& < > " '`) — donor name, campaign title, amounts, messages. Without
+it, a stored value like a campaign title could inject `<script>`/phishing links
+into recipients' inboxes. URLs use `encodeURIComponent` on path segments. When
+you add a new template, escape every `${...}` that isn't a trusted literal.
 
 ## Secrets & config
 
