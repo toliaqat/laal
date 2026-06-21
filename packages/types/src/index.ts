@@ -1,5 +1,5 @@
 /**
- * Shared domain types for Ashfaat.
+ * Shared domain types for Laal.
  * Mirrors supabase/migrations/0001_init.sql. Keep in sync with the schema.
  * (Once a Supabase project exists, you can replace the Row types below with
  *  `supabase gen types typescript` output.)

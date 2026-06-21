@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import type { Campaign, Beneficiary } from '@ashfaat/types';
+import type { Campaign, Beneficiary } from '@laal/types';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { APP_URL } from '@/lib/env';
 import { DonateForm } from '@/components/donate-form';

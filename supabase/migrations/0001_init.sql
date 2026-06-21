@@ -1,5 +1,5 @@
 -- ============================================================================
--- Ashfaat — initial schema (0001_init)
+-- Laal — initial schema (0001_init)
 -- Crowdfunding for expat bereavement: donors fund campaigns; funds are held in
 -- the platform Stripe balance and released to a verified beneficiary (a partner
 -- organization OR an individual) only after verification gates pass.

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { Campaign } from '@ashfaat/types';
+import type { Campaign } from '@laal/types';
 import { ProgressBar } from '@/components/progress-bar';
 
 export function CampaignCard({ campaign }: { campaign: Campaign }) {

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { Campaign } from '@ashfaat/types';
+import type { Campaign } from '@laal/types';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { Container, Card, Button, Progress, formatMoney } from '@/components/ui';
 

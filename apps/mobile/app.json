@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "Ashfaat",
-    "slug": "ashfaat",
-    "scheme": "ashfaat",
+    "name": "Laal",
+    "slug": "laal",
+    "scheme": "laal",
     "version": "0.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ashfaat.app"
+      "bundleIdentifier": "com.laal.app"
     },
     "android": {
-      "package": "com.ashfaat.app"
+      "package": "com.laal.app"
     },
     "web": {
       "bundler": "metro",

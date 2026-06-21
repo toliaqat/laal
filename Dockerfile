@@ -29,8 +29,8 @@ ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
 
 COPY . .
 # Install only the web app's workspace subtree (skips the Expo mobile deps).
-RUN pnpm install --frozen-lockfile --filter @ashfaat/web...
-RUN pnpm --filter @ashfaat/web build
+RUN pnpm install --frozen-lockfile --filter @laal/web...
+RUN pnpm --filter @laal/web build
 
 # ---------------------------------------------------------------------------
 # Runtime stage: copy only the standalone server output.

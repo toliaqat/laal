@@ -6,7 +6,7 @@ import {
   createServerSupabase,
   getCurrentUser,
 } from '@/lib/supabase/server';
-import type { IntendedUse } from '@ashfaat/types';
+import type { IntendedUse } from '@laal/types';
 
 const INTENDED_USES: IntendedUse[] = [
   'repatriation',

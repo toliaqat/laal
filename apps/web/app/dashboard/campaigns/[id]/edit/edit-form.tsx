@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Beneficiary, Campaign } from '@ashfaat/types';
+import type { Beneficiary, Campaign } from '@laal/types';
 import { Button, Card, Field } from '@/components/ui';
 import { updateCampaign } from './actions';
 

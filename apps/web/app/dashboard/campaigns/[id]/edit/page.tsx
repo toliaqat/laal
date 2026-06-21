@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import type { Beneficiary, Campaign } from '@ashfaat/types';
+import type { Beneficiary, Campaign } from '@laal/types';
 import { createServerSupabase, getCurrentUser } from '@/lib/supabase/server';
 import { Container } from '@/components/ui';
 import { EditForm } from './edit-form';

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { createAdminSupabase } from '@/lib/supabase/server';
+import { presignDownload } from '@/lib/r2';
 import {
   approveCampaignForm,
   rejectCampaignForm,
@@ -7,8 +8,8 @@ import {
   ensureOnboarding,
   releaseFundsForm,
 } from '@/app/admin/actions';
-import { canReleaseFunds } from '@ashfaat/types';
-import type { VerificationStatus } from '@ashfaat/types';
+import { canReleaseFunds } from '@laal/types';
+import type { VerificationStatus } from '@laal/types';
 import { Card, Badge, formatMoney, statusTone } from '@/components/ui';
 import type { ReactNode } from 'react';
 
@@ -61,13 +62,16 @@ export default async function AdminCampaignDetailPage({
     .eq('campaign_id', id)
     .order('created_at', { ascending: false });
 
-  // Signed URLs for each document.
+  // Short-lived presigned R2 URLs for each document.
   const signedDocs = await Promise.all(
     (documents ?? []).map(async (d) => {
-      const { data } = await supabase.storage
-        .from('documents')
-        .createSignedUrl(d.storage_path, 60);
-      return { ...d, url: data?.signedUrl ?? null };
+      let url: string | null = null;
+      try {
+        url = await presignDownload(d.storage_path, 300);
+      } catch {
+        url = null;
+      }
+      return { ...d, url };
     }),
   );
 

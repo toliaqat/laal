@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import type { Beneficiary, Campaign } from '@ashfaat/types';
+import type { Beneficiary, Campaign } from '@laal/types';
 import { supabase, WEB_APP_URL } from '@/lib/supabase';
 import { ProgressBar } from '@/components/progress-bar';
 

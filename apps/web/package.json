@@ -1,5 +1,5 @@
 {
-  "name": "@ashfaat/web",
+  "name": "@laal/web",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -10,8 +10,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ashfaat/supabase": "workspace:*",
-    "@ashfaat/types": "workspace:*",
+    "@aws-sdk/client-s3": "^3.700.0",
+    "@aws-sdk/s3-request-presigner": "^3.700.0",
+    "@laal/supabase": "workspace:*",
+    "@laal/types": "workspace:*",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.4",
     "next": "^15.1.3",

@@ -1,4 +1,4 @@
-# Ashfaat — Architecture
+# Laal — Architecture
 
 Crowdfunding for expat bereavement. Anyone can create a donation campaign for
 someone who has died abroad; others donate; the platform handles communications

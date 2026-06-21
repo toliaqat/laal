@@ -13,8 +13,8 @@ import {
 } from '@/lib/stripe';
 import { sendPayoutReleased } from '@/lib/email';
 import { logAudit } from '@/lib/audit';
-import { canReleaseFunds } from '@ashfaat/types';
-import type { VerificationStatus } from '@ashfaat/types';
+import { canReleaseFunds } from '@laal/types';
+import type { VerificationStatus } from '@laal/types';
 
 type ActionResult = { ok: boolean; error?: string; url?: string };
 

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import type { Campaign } from '@ashfaat/types';
+import type { Campaign } from '@laal/types';
 import { createServerSupabase, getCurrentUser } from '@/lib/supabase/server';
 import {
   Badge,
@@ -117,6 +117,13 @@ export default async function DashboardPage() {
                           View
                         </Button>
                       )}
+                      <Button
+                        href={`/dashboard/campaigns/${c.id}/documents`}
+                        variant="ghost"
+                        size="sm"
+                      >
+                        Documents
+                      </Button>
                     </div>
                   </div>
                 </Card>

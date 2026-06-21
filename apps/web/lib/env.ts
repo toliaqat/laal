@@ -21,6 +21,12 @@ export const STRIPE_SECRET_KEY = () => required('STRIPE_SECRET_KEY');
 export const STRIPE_WEBHOOK_SECRET = () => required('STRIPE_WEBHOOK_SECRET');
 export const RESEND_API_KEY = () => required('RESEND_API_KEY');
 
+// Cloudflare R2 (S3-compatible object storage) — server-only.
+export const R2_ACCOUNT_ID = () => required('R2_ACCOUNT_ID');
+export const R2_ACCESS_KEY_ID = () => required('R2_ACCESS_KEY_ID');
+export const R2_SECRET_ACCESS_KEY = () => required('R2_SECRET_ACCESS_KEY');
+export const R2_BUCKET = () => required('R2_BUCKET');
+
 // Misc
 export const APP_URL = () =>
   process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';

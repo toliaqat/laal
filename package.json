@@ -1,5 +1,5 @@
 {
-  "name": "ashfaat",
+  "name": "laal",
   "private": true,
   "version": "0.0.0",
   "packageManager": "pnpm@9.7.1",
@@ -11,8 +11,8 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
-    "web": "pnpm --filter @ashfaat/web dev",
-    "mobile": "pnpm --filter @ashfaat/mobile start"
+    "web": "pnpm --filter @laal/web dev",
+    "mobile": "pnpm --filter @laal/mobile start"
   },
   "devDependencies": {
     "turbo": "^2.1.3",

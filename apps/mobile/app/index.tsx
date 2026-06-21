@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Link } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import type { Campaign } from '@ashfaat/types';
+import type { Campaign } from '@laal/types';
 import { supabase, WEB_APP_URL } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { CampaignCard } from '@/components/campaign-card';

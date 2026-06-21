@@ -9,9 +9,13 @@ const nextConfig = {
   // Self-contained server bundle for Docker/Fly (small runtime image).
   output: 'standalone',
   // Compile the workspace packages (they ship raw TS, not built JS).
-  transpilePackages: ['@ashfaat/types', '@ashfaat/supabase'],
+  transpilePackages: ['@laal/types', '@laal/supabase'],
   // Pin the workspace root — also where standalone output is rooted.
   outputFileTracingRoot: monorepoRoot,
+  // Allow document uploads (death certificates etc.) through server actions.
+  experimental: {
+    serverActions: { bodySizeLimit: '8mb' },
+  },
 };
 
 export default nextConfig;

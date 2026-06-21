@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 /**
- * Supabase client factories for Ashfaat.
+ * Supabase client factories for Laal.
  *
  * - `createBrowserClient` / anon key: use in web + mobile clients. Subject to
  *   Row Level Security.
@@ -29,4 +29,4 @@ export function createServiceClient(url: string, serviceRoleKey: string): Client
   });
 }
 
-export * from '@ashfaat/types';
+export * from '@laal/types';

@@ -49,5 +49,5 @@ Recipients are **People / Families / Laals** — never poor, victims, or cases.
   reached".
 
 > Note: internal/technical terms in code, admin tooling, and the database
-> (campaign, beneficiary, donation, `@ashfaat/*` packages) stay as-is — this
+> (campaign, beneficiary, donation) stay as-is — this
 > glossary governs **user-facing copy**.

@@ -1,4 +1,4 @@
-# Ashfaat
+# Laal
 
 Crowdfunding for expat bereavement. See [`ARCHITECTURE.md`](./ARCHITECTURE.md)
 for the full design (data model, money flow, decisions).

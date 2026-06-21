@@ -19,8 +19,24 @@ fly secrets set \
   SUPABASE_SERVICE_ROLE_KEY="eyJ...service_role..." \
   STRIPE_SECRET_KEY="sk_live_or_test_..." \
   STRIPE_WEBHOOK_SECRET="whsec_..." \
-  RESEND_API_KEY="re_..."
+  RESEND_API_KEY="re_..." \
+  R2_ACCOUNT_ID="..." \
+  R2_ACCESS_KEY_ID="..." \
+  R2_SECRET_ACCESS_KEY="..." \
+  R2_BUCKET="laal-documents"
 ```
+
+### Cloudflare R2 (file storage)
+
+Verification documents are stored in a **private** R2 bucket (S3-compatible).
+
+1. Cloudflare dashboard → **R2** → create a bucket named `laal-documents`
+   (keep it private — do not enable public access).
+2. **R2 → Manage R2 API Tokens** → create a token with **Object Read & Write**
+   scoped to the bucket. Use the Account ID + Access Key ID + Secret in the
+   `R2_*` secrets above.
+3. No CORS config needed: uploads go through the app server (`PutObject`) and
+   reads use short-lived presigned GET URLs.
 
 > Public values (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
 > `NEXT_PUBLIC_APP_URL`) are already in `fly.toml` (`[build.args]` for the client

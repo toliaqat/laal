@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { Campaign } from '@ashfaat/types';
+import type { Campaign } from '@laal/types';
 import { ProgressBar } from './progress-bar';
 
 function formatMoney(amount: number, currency: string) {

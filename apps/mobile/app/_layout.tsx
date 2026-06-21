@@ -12,7 +12,7 @@ export default function RootLayout() {
           headerTintColor: '#1a1a1a',
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'Ashfaat' }} />
+        <Stack.Screen name="index" options={{ title: 'Laal' }} />
         <Stack.Screen name="campaigns/[slug]" options={{ title: 'Campaign' }} />
         <Stack.Screen name="login" options={{ title: 'Sign in' }} />
         <Stack.Screen name="signup" options={{ title: 'Create account' }} />
