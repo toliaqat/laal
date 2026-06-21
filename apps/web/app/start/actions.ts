@@ -111,10 +111,14 @@ export async function createCampaign(formData: FormData): Promise<void> {
   if (beneficiaryKind === 'organization') {
     const { data: org } = await supabase
       .from('organizations')
-      .select('name')
+      .select('name, status, can_be_beneficiary')
       .eq('id', organizationId)
-      .single();
-    beneficiaryName = org?.name ?? 'Partner organisation';
+      .maybeSingle();
+    // Only a verified, beneficiary-capable org may receive funds.
+    if (!org || org.status !== 'verified' || !org.can_be_beneficiary) {
+      throw new Error('That organisation cannot be selected as a beneficiary.');
+    }
+    beneficiaryName = org.name;
   }
 
   const { error: beneficiaryError } = await supabase

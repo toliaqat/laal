@@ -108,13 +108,18 @@ export async function transferToBeneficiary(params: {
   currency: string;
   destinationAccountId: string;
   transferGroup?: string;
+  /** Stripe idempotency key — dedupes concurrent/retried release attempts. */
+  idempotencyKey?: string;
 }): Promise<Stripe.Transfer> {
-  return stripe().transfers.create({
-    amount: params.amountMinor,
-    currency: params.currency.toLowerCase(),
-    destination: params.destinationAccountId,
-    transfer_group: params.transferGroup,
-  });
+  return stripe().transfers.create(
+    {
+      amount: params.amountMinor,
+      currency: params.currency.toLowerCase(),
+      destination: params.destinationAccountId,
+      transfer_group: params.transferGroup,
+    },
+    params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : undefined,
+  );
 }
 
 /** Convert a major-unit amount (e.g. 25.00) to minor units (2500). */

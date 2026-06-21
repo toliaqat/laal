@@ -2,6 +2,12 @@
 
 import { redirect } from 'next/navigation';
 import { createDonationCheckout, toMinorUnits } from '@/lib/stripe';
+import { createServerSupabase } from '@/lib/supabase/server';
+
+// Sanity bounds (major currency units). Prevents card-testing abuse and
+// float corruption from absurd inputs.
+const MIN_DONATION = 1;
+const MAX_DONATION = 1_000_000;
 
 /**
  * Server action invoked from <DonateForm>. Validates the amount, creates a
@@ -12,11 +18,8 @@ import { createDonationCheckout, toMinorUnits } from '@/lib/stripe';
  */
 export async function startDonation(formData: FormData): Promise<void> {
   const campaignId = String(formData.get('campaignId') ?? '').trim();
-  const slug = String(formData.get('slug') ?? '').trim();
-  const currency = String(formData.get('currency') ?? '').trim() || 'eur';
-  const campaignTitle = String(formData.get('campaignTitle') ?? '').trim();
 
-  if (!campaignId || !slug) {
+  if (!campaignId) {
     throw new Error('Missing campaign details.');
   }
 
@@ -25,8 +28,26 @@ export async function startDonation(formData: FormData): Promise<void> {
   const presetRaw = String(formData.get('amount') ?? '').trim();
   const amount = Number.parseFloat(customRaw || presetRaw);
 
-  if (!Number.isFinite(amount) || amount <= 0) {
-    throw new Error('Please enter a donation amount greater than zero.');
+  if (!Number.isFinite(amount) || amount < MIN_DONATION || amount > MAX_DONATION) {
+    throw new Error(
+      `Please enter a donation amount between ${MIN_DONATION} and ${MAX_DONATION}.`,
+    );
+  }
+
+  // Never trust client-supplied slug/currency/title — resolve them from the DB.
+  // Also enforce that the campaign is actually accepting donations.
+  const supabase = await createServerSupabase();
+  const { data: campaign } = await supabase
+    .from('campaigns')
+    .select('slug, title, currency, status')
+    .eq('id', campaignId)
+    .maybeSingle();
+
+  if (!campaign) {
+    throw new Error('Campaign not found.');
+  }
+  if (campaign.status !== 'active') {
+    throw new Error('This campaign is not currently accepting donations.');
   }
 
   const donorEmail = String(formData.get('donorEmail') ?? '').trim();
@@ -35,10 +56,10 @@ export async function startDonation(formData: FormData): Promise<void> {
 
   const session = await createDonationCheckout({
     campaignId,
-    campaignSlug: slug,
-    campaignTitle,
+    campaignSlug: campaign.slug,
+    campaignTitle: campaign.title,
     amountMinor: toMinorUnits(amount),
-    currency,
+    currency: campaign.currency,
     donorEmail: donorEmail || undefined,
     isAnonymous,
     message: message || undefined,

@@ -75,6 +75,17 @@ async function handleCheckoutCompleted(
     return;
   }
 
+  // Only record sessions whose funds are actually collected. Async payment
+  // methods complete the session while still 'unpaid'; recording those as
+  // 'succeeded' would inflate amount_raised (and thus releasable funds) before
+  // the money exists. Those flip to paid via async_payment_succeeded later.
+  if (session.payment_status !== 'paid') {
+    console.warn(
+      `[stripe webhook] checkout.session.completed not paid (status=${session.payment_status}); skipping`,
+    );
+    return;
+  }
+
   const paymentIntentId =
     typeof session.payment_intent === 'string'
       ? session.payment_intent
@@ -141,18 +152,19 @@ async function handleCheckoutCompleted(
 }
 
 async function handleAccountUpdated(account: Stripe.Account): Promise<void> {
-  if (!account.payouts_enabled) return;
-
   const admin = createAdminSupabase();
+  // Sync both directions: an account that becomes restricted later must lose
+  // its onboarding-complete flag so it is no longer releasable.
+  const onboardingComplete = Boolean(account.payouts_enabled);
 
   await Promise.all([
     admin
       .from('organizations')
-      .update({ stripe_onboarding_complete: true })
+      .update({ stripe_onboarding_complete: onboardingComplete })
       .eq('stripe_connect_account_id', account.id),
     admin
       .from('beneficiaries')
-      .update({ stripe_onboarding_complete: true })
+      .update({ stripe_onboarding_complete: onboardingComplete })
       .eq('stripe_connect_account_id', account.id),
   ]);
 }

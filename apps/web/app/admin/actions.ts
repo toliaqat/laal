@@ -243,14 +243,43 @@ export async function releaseFunds(campaignId: string): Promise<ActionResult> {
   if (releasable <= 0) {
     return { ok: false, error: 'Nothing left to release' };
   }
+  const releasableMinor = toMinorUnits(releasable);
 
-  // Transfer via Stripe.
-  const transfer = await transferToBeneficiary({
-    amountMinor: toMinorUnits(releasable),
-    currency: campaign.currency,
-    destinationAccountId,
-    transferGroup: `campaign_${campaignId}`,
-  });
+  // Atomic claim: only one release may proceed. Transition active -> completed
+  // conditioned on the current status. A concurrent second call updates zero
+  // rows and bails out before any money moves.
+  const { data: claimed } = await supabase
+    .from('campaigns')
+    .update({ status: 'completed' })
+    .eq('id', campaignId)
+    .eq('status', 'active')
+    .select('id');
+  if (!claimed || claimed.length === 0) {
+    return { ok: false, error: 'Campaign already released or not active' };
+  }
+
+  let transfer;
+  try {
+    // idempotencyKey is defense-in-depth: even if the claim is somehow bypassed,
+    // Stripe returns the same transfer for an identical (campaign, amount) key.
+    transfer = await transferToBeneficiary({
+      amountMinor: releasableMinor,
+      currency: campaign.currency,
+      destinationAccountId,
+      transferGroup: `campaign_${campaignId}`,
+      idempotencyKey: `release_${campaignId}_${releasableMinor}`,
+    });
+  } catch (err) {
+    // Transfer failed — release the claim so an admin can retry.
+    await supabase
+      .from('campaigns')
+      .update({ status: 'active' })
+      .eq('id', campaignId);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Stripe transfer failed',
+    };
+  }
 
   // Record the payout.
   const { error: payoutErr } = await supabase.from('payouts').insert({
@@ -282,11 +311,7 @@ export async function releaseFunds(campaignId: string): Promise<ActionResult> {
     });
   }
 
-  // Mark the campaign completed.
-  await supabase
-    .from('campaigns')
-    .update({ status: 'completed' })
-    .eq('id', campaignId);
+  // (Campaign was already set to 'completed' by the atomic claim above.)
 
   revalidatePath(`/admin/campaigns/${campaignId}`);
   revalidatePath('/admin/campaigns');
