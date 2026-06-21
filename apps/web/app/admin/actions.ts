@@ -37,6 +37,25 @@ export async function setVerificationForm(
 export async function releaseFundsForm(campaignId: string): Promise<void> {
   await releaseFunds(campaignId);
 }
+export async function pauseCampaignForm(id: string): Promise<void> {
+  await pauseCampaign(id);
+}
+export async function resumeCampaignForm(id: string): Promise<void> {
+  await resumeCampaign(id);
+}
+export async function closeCampaignForm(id: string): Promise<void> {
+  await closeCampaign(id);
+}
+export async function recomputeAmountRaisedForm(id: string): Promise<void> {
+  await recomputeAmountRaised(id);
+}
+
+/** Revalidate the pages that surface a single campaign's state. */
+function revalidateCampaign(id: string): void {
+  revalidatePath(`/admin/campaigns/${id}`);
+  revalidatePath('/admin/campaigns');
+  revalidatePath('/admin');
+}
 
 /** Resolve the current admin's profile id, or throw if not an admin. */
 async function requireAdminId(): Promise<string> {
@@ -393,5 +412,116 @@ export async function releaseFunds(campaignId: string): Promise<ActionResult> {
   revalidatePath(`/admin/campaigns/${campaignId}`);
   revalidatePath('/admin/campaigns');
   revalidatePath('/admin');
+  return { ok: true };
+}
+
+/** Pause an active campaign (active -> 'paused'). */
+export async function pauseCampaign(id: string): Promise<ActionResult> {
+  const adminId = await requireAdminId();
+  const supabase = createAdminSupabase();
+  const { data, error } = await supabase
+    .from('campaigns')
+    .update({ status: 'paused' })
+    .eq('id', id)
+    .eq('status', 'active')
+    .select('id');
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: 'Campaign is not active' };
+  }
+  await logAudit({
+    actorId: adminId,
+    action: 'campaign.paused',
+    entityType: 'campaign',
+    entityId: id,
+  });
+  revalidateCampaign(id);
+  return { ok: true };
+}
+
+/** Resume a paused campaign (paused -> 'active'). */
+export async function resumeCampaign(id: string): Promise<ActionResult> {
+  const adminId = await requireAdminId();
+  const supabase = createAdminSupabase();
+  const { data, error } = await supabase
+    .from('campaigns')
+    .update({ status: 'active' })
+    .eq('id', id)
+    .eq('status', 'paused')
+    .select('id');
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: 'Campaign is not paused' };
+  }
+  await logAudit({
+    actorId: adminId,
+    action: 'campaign.resumed',
+    entityType: 'campaign',
+    entityId: id,
+  });
+  revalidateCampaign(id);
+  return { ok: true };
+}
+
+/** Close a campaign (status -> 'closed'). */
+export async function closeCampaign(id: string): Promise<ActionResult> {
+  const adminId = await requireAdminId();
+  const supabase = createAdminSupabase();
+  // Guard the transition and confirm a row actually changed: a campaign that
+  // is already closed (or a stale/duplicate request) must not write a spurious
+  // 'campaign.closed' entry to the audit log.
+  const { data, error } = await supabase
+    .from('campaigns')
+    .update({ status: 'closed' })
+    .eq('id', id)
+    .neq('status', 'closed')
+    .select('id');
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: 'Campaign not found or already closed' };
+  }
+  await logAudit({
+    actorId: adminId,
+    action: 'campaign.closed',
+    entityType: 'campaign',
+    entityId: id,
+  });
+  revalidateCampaign(id);
+  return { ok: true };
+}
+
+/**
+ * Recompute amount_raised by summing succeeded donations for the campaign and
+ * writing the result back. This is the one legitimate place to write
+ * campaigns.amount_raised.
+ */
+export async function recomputeAmountRaised(id: string): Promise<ActionResult> {
+  const adminId = await requireAdminId();
+  const supabase = createAdminSupabase();
+
+  const { data: donations, error: dErr } = await supabase
+    .from('donations')
+    .select('amount, status')
+    .eq('campaign_id', id);
+  if (dErr) return { ok: false, error: dErr.message };
+
+  const total = (donations ?? [])
+    .filter((d) => d.status === 'succeeded')
+    .reduce((sum, d) => sum + Number(d.amount ?? 0), 0);
+
+  const { error } = await supabase
+    .from('campaigns')
+    .update({ amount_raised: total })
+    .eq('id', id);
+  if (error) return { ok: false, error: error.message };
+
+  await logAudit({
+    actorId: adminId,
+    action: 'campaign.amount_recomputed',
+    entityType: 'campaign',
+    entityId: id,
+    metadata: { amountRaised: total },
+  });
+  revalidateCampaign(id);
   return { ok: true };
 }

@@ -7,6 +7,10 @@ import {
   setVerificationForm,
   ensureOnboarding,
   releaseFundsForm,
+  pauseCampaignForm,
+  resumeCampaignForm,
+  closeCampaignForm,
+  recomputeAmountRaisedForm,
 } from '@/app/admin/actions';
 import { canReleaseFunds } from '@laal/types';
 import type { VerificationStatus } from '@laal/types';
@@ -346,6 +350,45 @@ export default async function AdminCampaignDetailPage({
             </tbody>
           </table>
         )}
+      </Section>
+
+      {/* Maintenance */}
+      <Section title="Maintenance">
+        <Card>
+          <div className="stack" style={{ gap: '0.6rem' }}>
+            <p className="small muted" style={{ margin: 0 }}>
+              Recompute re-sums succeeded donations into the stored raised total.
+            </p>
+            <div className="row wrap" style={{ gap: '0.4rem' }}>
+              {campaign.status === 'active' && (
+                <form action={pauseCampaignForm.bind(null, campaign.id)}>
+                  <button type="submit" className="btn btn-ghost btn-sm">
+                    Pause
+                  </button>
+                </form>
+              )}
+              {campaign.status === 'paused' && (
+                <form action={resumeCampaignForm.bind(null, campaign.id)}>
+                  <button type="submit" className="btn btn-ghost btn-sm">
+                    Resume
+                  </button>
+                </form>
+              )}
+              <form action={recomputeAmountRaisedForm.bind(null, campaign.id)}>
+                <button type="submit" className="btn btn-ghost btn-sm">
+                  Recompute raised
+                </button>
+              </form>
+              {campaign.status !== 'closed' && (
+                <form action={closeCampaignForm.bind(null, campaign.id)}>
+                  <button type="submit" className="btn btn-danger btn-sm">
+                    Close
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </Card>
       </Section>
     </div>
   );

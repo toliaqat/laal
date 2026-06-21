@@ -39,11 +39,6 @@ const I = {
       <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
     </svg>
   ),
-  tools: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14.7 6.3a4 4 0 0 0 5 5l-7.8 7.8a2 2 0 0 1-2.8-2.8l7.8-7.8a4 4 0 0 0-1.4-1.4" /><path d="M6 12 3 9a2 2 0 0 1 0-3l3-3 4 4" />
-    </svg>
-  ),
   send: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
@@ -65,7 +60,6 @@ const ITEMS: Item[] = [
   { href: '/admin/organizations', label: 'Organizations', icon: I.building },
   { href: '/admin/accounts', label: 'Accounts', icon: I.users },
   { href: '/admin/audit', label: 'Audit log', icon: I.list },
-  { href: '/admin/housekeeping', label: 'Housekeeping', icon: I.tools },
 ];
 
 export function AdminSidebar({ children }: { children?: ReactNode }) {
