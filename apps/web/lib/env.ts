@@ -52,7 +52,11 @@ export const R2_PUBLIC_BASE_URL = () =>
   required('R2_PUBLIC_BASE_URL').replace(/\/+$/, '');
 
 // Misc
+// Trailing slash stripped (like R2_PUBLIC_BASE_URL): APP_URL() is always joined
+// with leading-slash paths (`${APP_URL()}/campaigns/...`, OAuth `${base}${next}`,
+// Stripe success/cancel + email links), so a trailing slash in the env var would
+// produce malformed `//` URLs and can break the OAuth redirect origin match.
 export const APP_URL = () =>
-  process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
 export const EMAIL_FROM = () =>
   process.env.EMAIL_FROM ?? 'Laal <noreply@laal.app>';
