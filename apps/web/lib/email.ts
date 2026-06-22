@@ -80,6 +80,46 @@ export function sendOrgInvite(params: {
   return send(params.to, 'You’re invited to join Laal as a partner organization', layout(body));
 }
 
+/** Notice to an organizer that their fundraiser passed review and is live. */
+export function sendCampaignApproved(params: {
+  to: string;
+  organizerName?: string;
+  campaignTitle: string;
+  campaignSlug: string;
+}): Promise<SendResult> {
+  const body = `
+    <p>Dear ${esc(params.organizerName ?? 'friend')},</p>
+    <p>Your fundraiser <strong>${esc(params.campaignTitle)}</strong> has been
+    reviewed and is now live. People can find it and contribute.</p>
+    <p><a href="${APP_URL()}/campaigns/${encodeURIComponent(params.campaignSlug)}"
+      style="display:inline-block;background:#9a6a4f;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none">View your fundraiser</a></p>
+    <p>Share the link with those who loved them — every share helps.</p>`;
+  return send(
+    params.to,
+    `Your fundraiser is live — ${params.campaignTitle}`,
+    layout(body),
+  );
+}
+
+/** Notice to an organizer that their fundraiser was not approved. */
+export function sendCampaignRejected(params: {
+  to: string;
+  organizerName?: string;
+  campaignTitle: string;
+}): Promise<SendResult> {
+  const body = `
+    <p>Dear ${esc(params.organizerName ?? 'friend')},</p>
+    <p>Thank you for submitting <strong>${esc(params.campaignTitle)}</strong>.
+    After review, we're not able to publish it in its current form.</p>
+    <p>This is often something small we can resolve together. Reply to this
+    email and our team will help you get it ready.</p>`;
+  return send(
+    params.to,
+    `About your fundraiser — ${params.campaignTitle}`,
+    layout(body),
+  );
+}
+
 /** Receipt sent to a donor after a successful donation. */
 export function sendDonationReceipt(params: {
   to: string;

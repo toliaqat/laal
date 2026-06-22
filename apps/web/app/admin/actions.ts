@@ -11,7 +11,11 @@ import {
   transferToBeneficiary,
   toMinorUnits,
 } from '@/lib/stripe';
-import { sendPayoutReleased } from '@/lib/email';
+import {
+  sendCampaignApproved,
+  sendCampaignRejected,
+  sendPayoutReleased,
+} from '@/lib/email';
 import { logAudit } from '@/lib/audit';
 import { canReleaseFunds } from '@laal/types';
 import type { VerificationStatus } from '@laal/types';
@@ -71,6 +75,19 @@ async function requireAdminId(): Promise<string> {
   return profile.id;
 }
 
+/** Look up an organizer's email + name for a transactional notification. */
+async function organizerContact(
+  supabase: ReturnType<typeof createAdminSupabase>,
+  organizerId: string,
+): Promise<{ email: string | null; name: string | null }> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('email, full_name')
+    .eq('id', organizerId)
+    .maybeSingle();
+  return { email: data?.email ?? null, name: data?.full_name ?? null };
+}
+
 /** Approve a campaign: set status to active and stamp published_at. */
 export async function approveCampaign(id: string): Promise<ActionResult> {
   const adminId = await requireAdminId();
@@ -84,7 +101,7 @@ export async function approveCampaign(id: string): Promise<ActionResult> {
     .update({ status: 'active', published_at: new Date().toISOString() })
     .eq('id', id)
     .eq('status', 'pending_review')
-    .select('id');
+    .select('id, title, slug, organizer_id');
   if (error) return { ok: false, error: error.message };
   if (!data || data.length === 0) {
     return { ok: false, error: 'Campaign is not pending review' };
@@ -95,6 +112,26 @@ export async function approveCampaign(id: string): Promise<ActionResult> {
     entityType: 'campaign',
     entityId: id,
   });
+  // Best-effort: tell the organizer their fundraiser is live. Never fail the
+  // approval on an email error.
+  const approved = data[0];
+  if (approved && approved.organizer_id) {
+    const organizer = await organizerContact(
+      supabase,
+      approved.organizer_id as string,
+    );
+    if (organizer.email) {
+      const emailed = await sendCampaignApproved({
+        to: organizer.email,
+        organizerName: organizer.name ?? undefined,
+        campaignTitle: (approved.title as string) ?? 'your fundraiser',
+        campaignSlug: approved.slug as string,
+      });
+      if (!emailed.ok) {
+        console.error('[approveCampaign] notify failed:', emailed.error);
+      }
+    }
+  }
   revalidatePath('/admin/campaigns');
   revalidatePath(`/admin/campaigns/${id}`);
   revalidatePath('/admin');
@@ -113,7 +150,7 @@ export async function rejectCampaign(id: string): Promise<ActionResult> {
     .update({ status: 'rejected' })
     .eq('id', id)
     .eq('status', 'pending_review')
-    .select('id');
+    .select('id, title, organizer_id');
   if (error) return { ok: false, error: error.message };
   if (!data || data.length === 0) {
     return { ok: false, error: 'Campaign is not pending review' };
@@ -124,6 +161,24 @@ export async function rejectCampaign(id: string): Promise<ActionResult> {
     entityType: 'campaign',
     entityId: id,
   });
+  // Best-effort: let the organizer know, with an invitation to fix and resubmit.
+  const rejected = data[0];
+  if (rejected && rejected.organizer_id) {
+    const organizer = await organizerContact(
+      supabase,
+      rejected.organizer_id as string,
+    );
+    if (organizer.email) {
+      const emailed = await sendCampaignRejected({
+        to: organizer.email,
+        organizerName: organizer.name ?? undefined,
+        campaignTitle: (rejected.title as string) ?? 'your fundraiser',
+      });
+      if (!emailed.ok) {
+        console.error('[rejectCampaign] notify failed:', emailed.error);
+      }
+    }
+  }
   revalidatePath('/admin/campaigns');
   revalidatePath(`/admin/campaigns/${id}`);
   revalidatePath('/admin');
