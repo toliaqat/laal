@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createAdminSupabase, getCurrentUser } from '@/lib/supabase/server';
 import { refundPayment } from '@/lib/stripe';
+import { sendRefundConfirmation } from '@/lib/email';
 import { logAudit } from '@/lib/audit';
 
 type ActionResult = { ok: boolean; error?: string };
@@ -34,7 +35,9 @@ export async function refundDonation(donationId: string): Promise<ActionResult> 
 
   const { data: donation, error: dErr } = await supabase
     .from('donations')
-    .select('id, status, amount, currency, campaign_id, stripe_payment_intent_id')
+    .select(
+      'id, status, amount, currency, campaign_id, stripe_payment_intent_id, donor_email, donor_name',
+    )
     .eq('id', donationId)
     .single();
   if (dErr || !donation) {
@@ -110,6 +113,25 @@ export async function refundDonation(donationId: string): Promise<ActionResult> 
       campaignId: donation.campaign_id,
     },
   });
+
+  // Best-effort: tell the donor their money is on the way back. A failure here
+  // must not undo the refund, so log and continue.
+  if (donation.donor_email) {
+    const { data: campaign } = await supabase
+      .from('campaigns')
+      .select('title')
+      .eq('id', donation.campaign_id)
+      .maybeSingle();
+    const emailed = await sendRefundConfirmation({
+      to: donation.donor_email,
+      donorName: donation.donor_name ?? undefined,
+      amount: `${donation.currency} ${Number(donation.amount ?? 0).toFixed(2)}`,
+      campaignTitle: campaign?.title ?? 'a fundraiser',
+    });
+    if (!emailed.ok) {
+      console.error('[refundDonation] failed to send refund email:', emailed.error);
+    }
+  }
 
   revalidatePath('/admin/donations');
   if (donation.campaign_id) {

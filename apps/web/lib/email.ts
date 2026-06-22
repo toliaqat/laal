@@ -99,6 +99,28 @@ export function sendDonationReceipt(params: {
   return send(params.to, `Thank you for supporting ${params.campaignTitle}`, layout(body));
 }
 
+/** Confirmation sent to a donor when their donation is refunded (pre-release). */
+export function sendRefundConfirmation(params: {
+  to: string;
+  donorName?: string;
+  amount: string; // formatted e.g. "EUR 25.00"
+  campaignTitle: string;
+}): Promise<SendResult> {
+  const body = `
+    <p>Dear ${esc(params.donorName ?? 'friend')},</p>
+    <p>Your donation of <strong>${esc(params.amount)}</strong> to
+    <strong>${esc(params.campaignTitle)}</strong> has been refunded in full.</p>
+    <p>The amount returns to your original payment method — usually within 5–10
+    business days, depending on your bank.</p>
+    <p>Thank you for your kindness. We hope you'll stand with another family when
+    the time is right.</p>`;
+  return send(
+    params.to,
+    `Your donation to ${params.campaignTitle} has been refunded`,
+    layout(body),
+  );
+}
+
 /** Notice sent when funds are released to the beneficiary. */
 export function sendPayoutReleased(params: {
   to: string;
