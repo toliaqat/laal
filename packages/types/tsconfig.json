@@ -3,5 +3,9 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Test files run via `node --test` (native TS), which requires explicit .ts
+  // import extensions that tsc rejects here — and they need no type emit. Keep
+  // them out of the library typecheck.
+  "exclude": ["src/**/*.test.ts"]
 }
