@@ -39,7 +39,9 @@ FROM base AS runner
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
-    HOSTNAME=0.0.0.0
+    # Bind dual-stack (IPv6 + mapped IPv4). Fly's proxy reaches the machine over
+    # its private IPv6 (6PN) address, so an IPv4-only 0.0.0.0 bind is unreachable.
+    HOSTNAME="::"
 
 # Run as the unprivileged 'node' user shipped in the base image.
 USER node

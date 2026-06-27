@@ -26,12 +26,14 @@ primary_region = 'iad'  # US East — close to the Supabase us-east-1 project
   min_machines_running = 0  # scale to zero when idle (cheapest)
   processes = ['app']
 
-  [[http_service.checks]]
+  # TCP check (port open) rather than HTTP GET /: the root path returns a 307
+  # locale redirect, which Fly's HTTP checks treat as unhealthy (they pass only
+  # on 2xx). A TCP check is locale-independent and confirms the server accepts
+  # connections. Longer grace_period avoids racing the Next.js cold start.
+  [[http_service.tcp_checks]]
     interval = '30s'
     timeout = '5s'
-    grace_period = '10s'
-    method = 'GET'
-    path = '/'
+    grace_period = '30s'
 
 [[vm]]
   size = 'shared-cpu-1x'
