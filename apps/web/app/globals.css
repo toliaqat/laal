@@ -207,11 +207,30 @@ p { margin: 0 0 1rem; }
 .nav-link { color: var(--ink-soft); font-weight: 500; font-size: 0.95rem; }
 .nav-link:hover { color: var(--ink); }
 
+/* ---- language switcher ---- */
+.lang-switch {
+  display: inline-flex; align-items: center; gap: 0.15rem;
+  border: 1px solid var(--line-strong); border-radius: 999px; padding: 0.15rem;
+  background: var(--surface);
+}
+.lang-option {
+  appearance: none; cursor: pointer; border: none; background: transparent;
+  color: var(--ink-soft); font-weight: 600; font-size: 0.82rem;
+  padding: 0.3rem 0.7rem; border-radius: 999px; line-height: 1;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.lang-option:hover { color: var(--ink); }
+.lang-option.active { background: var(--accent-soft); color: var(--accent-hover); }
+.lang-option:disabled { cursor: default; opacity: 0.7; }
+@media (max-width: 768px) {
+  .nav-links .lang-switch { margin: 0.85rem 1.25rem; align-self: flex-start; }
+}
+
 .footer { border-top: 1px solid var(--line); margin-top: 4rem; padding: 2rem 0; color: var(--muted); font-size: 0.9rem; }
 
 /* ---- tables (admin) ---- */
 .table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-.table th { text-align: left; font-weight: 600; color: var(--muted); padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--line-strong); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.table th { text-align: start; font-weight: 600; color: var(--muted); padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--line-strong); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
 .table td { padding: 0.7rem 0.75rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .table tr:hover td { background: var(--surface-2); }
 /* On narrow screens let wide tables scroll horizontally instead of overflowing
@@ -240,7 +259,7 @@ p { margin: 0 0 1rem; }
 .chart-card .stat-label { align-self: flex-start; }
 .chart-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; width: 100%; max-width: 12rem; }
 .chart-legend li { display: flex; align-items: center; gap: 0.5rem; font-size: 0.86rem; color: var(--muted); }
-.chart-legend li strong { margin-left: auto; color: var(--ink); font-weight: 600; }
+.chart-legend li strong { margin-inline-start: auto; color: var(--ink); font-weight: 600; }
 .chart-dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; flex: none; }
 .chart-legend-label { white-space: nowrap; }
 
@@ -256,7 +275,7 @@ p { margin: 0 0 1rem; }
 
 .admin-sidebar {
   width: 248px; flex-shrink: 0; background: var(--surface);
-  border-right: 1px solid var(--line); position: sticky; top: 0; height: 100vh;
+  border-inline-end: 1px solid var(--line); position: sticky; top: 0; height: 100vh;
   display: flex; flex-direction: column; padding: 1.25rem 0.9rem;
 }
 .admin-sidebar-head { display: flex; align-items: center; justify-content: space-between; }
@@ -364,7 +383,7 @@ p { margin: 0 0 1rem; }
   display: grid; grid-template-columns: 1.05fr 0.95fr; gap: clamp(2rem, 5vw, 4rem);
   align-items: center; position: relative; z-index: 1;
 }
-.hero-copy { text-align: left; }
+.hero-copy { text-align: start; }
 .hero-copy h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); line-height: 1.08; margin-top: 0.4rem; }
 .hero-art { display: flex; justify-content: center; }
 
@@ -405,9 +424,9 @@ p { margin: 0 0 1rem; }
 }
 .trust-item svg { width: 15px; height: 15px; color: var(--accent); }
 /* hairline divider between items (not before the first) */
-.trust-item + .trust-item { position: relative; padding-left: 1.1rem; }
+.trust-item + .trust-item { position: relative; padding-inline-start: 1.1rem; }
 .trust-item + .trust-item::before {
-  content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  content: ''; position: absolute; inset-inline-start: 0; top: 50%; transform: translateY(-50%);
   width: 1px; height: 0.9rem; background: var(--line-strong);
 }
 @media (max-width: 880px) { .trust-line { justify-content: center; } }
@@ -500,11 +519,12 @@ p { margin: 0 0 1rem; }
 .app-status .dots { display: inline-flex; gap: 4px; align-items: center; }
 .app-body { padding: 0.4rem 0.9rem 1rem; }
 .app-h {
-  display: flex; justify-content: space-between; align-items: baseline;
+  display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
   margin: 0.5rem 0 0.15rem;
 }
 .app-title { font-family: var(--serif); font-size: 1.5rem; font-weight: 600; color: var(--ink); }
 .app-pill {
+  flex-shrink: 0; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.2rem;
   font-size: 0.62rem; font-weight: 700; color: var(--accent-hover);
   background: var(--accent-soft); border: 1px solid #e6cfbb;
   padding: 0.18rem 0.5rem; border-radius: 999px;
@@ -552,6 +572,60 @@ p { margin: 0 0 1rem; }
 .story-card { position: relative; height: 100%; transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease, border-color 0.25s ease; }
 .story-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: var(--line-strong); }
 
+/* ---- image bands (landing photography) ---------------------------------
+   Photos are framed like the rest of the system: hairline warm border,
+   soft radius, gentle shadow. A faint inset ring keeps light images from
+   floating off the beige background. */
+.split-band {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: clamp(1.75rem, 5vw, 3.5rem); align-items: center;
+}
+.split-media {
+  position: relative; aspect-ratio: 3 / 2; width: 100%;
+  border-radius: 18px; overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow), inset 0 0 0 1px rgba(255, 253, 248, 0.4);
+}
+.split-media img { transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
+.split-band:hover .split-media img { transform: scale(1.03); }
+@media (max-width: 880px) {
+  .split-band { grid-template-columns: 1fr; }
+  .split-media { order: -1; aspect-ratio: 16 / 10; }
+}
+
+/* full-width warm banner (between a heading and the cards below it) */
+.band-media {
+  position: relative; width: 100%;
+  height: clamp(190px, 30vw, 300px);
+  border-radius: 18px; overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow), inset 0 0 0 1px rgba(255, 253, 248, 0.4);
+}
+/* a soft warm wash so the photo settles into the beige system */
+.band-media::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, transparent 55%, rgba(156, 107, 74, 0.12) 100%);
+}
+
+/* closing CTA — portrait photo beside the copy */
+.cta-grid {
+  display: grid; grid-template-columns: 0.85fr 1.15fr;
+  gap: clamp(1.75rem, 5vw, 3.5rem); align-items: center;
+}
+.cta-media {
+  position: relative; aspect-ratio: 4 / 5; width: 100%;
+  border-radius: 18px; overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow), inset 0 0 0 1px rgba(255, 253, 248, 0.4);
+}
+@media (max-width: 880px) {
+  .cta-grid { grid-template-columns: 1fr; }
+  .cta-media { order: -1; aspect-ratio: 16 / 11; max-height: 340px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .split-band:hover .split-media img { transform: none; }
+}
+
 /* ---- closing CTA ---- */
 .cta-lux {
   position: relative; overflow: hidden;
@@ -570,3 +644,28 @@ p { margin: 0 0 1rem; }
   .btn-primary:hover, .btn-ghost:hover, .step-card:hover,
   .story-card:hover, .trust-pill:hover { transform: none; }
 }
+
+/* ============================================================================
+   RTL + Urdu. `dir="rtl"` is set on <html> for Urdu (see [locale]/layout.tsx);
+   layout mirrors automatically because the rules above use logical properties
+   (margin-inline, padding-inline, inset-inline, text-align: start/end).
+   Here we only handle what logical properties can't: the script's own font and
+   the few glyphs whose meaning depends on reading direction.
+   ============================================================================ */
+[dir='rtl'] {
+  /* Swap in the Urdu webfaces loaded via next/font (see [locale]/fonts.ts). */
+  --serif: var(--font-urdu-serif), "Noto Nastaliq Urdu", ui-serif, serif;
+  --sans: var(--font-urdu-sans), "Noto Naskh Arabic", ui-sans-serif, system-ui,
+    sans-serif;
+}
+/* Nastaliq sits tall and needs more vertical breathing room than Latin type. */
+[dir='rtl'] body { line-height: 1.9; }
+[dir='rtl'] h1,
+[dir='rtl'] h2,
+[dir='rtl'] h3 { line-height: 1.6; }
+
+/* Directional inline glyphs (e.g. the "Review →" / "View all →" arrows that are
+   plain text in the markup) point the wrong way in RTL — mirror them. */
+[dir='rtl'] .stat-cue,
+[dir='rtl'] .ar-flip { unicode-bidi: plaintext; }
+[dir='rtl'] .ar-flip-glyph { display: inline-block; transform: scaleX(-1); }

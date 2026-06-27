@@ -8,6 +8,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { accentShadow, colors, radius, serif } from '@/lib/theme';
 import { signInWithGoogle } from '@/lib/google-auth';
 
@@ -32,11 +33,12 @@ export function Avatar({
 }
 
 /** A small "✓ Verified" trust chip. */
-export function VerifiedChip({ label = 'Verified' }: { label?: string }) {
+export function VerifiedChip({ label }: { label?: string }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.verified}>
       <Text style={styles.verifiedMark}>✓</Text>
-      <Text style={styles.verifiedText}>{label}</Text>
+      <Text style={styles.verifiedText}>{label ?? t('mobile.common.verified')}</Text>
     </View>
   );
 }
@@ -115,7 +117,7 @@ export function GhostButton({
 
 /** "Continue with Google" — native sign-in via signInWithGoogle. */
 export function GoogleButton({
-  label = 'Continue with Google',
+  label,
   onSuccess,
   onError,
 }: {
@@ -123,6 +125,7 @@ export function GoogleButton({
   onSuccess?: () => void;
   onError?: (message: string) => void;
 }) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
   const handle = async () => {
@@ -131,7 +134,7 @@ export function GoogleButton({
     const res = await signInWithGoogle();
     setLoading(false);
     if (res.ok) onSuccess?.();
-    else if (!res.cancelled) onError?.(res.message ?? 'Google sign-in failed.');
+    else if (!res.cancelled) onError?.(res.message ?? t('mobile.google.failed'));
   };
 
   return (
@@ -145,7 +148,7 @@ export function GoogleButton({
       ) : (
         <>
           <Text style={styles.gMark}>G</Text>
-          <Text style={styles.googleText}>{label}</Text>
+          <Text style={styles.googleText}>{label ?? t('mobile.google.continue')}</Text>
         </>
       )}
     </Pressable>
@@ -153,11 +156,12 @@ export function GoogleButton({
 }
 
 /** A labelled "or" rule to separate Google from the email form. */
-export function AuthDivider({ label = 'or' }: { label?: string }) {
+export function AuthDivider({ label }: { label?: string }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.divider}>
       <View style={styles.dividerLine} />
-      <Text style={styles.dividerText}>{label}</Text>
+      <Text style={styles.dividerText}>{label ?? t('mobile.auth.divider')}</Text>
       <View style={styles.dividerLine} />
     </View>
   );

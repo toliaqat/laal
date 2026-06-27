@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   loadSupporterMessages,
   type SupporterMessage,
-} from '@/app/campaigns/[slug]/supporters';
+} from '@/app/[locale]/campaigns/[slug]/supporters';
 
 /** Fixed locale keeps server and client formatting identical (no hydration mismatch). */
 function formatAmount(amount: number, currency: string): string {
@@ -38,6 +39,7 @@ export function SupporterWall({
   initialItems: SupporterMessage[];
   initialHasMore: boolean;
 }) {
+  const t = useTranslations('campaigns');
   const [items, setItems] = useState<SupporterMessage[]>(initialItems);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
@@ -79,7 +81,7 @@ export function SupporterWall({
               className="row wrap"
               style={{ gap: '0.5rem', alignItems: 'baseline' }}
             >
-              <strong>{s.name?.trim() || 'Anonymous'}</strong>
+              <strong>{s.name?.trim() || t('supporters.anonymous')}</strong>
               <span className="muted small">
                 {formatAmount(s.amount, s.currency)} · {formatDate(s.createdAt)}
               </span>
@@ -99,7 +101,7 @@ export function SupporterWall({
           disabled={loading}
           style={{ alignSelf: 'center' }}
         >
-          {loading ? 'Loading…' : 'Show more'}
+          {loading ? t('supporters.loading') : t('supporters.showMore')}
         </button>
       )}
     </div>

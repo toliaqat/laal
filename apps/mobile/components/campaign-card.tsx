@@ -1,13 +1,15 @@
 import { Link } from 'expo-router';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { Campaign } from '@laal/types';
 import { ProgressBar } from './progress-bar';
 import { VerifiedChip } from './ui';
 import { cardShadow, colors, initials, radius, serif, spacing } from '@/lib/theme';
 
-function formatMoney(amount: number, currency: string) {
+function formatMoney(amount: number, currency: string, locale: string) {
   try {
-    return new Intl.NumberFormat(undefined, {
+    const fmtLocale = locale === 'ur' ? 'ur-PK-u-nu-latn' : locale;
+    return new Intl.NumberFormat(fmtLocale, {
       style: 'currency',
       currency,
       maximumFractionDigits: 0,
@@ -19,6 +21,7 @@ function formatMoney(amount: number, currency: string) {
 
 /** A tappable card summarizing a campaign; links to its detail screen. */
 export function CampaignCard({ campaign }: { campaign: Campaign }) {
+  const { t, i18n } = useTranslation();
   const pct =
     campaign.goal_amount > 0
       ? Math.round((campaign.amount_raised / campaign.goal_amount) * 100)
@@ -58,7 +61,9 @@ export function CampaignCard({ campaign }: { campaign: Campaign }) {
           <Text style={styles.title} numberOfLines={2}>
             {campaign.title}
           </Text>
-          <Text style={styles.memory}>In memory of {campaign.deceased_name}</Text>
+          <Text style={styles.memory}>
+            {t('mobile.common.inMemoryOf', { name: campaign.deceased_name })}
+          </Text>
 
           <View style={styles.progressWrap}>
             <ProgressBar value={campaign.amount_raised} total={campaign.goal_amount} />
@@ -66,13 +71,15 @@ export function CampaignCard({ campaign }: { campaign: Campaign }) {
 
           <View style={styles.amounts}>
             <Text style={styles.raised}>
-              {formatMoney(campaign.amount_raised, campaign.currency)}
+              {formatMoney(campaign.amount_raised, campaign.currency, i18n.language)}
             </Text>
             <Text style={styles.goal}>
-              raised of {formatMoney(campaign.goal_amount, campaign.currency)}
+              {t('mobile.common.raisedOf', {
+                amount: formatMoney(campaign.goal_amount, campaign.currency, i18n.language),
+              })}
             </Text>
             <View style={{ flex: 1 }} />
-            <Text style={styles.pct}>{pct}% there</Text>
+            <Text style={styles.pct}>{t('mobile.card.pctThere', { pct })}</Text>
           </View>
         </View>
       </Pressable>

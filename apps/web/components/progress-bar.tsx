@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { getTranslations } from 'next-intl/server';
 
 function formatMoney(amount: number, currency: string): string {
   try {
@@ -12,7 +13,7 @@ function formatMoney(amount: number, currency: string): string {
   }
 }
 
-export function ProgressBar({
+export async function ProgressBar({
   raised,
   goal,
   currency,
@@ -23,6 +24,7 @@ export function ProgressBar({
   currency: string;
   style?: CSSProperties;
 }) {
+  const t = await getTranslations('campaigns');
   const pct =
     goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0;
 
@@ -55,7 +57,7 @@ export function ProgressBar({
         <strong style={{ color: '#1a1a1a' }}>
           {formatMoney(raised, currency)}
         </strong>{' '}
-        raised of {formatMoney(goal, currency)} goal
+        {t('progress.raisedOfGoal', { amount: formatMoney(goal, currency) })}
       </p>
     </div>
   );

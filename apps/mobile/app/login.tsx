@@ -12,11 +12,13 @@ import {
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
 import { AuthDivider, GoogleButton } from '@/components/ui';
 import { accentShadow, colors, radius, serif, spacing } from '@/lib/theme';
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
@@ -53,17 +55,15 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Pressable onPress={() => router.back()} hitSlop={8} style={styles.back}>
-          <Text style={styles.backText}>‹ Back</Text>
+          <Text style={styles.backText}>{t('mobile.common.back')}</Text>
         </Pressable>
-        <Text style={styles.eyebrow}>WELCOME BACK</Text>
-        <Text style={styles.title}>Sign in to Laal</Text>
-        <Text style={styles.subtitle}>
-          Return to the people your community is standing with.
-        </Text>
+        <Text style={styles.eyebrow}>{t('mobile.login.eyebrow')}</Text>
+        <Text style={styles.title}>{t('mobile.login.title')}</Text>
+        <Text style={styles.subtitle}>{t('mobile.login.subtitle')}</Text>
 
         <View style={styles.form}>
           <GoogleButton
-            label="Sign in with Google"
+            label={t('mobile.login.google')}
             onSuccess={() => router.replace('/')}
             onError={setError}
           />
@@ -71,7 +71,7 @@ export default function LoginScreen() {
 
           <TextInput
             style={[styles.input, focused === 'email' && styles.inputFocused]}
-            placeholder="Email"
+            placeholder={t('mobile.auth.emailPlaceholder')}
             placeholderTextColor={colors.muted}
             autoCapitalize="none"
             autoComplete="email"
@@ -83,7 +83,7 @@ export default function LoginScreen() {
           />
           <TextInput
             style={[styles.input, focused === 'password' && styles.inputFocused]}
-            placeholder="Password"
+            placeholder={t('mobile.auth.passwordPlaceholder')}
             placeholderTextColor={colors.muted}
             secureTextEntry
             autoCapitalize="none"
@@ -108,15 +108,15 @@ export default function LoginScreen() {
             {submitting ? (
               <ActivityIndicator color={colors.accentInk} />
             ) : (
-              <Text style={styles.buttonText}>Sign in</Text>
+              <Text style={styles.buttonText}>{t('mobile.login.submit')}</Text>
             )}
           </Pressable>
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Don’t have an account? </Text>
+          <Text style={styles.footerText}>{t('mobile.login.noAccount')} </Text>
           <Link href="/signup" style={styles.link}>
-            Create one
+            {t('mobile.login.createOne')}
           </Link>
         </View>
       </ScrollView>

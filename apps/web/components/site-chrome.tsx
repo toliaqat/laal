@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { Link, usePathname } from '@/i18n/navigation';
 import { SignOutButton } from '@/components/sign-out-button';
+import { LanguageSwitcher } from '@/components/language-switcher';
 
 /**
  * Public site chrome (top nav + footer). Hidden on /admin, which renders its
@@ -22,6 +23,9 @@ export function SiteChrome({
   isOrgMember?: boolean;
   children: ReactNode;
 }) {
+  const t = useTranslations('nav');
+  // next-intl's usePathname returns the path *without* the locale prefix,
+  // so the /admin check still matches `/ur/admin` and `/en/admin`.
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -44,7 +48,7 @@ export function SiteChrome({
           <button
             type="button"
             className="nav-burger"
-            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-label={open ? t('closeMenu') : t('openMenu')}
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
           >
@@ -52,41 +56,42 @@ export function SiteChrome({
           </button>
           <nav className={`nav-links${open ? ' open' : ''}`}>
             <Link href="/campaigns" className="nav-link">
-              Fundraisers
+              {t('fundraisers')}
             </Link>
             <Link href="/start" className="nav-link">
-              Start a fundraiser
+              {t('start')}
             </Link>
             {signedIn ? (
               <>
                 <Link href="/dashboard" className="nav-link">
-                  Dashboard
+                  {t('dashboard')}
                 </Link>
                 {isOrgMember && (
                   <Link href="/org" className="nav-link">
-                    Organization
+                    {t('organization')}
                   </Link>
                 )}
                 <SignOutButton />
               </>
             ) : (
               <Link href="/login" className="btn btn-primary btn-sm">
-                Sign in
+                {t('signIn')}
               </Link>
             )}
+            <LanguageSwitcher />
           </nav>
         </div>
       </header>
       <main>{children}</main>
       <footer className="footer">
         <div className="container row-between wrap">
-          <span>© {new Date().getFullYear()} Laal. Every life is precious.</span>
+          <span>{t('copyright', { year: new Date().getFullYear() })}</span>
           <span className="row wrap" style={{ gap: '1rem' }}>
             <Link href="/campaigns" className="nav-link">
-              Browse fundraisers
+              {t('browse')}
             </Link>
             <Link href="/start" className="nav-link">
-              Start a fundraiser
+              {t('start')}
             </Link>
           </span>
         </div>

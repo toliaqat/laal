@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Field } from '@/components/ui';
 
 /**
@@ -18,6 +19,7 @@ export function CoverImageInput({
   /** Render a "remove current photo" checkbox (edit flow only). */
   allowRemove?: boolean;
 }) {
+  const t = useTranslations('start');
   const [preview, setPreview] = useState<string | null>(null);
   const [remove, setRemove] = useState(false);
 
@@ -32,15 +34,15 @@ export function CoverImageInput({
 
   return (
     <Field
-      label="Cover photo (optional)"
-      hint="A photo of your loved one helps people connect with their story. JPG, PNG or WebP, up to 8MB."
+      label={t('cover.label')}
+      hint={t('cover.hint')}
     >
       <div className="stack" style={{ gap: '0.6rem' }}>
         {shown && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={shown}
-            alt={deceasedName ? `Photo of ${deceasedName}` : 'Cover photo'}
+            alt={deceasedName ? t('cover.photoOfAlt', { name: deceasedName }) : t('cover.photoAlt')}
             style={{
               width: '100%',
               maxHeight: 280,
@@ -76,7 +78,7 @@ export function CoverImageInput({
               checked={remove}
               onChange={(e) => setRemove(e.target.checked)}
             />
-            <span>Remove current photo</span>
+            <span>{t('cover.remove')}</span>
           </label>
         )}
       </div>

@@ -1,17 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { startDonation } from '@/app/actions/donations';
 
 const PRESETS = [10, 25, 50];
 const MAX_DONATION = 50; // launch cap — keep in sync with app/actions/donations.ts
-
-// Per-tier microcopy (Laal voice).
-const TIER_COPY: Record<number, string> = {
-  10: 'Provide a moment of relief',
-  25: 'Create meaningful support',
-  50: 'Make a lasting difference',
-};
 
 function symbolFor(currency: string): string {
   switch (currency.toUpperCase()) {
@@ -37,9 +31,16 @@ export function DonateForm({
   currency: string;
   campaignTitle: string;
 }) {
+  const t = useTranslations('campaigns');
   const [selected, setSelected] = useState<number>(25);
   const [custom, setCustom] = useState<string>('');
   const sym = symbolFor(currency);
+
+  const tierCopy: Record<number, string> = {
+    10: t('donate.tier10'),
+    25: t('donate.tier25'),
+    50: t('donate.tier50'),
+  };
 
   const effectiveAmount = custom.trim() ? custom : String(selected);
   const numeric = Number.parseFloat(effectiveAmount);
@@ -56,8 +57,10 @@ export function DonateForm({
 
       <div>
         <div className="label" style={{ marginBottom: '0.5rem' }}>
-          Choose how you’ll help{' '}
-          <span className="hint">(up to {sym}{MAX_DONATION} for now)</span>
+          {t('donate.chooseHelp')}{' '}
+          <span className="hint">
+            {t('donate.upToCap', { cap: `${sym}${MAX_DONATION}` })}
+          </span>
         </div>
         <div className="row wrap">
           {PRESETS.map((p) => {
@@ -79,15 +82,15 @@ export function DonateForm({
             );
           })}
         </div>
-        {!custom.trim() && TIER_COPY[selected] ? (
+        {!custom.trim() && tierCopy[selected] ? (
           <p className="hint" style={{ marginTop: '0.5rem' }}>
-            {TIER_COPY[selected]}
+            {tierCopy[selected]}
           </p>
         ) : null}
       </div>
 
       <div className="field">
-        <label className="label">Or enter a custom amount</label>
+        <label className="label">{t('donate.customLabel')}</label>
         <input
           name="customAmount"
           className="input"
@@ -102,25 +105,24 @@ export function DonateForm({
         />
         {overCap ? (
           <span className="error-text">
-            The maximum donation is {sym}
-            {MAX_DONATION} for now.
+            {t('donate.overCap', { cap: `${sym}${MAX_DONATION}` })}
           </span>
         ) : null}
       </div>
 
       <div className="field">
-        <label className="label">Your name (optional)</label>
+        <label className="label">{t('donate.nameLabel')}</label>
         <input
           name="donorName"
           className="input"
           type="text"
           autoComplete="name"
-          placeholder="Jane Doe"
+          placeholder={t('donate.namePlaceholder')}
         />
       </div>
 
       <div className="field">
-        <label className="label">Email (optional, for your receipt)</label>
+        <label className="label">{t('donate.emailLabel')}</label>
         <input
           name="donorEmail"
           className="input"
@@ -132,21 +134,23 @@ export function DonateForm({
 
       <label className="row" style={{ gap: '0.5rem' }}>
         <input name="isAnonymous" type="checkbox" />
-        <span>Support anonymously</span>
+        <span>{t('donate.anonymous')}</span>
       </label>
 
       <div className="field">
-        <label className="label">Leave a message of condolence (optional)</label>
+        <label className="label">{t('donate.messageLabel')}</label>
         <textarea
           name="message"
           className="textarea"
           maxLength={450}
-          placeholder="A few words for the family…"
+          placeholder={t('donate.messagePlaceholder')}
         />
       </div>
 
       <button type="submit" className="btn btn-primary btn-block" disabled={invalid}>
-        Help Now{invalid ? '' : ` · ${sym}${effectiveAmount}`}
+        {invalid
+          ? t('donate.submit')
+          : t('donate.submitWithAmount', { amount: `${sym}${effectiveAmount}` })}
       </button>
     </form>
   );

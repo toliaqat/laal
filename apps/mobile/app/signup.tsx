@@ -12,11 +12,13 @@ import {
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
 import { AuthDivider, GoogleButton } from '@/components/ui';
 import { accentShadow, colors, radius, serif, spacing } from '@/lib/theme';
 
 export default function SignupScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [fullName, setFullName] = useState('');
@@ -55,13 +57,10 @@ export default function SignupScreen() {
         <View style={styles.doneBadge}>
           <Text style={styles.doneMark}>✓</Text>
         </View>
-        <Text style={styles.title}>Almost there</Text>
-        <Text style={styles.message}>
-          Check your email to confirm your account, then sign in. We’re glad
-          you’re here.
-        </Text>
+        <Text style={styles.title}>{t('mobile.signup.doneTitle')}</Text>
+        <Text style={styles.message}>{t('mobile.signup.doneBody')}</Text>
         <Link href="/login" style={[styles.link, { marginTop: spacing.lg }]}>
-          Back to sign in
+          {t('mobile.signup.backToSignIn')}
         </Link>
       </View>
     );
@@ -80,17 +79,15 @@ export default function SignupScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Pressable onPress={() => router.back()} hitSlop={8} style={styles.back}>
-          <Text style={styles.backText}>‹ Back</Text>
+          <Text style={styles.backText}>{t('mobile.common.back')}</Text>
         </Pressable>
-        <Text style={styles.eyebrow}>JOIN LAAL</Text>
-        <Text style={styles.title}>Create your account</Text>
-        <Text style={styles.subtitle}>
-          Follow the families you care about and stand with them.
-        </Text>
+        <Text style={styles.eyebrow}>{t('mobile.signup.eyebrow')}</Text>
+        <Text style={styles.title}>{t('mobile.signup.title')}</Text>
+        <Text style={styles.subtitle}>{t('mobile.signup.subtitle')}</Text>
 
         <View style={styles.form}>
           <GoogleButton
-            label="Sign up with Google"
+            label={t('mobile.signup.google')}
             onSuccess={() => router.replace('/')}
             onError={setError}
           />
@@ -98,7 +95,7 @@ export default function SignupScreen() {
 
           <TextInput
             style={[styles.input, focused === 'name' && styles.inputFocused]}
-            placeholder="Full name"
+            placeholder={t('mobile.auth.fullNamePlaceholder')}
             placeholderTextColor={colors.muted}
             autoCapitalize="words"
             autoComplete="name"
@@ -109,7 +106,7 @@ export default function SignupScreen() {
           />
           <TextInput
             style={[styles.input, focused === 'email' && styles.inputFocused]}
-            placeholder="Email"
+            placeholder={t('mobile.auth.emailPlaceholder')}
             placeholderTextColor={colors.muted}
             autoCapitalize="none"
             autoComplete="email"
@@ -121,7 +118,7 @@ export default function SignupScreen() {
           />
           <TextInput
             style={[styles.input, focused === 'password' && styles.inputFocused]}
-            placeholder="Password"
+            placeholder={t('mobile.auth.passwordPlaceholder')}
             placeholderTextColor={colors.muted}
             secureTextEntry
             autoCapitalize="none"
@@ -146,15 +143,15 @@ export default function SignupScreen() {
             {submitting ? (
               <ActivityIndicator color={colors.accentInk} />
             ) : (
-              <Text style={styles.buttonText}>Create account</Text>
+              <Text style={styles.buttonText}>{t('mobile.signup.submit')}</Text>
             )}
           </Pressable>
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account? </Text>
+          <Text style={styles.footerText}>{t('mobile.signup.haveAccount')} </Text>
           <Link href="/login" style={styles.link}>
-            Sign in
+            {t('mobile.signup.signIn')}
           </Link>
         </View>
       </ScrollView>

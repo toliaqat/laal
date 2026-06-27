@@ -10,6 +10,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
+import { useTranslation } from 'react-i18next';
 import type { Beneficiary, Campaign } from '@laal/types';
 import { supabase, WEB_APP_URL } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
@@ -17,9 +18,10 @@ import { ProgressBar } from '@/components/progress-bar';
 import { VerifiedChip } from '@/components/ui';
 import { accentShadow, colors, radius, serif, spacing } from '@/lib/theme';
 
-function formatMoney(amount: number, currency: string) {
+function formatMoney(amount: number, currency: string, locale: string) {
   try {
-    return new Intl.NumberFormat(undefined, {
+    const fmtLocale = locale === 'ur' ? 'ur-PK-u-nu-latn' : locale;
+    return new Intl.NumberFormat(fmtLocale, {
       style: 'currency',
       currency,
       maximumFractionDigits: 0,
@@ -30,6 +32,7 @@ function formatMoney(amount: number, currency: string) {
 }
 
 export default function CampaignDetailScreen() {
+  const { t, i18n } = useTranslation();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -134,7 +137,7 @@ export default function CampaignDetailScreen() {
   if (!campaign) {
     return (
       <View style={styles.center}>
-        <Text style={styles.notFound}>This fundraiser could not be found.</Text>
+        <Text style={styles.notFound}>{t('mobile.detail.notFound')}</Text>
       </View>
     );
   }
@@ -148,31 +151,35 @@ export default function CampaignDetailScreen() {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.headRow}>
-          <VerifiedChip label="Verified fundraiser" />
+          <VerifiedChip label={t('mobile.detail.verifiedFundraiser')} />
           <Pressable
             onPress={toggleFollow}
             hitSlop={6}
             style={[styles.followBtn, followed && styles.followBtnOn]}
           >
             <Text style={[styles.followText, followed && styles.followTextOn]}>
-              {followed ? '♥  Following' : '♡  Follow'}
+              {followed ? t('mobile.detail.following') : t('mobile.detail.follow')}
             </Text>
           </Pressable>
         </View>
         <Text style={styles.title}>{campaign.title}</Text>
-        <Text style={styles.memory}>In memory of {campaign.deceased_name}</Text>
+        <Text style={styles.memory}>
+          {t('mobile.common.inMemoryOf', { name: campaign.deceased_name })}
+        </Text>
 
         <View style={styles.progressWrap}>
           <ProgressBar value={campaign.amount_raised} total={campaign.goal_amount} />
           <View style={styles.amounts}>
             <Text style={styles.raised}>
-              {formatMoney(campaign.amount_raised, campaign.currency)}
+              {formatMoney(campaign.amount_raised, campaign.currency, i18n.language)}
             </Text>
             <Text style={styles.goal}>
-              raised of {formatMoney(campaign.goal_amount, campaign.currency)}
+              {t('mobile.common.raisedOf', {
+                amount: formatMoney(campaign.goal_amount, campaign.currency, i18n.language),
+              })}
             </Text>
             <View style={{ flex: 1 }} />
-            <Text style={styles.pct}>{pct}%</Text>
+            <Text style={styles.pct}>{t('mobile.common.pct', { pct })}</Text>
           </View>
         </View>
 
@@ -182,13 +189,18 @@ export default function CampaignDetailScreen() {
 
         {beneficiary ? (
           <View style={styles.beneficiaryCard}>
-            <Text style={styles.beneficiaryLabel}>WHERE SUPPORT GOES</Text>
+            <Text style={styles.beneficiaryLabel}>
+              {t('mobile.detail.whereSupportGoes')}
+            </Text>
             <Text style={styles.beneficiaryText}>
-              Funds reach {beneficiary.display_name}
               {beneficiary.relationship_to_deceased
-                ? ` (${beneficiary.relationship_to_deceased})`
-                : ''}
-              , a confirmed family member.
+                ? t('mobile.detail.fundsReachWithRelation', {
+                    name: beneficiary.display_name,
+                    relation: beneficiary.relationship_to_deceased,
+                  })
+                : t('mobile.detail.fundsReach', {
+                    name: beneficiary.display_name,
+                  })}
             </Text>
           </View>
         ) : null}
@@ -203,11 +215,9 @@ export default function CampaignDetailScreen() {
           ]}
           onPress={help}
         >
-          <Text style={styles.helpText}>Help Now</Text>
+          <Text style={styles.helpText}>{t('mobile.detail.helpNow')}</Text>
         </Pressable>
-        <Text style={styles.helpNote}>
-          Secure · you’ll continue on the web to help safely.
-        </Text>
+        <Text style={styles.helpNote}>{t('mobile.detail.helpNote')}</Text>
       </View>
     </View>
   );

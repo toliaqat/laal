@@ -10,17 +10,19 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
+import { useTranslation } from 'react-i18next';
 import type { Profile } from '@laal/types';
 import { supabase, WEB_APP_URL } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { Avatar } from '@/components/ui';
+import { LanguageToggle } from '@/components/language-toggle';
 import { cardShadow, colors, radius, serif, spacing } from '@/lib/theme';
 
-const ROLE_LABEL: Record<string, string> = {
-  donor: 'Supporter',
-  organizer: 'Organizer',
-  org_member: 'Partner',
-  admin: 'Team',
+const ROLE_KEY: Record<string, string> = {
+  donor: 'mobile.account.roleSupporter',
+  organizer: 'mobile.account.roleOrganizer',
+  org_member: 'mobile.account.rolePartner',
+  admin: 'mobile.account.roleTeam',
 };
 
 type CampaignRef = { slug: string; title: string; deceased_name: string } | null;
@@ -34,9 +36,10 @@ type DonationItem = {
   campaign: CampaignRef;
 };
 
-function formatMoney(amount: number, currency: string) {
+function formatMoney(amount: number, currency: string, locale: string) {
   try {
-    return new Intl.NumberFormat(undefined, {
+    const fmtLocale = locale === 'ur' ? 'ur-PK-u-nu-latn' : locale;
+    return new Intl.NumberFormat(fmtLocale, {
       style: 'currency',
       currency,
       maximumFractionDigits: 0,
@@ -46,9 +49,10 @@ function formatMoney(amount: number, currency: string) {
   }
 }
 
-function formatDate(iso: string) {
+function formatDate(iso: string, locale: string) {
   try {
-    return new Date(iso).toLocaleDateString(undefined, {
+    const fmtLocale = locale === 'ur' ? 'ur-PK-u-nu-latn' : locale;
+    return new Date(iso).toLocaleDateString(fmtLocale, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -59,6 +63,7 @@ function formatDate(iso: string) {
 }
 
 export default function AccountScreen() {
+  const { t, i18n } = useTranslation();
   const { session, signOut } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -109,9 +114,9 @@ export default function AccountScreen() {
 
   const meta = session.user.user_metadata ?? {};
   const fullName =
-    profile?.full_name || (meta.full_name as string) || 'Friend';
+    profile?.full_name || (meta.full_name as string) || t('mobile.account.friend');
   const email = profile?.email || session.user.email || '';
-  const role = ROLE_LABEL[profile?.role ?? 'donor'] ?? 'Supporter';
+  const role = t(ROLE_KEY[profile?.role ?? 'donor'] ?? 'mobile.account.roleSupporter');
 
   const handleSignOut = async () => {
     // Leave the account screen first, then clear the session, so the
@@ -133,7 +138,7 @@ export default function AccountScreen() {
         hitSlop={8}
         style={styles.back}
       >
-        <Text style={styles.backText}>‹ Fundraisers</Text>
+        <Text style={styles.backText}>{t('mobile.account.backFundraisers')}</Text>
       </Pressable>
 
       {/* identity */}
@@ -154,7 +159,7 @@ export default function AccountScreen() {
       ) : (
         <>
           <View style={styles.subHead}>
-            <Text style={styles.sectionLabel}>FUNDRAISERS YOU FOLLOW</Text>
+            <Text style={styles.sectionLabel}>{t('mobile.account.followsLabel')}</Text>
             {follows.length > 0 ? (
               <Text style={styles.countChip}>{follows.length}</Text>
             ) : null}
@@ -162,8 +167,8 @@ export default function AccountScreen() {
           {follows.length === 0 ? (
             <ActivityRow
               icon="❤"
-              title="No fundraisers yet"
-              body="Tap Follow on a fundraiser to save it here, so you can return to the people you care about."
+              title={t('mobile.account.followsEmptyTitle')}
+              body={t('mobile.account.followsEmptyBody')}
             />
           ) : (
             follows
@@ -182,7 +187,7 @@ export default function AccountScreen() {
                       {f.campaign!.title}
                     </Text>
                     <Text style={styles.listSub} numberOfLines={1}>
-                      In memory of {f.campaign!.deceased_name}
+                      {t('mobile.common.inMemoryOf', { name: f.campaign!.deceased_name })}
                     </Text>
                   </View>
                   <Text style={styles.chevron}>›</Text>
@@ -191,7 +196,7 @@ export default function AccountScreen() {
           )}
 
           <View style={styles.subHead}>
-            <Text style={styles.sectionLabel}>YOUR SUPPORT</Text>
+            <Text style={styles.sectionLabel}>{t('mobile.account.supportLabel')}</Text>
             {donations.length > 0 ? (
               <Text style={styles.countChip}>{donations.length}</Text>
             ) : null}
@@ -199,8 +204,8 @@ export default function AccountScreen() {
           {donations.length === 0 ? (
             <ActivityRow
               icon="✦"
-              title="No support yet"
-              body="Every contribution you make will appear here — a quiet record of kindness."
+              title={t('mobile.account.supportEmptyTitle')}
+              body={t('mobile.account.supportEmptyBody')}
             />
           ) : (
             donations.map((d) => {
@@ -211,15 +216,15 @@ export default function AccountScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.listTitle} numberOfLines={1}>
-                      {d.campaign?.title ?? 'A fundraiser you supported'}
+                      {d.campaign?.title ?? t('mobile.account.donationFallbackTitle')}
                     </Text>
                     <Text style={styles.listSub}>
-                      {formatDate(d.created_at)}
+                      {formatDate(d.created_at, i18n.language)}
                       {d.status !== 'succeeded' ? ` · ${d.status}` : ''}
                     </Text>
                   </View>
                   <Text style={styles.amount}>
-                    {formatMoney(d.amount, d.currency)}
+                    {formatMoney(d.amount, d.currency, i18n.language)}
                   </Text>
                 </>
               );
@@ -241,7 +246,7 @@ export default function AccountScreen() {
         </>
       )}
 
-      <Text style={styles.sectionLabel}>DO MORE</Text>
+      <Text style={styles.sectionLabel}>{t('mobile.account.doMore')}</Text>
 
       <Pressable
         style={[styles.actionRow, cardShadow]}
@@ -251,8 +256,8 @@ export default function AccountScreen() {
           <Text style={styles.actionIconText}>＋</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.actionTitle}>Start a fundraiser</Text>
-          <Text style={styles.actionBody}>Stand up for someone on the web →</Text>
+          <Text style={styles.actionTitle}>{t('mobile.account.startTitle')}</Text>
+          <Text style={styles.actionBody}>{t('mobile.account.startBody')}</Text>
         </View>
       </Pressable>
 
@@ -264,16 +269,21 @@ export default function AccountScreen() {
           <Text style={styles.actionIconText}>≡</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.actionTitle}>Manage on the web</Text>
-          <Text style={styles.actionBody}>Your dashboard and fundraisers →</Text>
+          <Text style={styles.actionTitle}>{t('mobile.account.manageTitle')}</Text>
+          <Text style={styles.actionBody}>{t('mobile.account.manageBody')}</Text>
         </View>
       </Pressable>
 
+      <Text style={styles.sectionLabel}>{t('mobile.account.preferences')}</Text>
+      <View style={[styles.actionRow, cardShadow]}>
+        <LanguageToggle />
+      </View>
+
       <Pressable style={styles.signOut} onPress={handleSignOut} hitSlop={6}>
-        <Text style={styles.signOutText}>Sign out</Text>
+        <Text style={styles.signOutText}>{t('mobile.account.signOut')}</Text>
       </Pressable>
 
-      <Text style={styles.footnote}>Every life is precious.</Text>
+      <Text style={styles.footnote}>{t('mobile.account.footnote')}</Text>
     </ScrollView>
   );
 }

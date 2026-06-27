@@ -1,8 +1,10 @@
-import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import type { Campaign } from '@laal/types';
+import { Link } from '@/i18n/navigation';
 import { ProgressBar } from '@/components/progress-bar';
 
-export function CampaignCard({ campaign }: { campaign: Campaign }) {
+export async function CampaignCard({ campaign }: { campaign: Campaign }) {
+  const t = await getTranslations('campaigns');
   return (
     <Link
       href={`/campaigns/${campaign.slug}`}
@@ -20,7 +22,7 @@ export function CampaignCard({ campaign }: { campaign: Campaign }) {
           {campaign.title}
         </h3>
         <p style={{ margin: '0 0 1rem', color: '#888', fontSize: '0.875rem' }}>
-          In memory of {campaign.deceased_name}
+          {t('card.inMemoryOf', { name: campaign.deceased_name })}
         </p>
         <ProgressBar
           raised={campaign.amount_raised}

@@ -10,7 +10,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { markOnboardingSeen } from '@/lib/onboarding';
+import { LanguageToggle } from '@/components/language-toggle';
 import { accentShadow, colors, radius, serif, spacing } from '@/lib/theme';
 
 type Panel = {
@@ -20,31 +22,32 @@ type Panel = {
   body: string;
 };
 
-const PANELS: Panel[] = [
-  {
-    key: 'who',
-    mark: '❡',
-    title: 'Everyone is someone’s Laal.',
-    body: 'A calm, caring way to stand with families in their hardest moments — with dignity, never pity.',
-  },
-  {
-    key: 'verified',
-    mark: '✓',
-    title: 'Every fundraiser is verified.',
-    body: 'We gently confirm the people and the need, so your kindness reaches the right family.',
-  },
-  {
-    key: 'help',
-    mark: '♥',
-    title: 'Be there in seconds.',
-    body: 'Help securely without an account — or sign in to follow the families you care about.',
-  },
-];
-
 export default function OnboardingScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+
+  const PANELS: Panel[] = [
+    {
+      key: 'who',
+      mark: '❡',
+      title: t('mobile.onboarding.whoTitle'),
+      body: t('mobile.onboarding.whoBody'),
+    },
+    {
+      key: 'verified',
+      mark: '✓',
+      title: t('mobile.onboarding.verifiedTitle'),
+      body: t('mobile.onboarding.verifiedBody'),
+    },
+    {
+      key: 'help',
+      mark: '♥',
+      title: t('mobile.onboarding.helpTitle'),
+      body: t('mobile.onboarding.helpBody'),
+    },
+  ];
   const listRef = useRef<FlatList<Panel>>(null);
   const [index, setIndex] = useState(0);
   const fade = useRef(new Animated.Value(0)).current;
@@ -79,6 +82,12 @@ export default function OnboardingScreen() {
         { opacity: fade, paddingTop: insets.top, paddingBottom: insets.bottom },
       ]}
     >
+      {/* language switch — reachable before sign-in, and confirms the
+          auto-detected language for first-time users */}
+      <View style={styles.langBar}>
+        <LanguageToggle compact />
+      </View>
+
       {/* top bar: dots + skip */}
       <View style={styles.topBar}>
         <View style={styles.dots}>
@@ -91,7 +100,7 @@ export default function OnboardingScreen() {
         </View>
         {!isLast ? (
           <Pressable onPress={() => finish('/')} hitSlop={8}>
-            <Text style={styles.skip}>Skip</Text>
+            <Text style={styles.skip}>{t('mobile.onboarding.skip')}</Text>
           </Pressable>
         ) : (
           <View style={{ width: 36 }} />
@@ -130,16 +139,16 @@ export default function OnboardingScreen() {
           ]}
         >
           <Text style={styles.primaryText}>
-            {isLast ? 'Get started' : 'Continue'}
+            {isLast ? t('mobile.onboarding.getStarted') : t('mobile.onboarding.continue')}
           </Text>
         </Pressable>
 
         {isLast ? (
           <Pressable onPress={() => finish('/login')} hitSlop={8}>
-            <Text style={styles.secondary}>I already have an account</Text>
+            <Text style={styles.secondary}>{t('mobile.onboarding.haveAccount')}</Text>
           </Pressable>
         ) : (
-          <Text style={styles.tagline}>Every life is precious.</Text>
+          <Text style={styles.tagline}>{t('mobile.onboarding.tagline')}</Text>
         )}
       </View>
     </Animated.View>
@@ -148,6 +157,12 @@ export default function OnboardingScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
+  langBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+  },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',

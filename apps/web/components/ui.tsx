@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 
 /** Shared presentational primitives styled by app/globals.css. */
 
@@ -276,10 +276,19 @@ export function ChartLegend({
   );
 }
 
-/** Format a money amount with its ISO currency. */
-export function formatMoney(amount: number, currency: string): string {
+/**
+ * Format a money amount with its ISO currency, localized to the active locale.
+ * Urdu ('ur') keeps Western digits for amounts (clearer for currency) by
+ * pinning the numbering system; pass any BCP-47 locale to override.
+ */
+export function formatMoney(
+  amount: number,
+  currency: string,
+  locale?: string,
+): string {
+  const resolved = locale === 'ur' ? 'ur-PK-u-nu-latn' : locale;
   try {
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat(resolved, {
       style: 'currency',
       currency: currency || 'EUR',
       maximumFractionDigits: 0,

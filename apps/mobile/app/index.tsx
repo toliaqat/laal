@@ -11,15 +11,18 @@ import {
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
+import { useTranslation } from 'react-i18next';
 import type { Campaign } from '@laal/types';
 import { supabase, WEB_APP_URL } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { hasSeenOnboarding } from '@/lib/onboarding';
 import { CampaignCard } from '@/components/campaign-card';
 import { Avatar, PrimaryButton } from '@/components/ui';
+import { LanguageToggle } from '@/components/language-toggle';
 import { colors, firstName, initials, radius, serif, spacing } from '@/lib/theme';
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
   const { session } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -88,33 +91,33 @@ export default function HomeScreen() {
             />
           </Pressable>
         ) : (
-          <Link href="/login" asChild>
-            <Pressable style={styles.signInPill} hitSlop={6}>
-              <Text style={styles.signInPillText}>Sign in</Text>
-            </Pressable>
-          </Link>
+          <View style={styles.headerRight}>
+            <LanguageToggle compact />
+            <Link href="/login" asChild>
+              <Pressable style={styles.signInPill} hitSlop={6}>
+                <Text style={styles.signInPillText}>{t('mobile.home.signIn')}</Text>
+              </Pressable>
+            </Link>
+          </View>
         )}
       </View>
 
       {/* hero band */}
       <View style={styles.hero}>
-        <Text style={styles.eyebrow}>EVERY LIFE IS PRECIOUS</Text>
+        <Text style={styles.eyebrow}>{t('mobile.home.eyebrow')}</Text>
         {signedIn ? (
           <>
             <Text style={styles.heroTitle}>
-              Welcome back{name ? `, ${name}` : ''}.
+              {name
+                ? t('mobile.home.welcomeBackName', { name })
+                : t('mobile.home.welcomeBack')}
             </Text>
-            <Text style={styles.heroSub}>
-              Here are the people your community is standing with today.
-            </Text>
+            <Text style={styles.heroSub}>{t('mobile.home.welcomeBackSub')}</Text>
           </>
         ) : (
           <>
-            <Text style={styles.heroTitle}>Everyone is someone’s Laal.</Text>
-            <Text style={styles.heroSub}>
-              Behind every request is a person who matters — and a community
-              ready to stand with them.
-            </Text>
+            <Text style={styles.heroTitle}>{t('mobile.home.heroTitle')}</Text>
+            <Text style={styles.heroSub}>{t('mobile.home.heroSub')}</Text>
           </>
         )}
       </View>
@@ -122,20 +125,17 @@ export default function HomeScreen() {
       {/* gentle, non-blocking sign-in invitation (signed-out only) */}
       {!signedIn ? (
         <View style={styles.inviteCard}>
-          <Text style={styles.inviteTitle}>Follow the families you care about</Text>
-          <Text style={styles.inviteBody}>
-            Sign in to save fundraisers and get a gentle note when support arrives.
-            You can always help without an account.
-          </Text>
+          <Text style={styles.inviteTitle}>{t('mobile.home.inviteTitle')}</Text>
+          <Text style={styles.inviteBody}>{t('mobile.home.inviteBody')}</Text>
           <View style={styles.inviteActions}>
             <Link href="/login" asChild>
               <Pressable style={styles.invitePrimary}>
-                <Text style={styles.invitePrimaryText}>Sign in</Text>
+                <Text style={styles.invitePrimaryText}>{t('mobile.home.signIn')}</Text>
               </Pressable>
             </Link>
             <Link href="/signup" asChild>
               <Pressable hitSlop={6}>
-                <Text style={styles.inviteLink}>Create account</Text>
+                <Text style={styles.inviteLink}>{t('mobile.home.createAccount')}</Text>
               </Pressable>
             </Link>
           </View>
@@ -146,17 +146,15 @@ export default function HomeScreen() {
             <Text style={styles.sharePromptHeart}>♥</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.sharePromptTitle}>Share someone’s story</Text>
-            <Text style={styles.sharePromptBody}>
-              Start a fundraiser on the web in a few minutes →
-            </Text>
+            <Text style={styles.sharePromptTitle}>{t('mobile.home.sharePromptTitle')}</Text>
+            <Text style={styles.sharePromptBody}>{t('mobile.home.sharePromptBody')}</Text>
           </View>
         </Pressable>
       )}
 
       <View style={styles.sectionRow}>
         <Text style={styles.sectionTitle}>
-          {signedIn ? 'Fundraisers near you' : 'Verified fundraisers'}
+          {signedIn ? t('mobile.home.sectionNearYou') : t('mobile.home.sectionVerified')}
         </Text>
         {campaigns.length > 0 ? (
           <Text style={styles.sectionCount}>{campaigns.length}</Text>
@@ -193,13 +191,10 @@ export default function HomeScreen() {
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>New fundraisers are being reviewed</Text>
-            <Text style={styles.emptyBody}>
-              Every fundraiser is gently verified before it appears here. Check back
-              soon to support someone precious.
-            </Text>
+            <Text style={styles.emptyTitle}>{t('mobile.home.emptyTitle')}</Text>
+            <Text style={styles.emptyBody}>{t('mobile.home.emptyBody')}</Text>
             <PrimaryButton
-              label="Start the first fundraiser"
+              label={t('mobile.home.emptyCta')}
               onPress={openStart}
               style={{ marginTop: spacing.md }}
             />
@@ -222,6 +217,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   brand: { fontSize: 24, fontWeight: '700', color: colors.ink, fontFamily: serif },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   signInPill: {
     borderWidth: 1,
     borderColor: colors.lineStrong,
