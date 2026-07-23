@@ -110,7 +110,10 @@ export function EditForm({
 
           <div className="row wrap">
             <div style={{ flex: 1, minWidth: 160 }}>
-              <Field label={t('editForm.deathCountryLabel')}>
+              <Field
+                label={t('editForm.deathCountryLabel')}
+                hint={t('editForm.deathCountryHint')}
+              >
                 <input
                   id="death_country"
                   name="death_country"
@@ -120,7 +123,10 @@ export function EditForm({
               </Field>
             </div>
             <div style={{ flex: 1, minWidth: 160 }}>
-              <Field label={t('editForm.deathCityLabel')}>
+              <Field
+                label={t('editForm.deathCityLabel')}
+                hint={t('editForm.deathCityHint')}
+              >
                 <input
                   id="death_city"
                   name="death_city"

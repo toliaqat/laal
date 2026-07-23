@@ -104,7 +104,10 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
 
           <div className="row wrap">
             <div style={{ flex: 1, minWidth: 160 }}>
-              <Field label={t('form.deathCountryLabel')}>
+              <Field
+                label={t('form.deathCountryLabel')}
+                hint={t('form.deathCountryHint')}
+              >
                 <input
                   id="death_country"
                   name="death_country"
@@ -113,7 +116,10 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
               </Field>
             </div>
             <div style={{ flex: 1, minWidth: 160 }}>
-              <Field label={t('form.deathCityLabel')}>
+              <Field
+                label={t('form.deathCityLabel')}
+                hint={t('form.deathCityHint')}
+              >
                 <input id="death_city" name="death_city" className="input" />
               </Field>
             </div>
