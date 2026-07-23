@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -110,14 +111,20 @@ export default function CampaignDetailScreen() {
       const { error } = await supabase
         .from('campaign_follows')
         .insert({ campaign_id: campaign.id, profile_id: session.user.id });
-      if (error) setFollowed(false);
+      if (error) {
+        setFollowed(false); // roll back the optimistic update
+        Alert.alert(t('mobile.detail.followError'));
+      }
     } else {
       const { error } = await supabase
         .from('campaign_follows')
         .delete()
         .eq('campaign_id', campaign.id)
         .eq('profile_id', session.user.id);
-      if (error) setFollowed(true);
+      if (error) {
+        setFollowed(true); // roll back the optimistic update
+        Alert.alert(t('mobile.detail.followError'));
+      }
     }
     setFollowBusy(false);
   };
@@ -154,8 +161,15 @@ export default function CampaignDetailScreen() {
           <VerifiedChip label={t('mobile.detail.verifiedFundraiser')} />
           <Pressable
             onPress={toggleFollow}
+            disabled={followBusy}
             hitSlop={6}
-            style={[styles.followBtn, followed && styles.followBtnOn]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: followed, busy: followBusy }}
+            style={[
+              styles.followBtn,
+              followed && styles.followBtnOn,
+              followBusy && styles.followBtnBusy,
+            ]}
           >
             <Text style={[styles.followText, followed && styles.followTextOn]}>
               {followed ? t('mobile.detail.following') : t('mobile.detail.follow')}
@@ -247,6 +261,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   followBtnOn: { backgroundColor: colors.accentSoft, borderColor: '#e6cfbb' },
+  followBtnBusy: { opacity: 0.6 },
   followText: { fontSize: 13, fontWeight: '700', color: colors.inkSoft },
   followTextOn: { color: colors.accentHover },
   title: {

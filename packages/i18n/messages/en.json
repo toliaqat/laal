@@ -232,7 +232,9 @@
     }
   },
   "dashboard": {
-    "meta": { "title": "Your fundraisers — Laal" },
+    "meta": {
+      "title": "Your fundraisers — Laal"
+    },
     "eyebrow": "Dashboard",
     "heading": "Your fundraisers",
     "startFundraiser": "Start a fundraiser",
@@ -277,7 +279,9 @@
       "mixed": "Mixed"
     },
     "documentsPage": {
-      "meta": { "title": "Documents — Laal" },
+      "meta": {
+        "title": "Documents — Laal"
+      },
       "eyebrow": "Supporting documents",
       "intro": "Share documents that help us verify this fundraiser — for example a death certificate or proof of relationship. They are private and only seen by our review team.",
       "uploadTitle": "Upload a document",
@@ -291,7 +295,9 @@
       "backToDashboard": "← Back to dashboard"
     },
     "editPage": {
-      "meta": { "title": "Edit fundraiser — Laal" },
+      "meta": {
+        "title": "Edit fundraiser — Laal"
+      },
       "eyebrow": "Edit fundraiser"
     },
     "editForm": {
@@ -392,10 +398,14 @@
       "sectionVerified": "Verified fundraisers",
       "emptyTitle": "New fundraisers are being reviewed",
       "emptyBody": "Every fundraiser is gently verified before it appears here. Check back soon to support someone precious.",
-      "emptyCta": "Start the first fundraiser"
+      "emptyCta": "Start the first fundraiser",
+      "errorTitle": "We couldn’t load fundraisers",
+      "errorBody": "Please check your connection and try again.",
+      "retry": "Try again"
     },
     "card": {
-      "pctThere": "{{pct}}% there"
+      "pctThere": "{{pct}}% there",
+      "a11yLabel": "{{title}}, in memory of {{name}}. {{pct}}% of goal raised."
     },
     "auth": {
       "divider": "or",
@@ -455,6 +465,9 @@
       "supportEmptyTitle": "No support yet",
       "supportEmptyBody": "Every contribution you make will appear here — a quiet record of kindness.",
       "donationFallbackTitle": "A fundraiser you supported",
+      "errorTitle": "We couldn’t load your activity",
+      "errorBody": "Please check your connection and try again.",
+      "retry": "Try again",
       "doMore": "DO MORE",
       "startTitle": "Start a fundraiser",
       "startBody": "Stand up for someone on the web →",
@@ -470,6 +483,7 @@
       "verifiedFundraiser": "Verified fundraiser",
       "follow": "♡  Follow",
       "following": "♥  Following",
+      "followError": "We couldn’t update this. Please check your connection and try again.",
       "whereSupportGoes": "WHERE SUPPORT GOES",
       "fundsReach": "Funds reach {{name}}, a confirmed family member.",
       "fundsReachWithRelation": "Funds reach {{name}} ({{relation}}), a confirmed family member.",

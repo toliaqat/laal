@@ -29,6 +29,7 @@ export default function HomeScreen() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [errored, setErrored] = useState(false);
   const [gateReady, setGateReady] = useState(false);
 
   // First launch → show the onboarding intro once, before Stories renders.
@@ -45,11 +46,18 @@ export default function HomeScreen() {
   }, [router]);
 
   const load = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('campaigns')
       .select('*')
       .eq('status', 'active')
       .order('created_at', { ascending: false });
+    // Distinguish a real fetch failure from a genuinely empty list, so a
+    // transient network error doesn't masquerade as "no fundraisers yet".
+    if (error) {
+      setErrored(true);
+      return;
+    }
+    setErrored(false);
     setCampaigns((data as Campaign[]) ?? []);
   }, []);
 
@@ -190,15 +198,27 @@ export default function HomeScreen() {
           />
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>{t('mobile.home.emptyTitle')}</Text>
-            <Text style={styles.emptyBody}>{t('mobile.home.emptyBody')}</Text>
-            <PrimaryButton
-              label={t('mobile.home.emptyCta')}
-              onPress={openStart}
-              style={{ marginTop: spacing.md }}
-            />
-          </View>
+          errored ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>{t('mobile.home.errorTitle')}</Text>
+              <Text style={styles.emptyBody}>{t('mobile.home.errorBody')}</Text>
+              <PrimaryButton
+                label={t('mobile.home.retry')}
+                onPress={onRefresh}
+                style={{ marginTop: spacing.md }}
+              />
+            </View>
+          ) : (
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>{t('mobile.home.emptyTitle')}</Text>
+              <Text style={styles.emptyBody}>{t('mobile.home.emptyBody')}</Text>
+              <PrimaryButton
+                label={t('mobile.home.emptyCta')}
+                onPress={openStart}
+                style={{ marginTop: spacing.md }}
+              />
+            </View>
+          )
         }
       />
     </View>

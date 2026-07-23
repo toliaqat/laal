@@ -30,6 +30,13 @@ export function CampaignCard({ campaign }: { campaign: Campaign }) {
   return (
     <Link href={`/campaigns/${campaign.slug}`} asChild>
       <Pressable
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={t('mobile.card.a11yLabel', {
+          title: campaign.title,
+          name: campaign.deceased_name,
+          pct,
+        })}
         style={({ pressed }) => [
           styles.card,
           cardShadow,
@@ -117,7 +124,7 @@ const styles = StyleSheet.create({
     color: colors.accent,
     opacity: 0.55,
   },
-  chipOverlay: { position: 'absolute', top: spacing.md, left: spacing.md },
+  chipOverlay: { position: 'absolute', top: spacing.md, start: spacing.md },
 
   body: { padding: spacing.lg, gap: spacing.sm },
   title: { fontSize: 18, fontWeight: '600', color: colors.ink, fontFamily: serif },

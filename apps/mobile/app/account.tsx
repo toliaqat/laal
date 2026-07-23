@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  I18nManager,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import type { Profile } from '@laal/types';
 import { supabase, WEB_APP_URL } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
-import { Avatar } from '@/components/ui';
+import { Avatar, PrimaryButton } from '@/components/ui';
 import { LanguageToggle } from '@/components/language-toggle';
 import { cardShadow, colors, radius, serif, spacing } from '@/lib/theme';
 
@@ -71,44 +72,62 @@ export default function AccountScreen() {
   const [follows, setFollows] = useState<FollowItem[]>([]);
   const [donations, setDonations] = useState<DonationItem[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [errored, setErrored] = useState(false);
 
   // Signed-out users have no account to show — send them to sign in.
   useEffect(() => {
     if (!session) router.replace('/login');
   }, [session, router]);
 
+  const load = useCallback(async () => {
+    if (!session) return;
+    const [prof, f, d] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle(),
+      supabase
+        .from('campaign_follows')
+        .select('campaign_id, campaign:campaigns(slug, title, deceased_name)')
+        // Scope to the signed-in user explicitly: the RLS policy also allows
+        // admins to read ALL follows, so without this an admin would see every
+        // user's saved stories in their own list.
+        .eq('profile_id', session.user.id)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('donations')
+        .select(
+          'id, amount, currency, status, created_at, campaign:campaigns(slug, title, deceased_name)',
+        )
+        .eq('donor_profile_id', session.user.id)
+        .order('created_at', { ascending: false }),
+    ]);
+    // Distinguish a real fetch failure from genuinely empty activity, so a
+    // transient network error doesn't masquerade as "nothing followed yet".
+    if (prof.error || f.error || d.error) {
+      setErrored(true);
+      return;
+    }
+    setErrored(false);
+    setProfile((prof.data as Profile | null) ?? null);
+    setFollows((f.data as unknown as FollowItem[]) ?? []);
+    setDonations((d.data as unknown as DonationItem[]) ?? []);
+  }, [session]);
+
   useEffect(() => {
     if (!session) return;
     let mounted = true;
     (async () => {
-      const [{ data: prof }, { data: f }, { data: d }] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle(),
-        supabase
-          .from('campaign_follows')
-          .select('campaign_id, campaign:campaigns(slug, title, deceased_name)')
-          // Scope to the signed-in user explicitly: the RLS policy also allows
-          // admins to read ALL follows, so without this an admin would see every
-          // user's saved stories in their own list.
-          .eq('profile_id', session.user.id)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('donations')
-          .select(
-            'id, amount, currency, status, created_at, campaign:campaigns(slug, title, deceased_name)',
-          )
-          .eq('donor_profile_id', session.user.id)
-          .order('created_at', { ascending: false }),
-      ]);
-      if (!mounted) return;
-      setProfile((prof as Profile | null) ?? null);
-      setFollows((f as unknown as FollowItem[]) ?? []);
-      setDonations((d as unknown as DonationItem[]) ?? []);
-      setLoadingData(false);
+      await load();
+      if (mounted) setLoadingData(false);
     })();
     return () => {
       mounted = false;
     };
-  }, [session]);
+  }, [session, load]);
+
+  const retry = useCallback(async () => {
+    setLoadingData(true);
+    await load();
+    setLoadingData(false);
+  }, [load]);
 
   if (!session) return <View style={styles.screen} />;
 
@@ -155,6 +174,16 @@ export default function AccountScreen() {
       {loadingData ? (
         <View style={styles.loadingBox}>
           <ActivityIndicator color={colors.accent} />
+        </View>
+      ) : errored ? (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorTitle}>{t('mobile.account.errorTitle')}</Text>
+          <Text style={styles.errorBody}>{t('mobile.account.errorBody')}</Text>
+          <PrimaryButton
+            label={t('mobile.account.retry')}
+            onPress={retry}
+            style={{ marginTop: spacing.md }}
+          />
         </View>
       ) : (
         <>
@@ -390,6 +419,17 @@ const styles = StyleSheet.create({
   activityBody: { fontSize: 13, lineHeight: 19, color: colors.muted, marginTop: 2 },
 
   loadingBox: { paddingVertical: spacing.xl, alignItems: 'center' },
+  errorBox: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.md,
+    padding: spacing.xl,
+    alignItems: 'center',
+    gap: 6,
+  },
+  errorTitle: { fontSize: 16, fontWeight: '700', color: colors.ink, fontFamily: serif },
+  errorBody: { fontSize: 13, lineHeight: 20, color: colors.muted, textAlign: 'center' },
   subHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -430,7 +470,14 @@ const styles = StyleSheet.create({
   listIconText: { fontSize: 15, color: colors.accent },
   listTitle: { fontSize: 14, fontWeight: '700', color: colors.ink },
   listSub: { fontSize: 12, color: colors.muted, marginTop: 1 },
-  chevron: { fontSize: 22, color: colors.lineStrong, fontWeight: '600' },
+  chevron: {
+    fontSize: 22,
+    color: colors.lineStrong,
+    fontWeight: '600',
+    // The `›` glyph is directional: point it toward the row's leading edge,
+    // so it reads as a "forward" affordance in RTL (Urdu) too.
+    transform: [{ scaleX: I18nManager.isRTL ? -1 : 1 }],
+  },
   amount: { fontSize: 14, fontWeight: '700', color: colors.accentHover },
 
   actionRow: {

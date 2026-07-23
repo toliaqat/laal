@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -26,6 +26,7 @@ export default function LoginScreen() {
   const [focused, setFocused] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const passwordRef = useRef<TextInput>(null);
 
   const onSubmit = async () => {
     setError(null);
@@ -80,8 +81,12 @@ export default function LoginScreen() {
             onChangeText={setEmail}
             onFocus={() => setFocused('email')}
             onBlur={() => setFocused(null)}
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => passwordRef.current?.focus()}
           />
           <TextInput
+            ref={passwordRef}
             style={[styles.input, focused === 'password' && styles.inputFocused]}
             placeholder={t('mobile.auth.passwordPlaceholder')}
             placeholderTextColor={colors.muted}
@@ -91,6 +96,8 @@ export default function LoginScreen() {
             onChangeText={setPassword}
             onFocus={() => setFocused('password')}
             onBlur={() => setFocused(null)}
+            returnKeyType="go"
+            onSubmitEditing={onSubmit}
           />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}

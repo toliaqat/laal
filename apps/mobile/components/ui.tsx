@@ -79,6 +79,7 @@ export function PrimaryButton({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
       style={({ pressed }) => [
         styles.primaryBtn,
         accentShadow,
@@ -104,6 +105,7 @@ export function GhostButton({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
       style={({ pressed }) => [
         styles.ghostBtn,
         pressed && styles.pressedSoft,
@@ -141,6 +143,8 @@ export function GoogleButton({
     <Pressable
       onPress={handle}
       disabled={loading}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: loading, busy: loading }}
       style={({ pressed }) => [styles.googleBtn, pressed && styles.pressedSoft]}
     >
       {loading ? (

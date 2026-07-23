@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -28,6 +28,8 @@ export default function SignupScreen() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   const onSubmit = async () => {
     setError(null);
@@ -103,8 +105,12 @@ export default function SignupScreen() {
             onChangeText={setFullName}
             onFocus={() => setFocused('name')}
             onBlur={() => setFocused(null)}
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => emailRef.current?.focus()}
           />
           <TextInput
+            ref={emailRef}
             style={[styles.input, focused === 'email' && styles.inputFocused]}
             placeholder={t('mobile.auth.emailPlaceholder')}
             placeholderTextColor={colors.muted}
@@ -115,8 +121,12 @@ export default function SignupScreen() {
             onChangeText={setEmail}
             onFocus={() => setFocused('email')}
             onBlur={() => setFocused(null)}
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => passwordRef.current?.focus()}
           />
           <TextInput
+            ref={passwordRef}
             style={[styles.input, focused === 'password' && styles.inputFocused]}
             placeholder={t('mobile.auth.passwordPlaceholder')}
             placeholderTextColor={colors.muted}
@@ -126,6 +136,8 @@ export default function SignupScreen() {
             onChangeText={setPassword}
             onFocus={() => setFocused('password')}
             onBlur={() => setFocused(null)}
+            returnKeyType="go"
+            onSubmitEditing={onSubmit}
           />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
