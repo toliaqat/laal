@@ -205,6 +205,8 @@
       "intendedUseLabel": "Intended use",
       "deathCountryLabel": "Country of death",
       "deathCityLabel": "City of death",
+      "repatriationCityLabel": "City of burial in Pakistan",
+      "repatriationCityHint": "The city where the deceased will be taken for burial",
       "submit": "Submit for review"
     },
     "intendedUse": {
@@ -305,6 +307,8 @@
       "intendedUseLabel": "Intended use",
       "deathCountryLabel": "Country of death",
       "deathCityLabel": "City of death",
+      "repatriationCityLabel": "City of burial in Pakistan",
+      "repatriationCityHint": "The city where the deceased will be taken for burial",
       "beneficiaryTitle": "Who receives the support?",
       "beneficiaryHelp": "Choose a verified partner organisation, or a person such as yourself or a family member.",
       "orgOption": "A verified partner organisation",

@@ -13,6 +13,9 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
   const [kind, setKind] = useState<'organization' | 'individual'>(
     orgs.length > 0 ? 'organization' : 'individual',
   );
+  const [intendedUse, setIntendedUse] = useState<
+    'local_burial' | 'repatriation'
+  >('local_burial');
 
   return (
     <form action={createCampaign} className="stack">
@@ -87,7 +90,12 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
               id="intended_use"
               name="intended_use"
               className="select"
-              defaultValue="local_burial"
+              value={intendedUse}
+              onChange={(e) =>
+                setIntendedUse(
+                  e.target.value as 'local_burial' | 'repatriation',
+                )
+              }
             >
               <option value="local_burial">{t('intendedUse.localBurial')}</option>
               <option value="repatriation">{t('intendedUse.repatriation')}</option>
@@ -110,6 +118,19 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
               </Field>
             </div>
           </div>
+
+          {intendedUse === 'repatriation' && (
+            <Field
+              label={t('form.repatriationCityLabel')}
+              hint={t('form.repatriationCityHint')}
+            >
+              <input
+                id="repatriation_city"
+                name="repatriation_city"
+                className="input"
+              />
+            </Field>
+          )}
         </div>
       </Card>
 

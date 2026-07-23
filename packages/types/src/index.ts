@@ -99,6 +99,8 @@ export interface Campaign {
   deceased_nationality: string | null;
   death_country: string | null;
   death_city: string | null;
+  /** Repatriation campaigns only: destination city in Pakistan. */
+  repatriation_city: string | null;
   intended_use: IntendedUse;
   goal_amount: number;
   currency: string;

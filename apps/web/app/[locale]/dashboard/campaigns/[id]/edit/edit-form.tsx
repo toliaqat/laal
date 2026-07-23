@@ -22,6 +22,7 @@ export function EditForm({
   const initialKind: 'organization' | 'individual' =
     beneficiary?.type === 'organization' ? 'organization' : 'individual';
   const [kind, setKind] = useState<'organization' | 'individual'>(initialKind);
+  const [intendedUse, setIntendedUse] = useState(campaign.intended_use);
 
   return (
     <form action={updateCampaign} className="stack">
@@ -95,7 +96,12 @@ export function EditForm({
               id="intended_use"
               name="intended_use"
               className="select"
-              defaultValue={campaign.intended_use}
+              value={intendedUse}
+              onChange={(e) =>
+                setIntendedUse(
+                  e.target.value as 'local_burial' | 'repatriation',
+                )
+              }
             >
               <option value="local_burial">{t('intendedUse.local_burial')}</option>
               <option value="repatriation">{t('intendedUse.repatriation')}</option>
@@ -124,6 +130,20 @@ export function EditForm({
               </Field>
             </div>
           </div>
+
+          {intendedUse === 'repatriation' && (
+            <Field
+              label={t('editForm.repatriationCityLabel')}
+              hint={t('editForm.repatriationCityHint')}
+            >
+              <input
+                id="repatriation_city"
+                name="repatriation_city"
+                className="input"
+                defaultValue={campaign.repatriation_city ?? ''}
+              />
+            </Field>
+          )}
         </div>
       </Card>
 

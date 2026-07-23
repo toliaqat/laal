@@ -57,6 +57,9 @@ export async function updateCampaign(formData: FormData): Promise<void> {
   const currency = normalizeCurrency(formData.get('currency'));
   const deathCountry = String(formData.get('death_country') ?? '').trim();
   const deathCity = String(formData.get('death_city') ?? '').trim();
+  const repatriationCity = String(
+    formData.get('repatriation_city') ?? '',
+  ).trim();
 
   const intendedUseRaw = String(formData.get('intended_use') ?? '');
   const intendedUse = INTENDED_USES.includes(intendedUseRaw as IntendedUse)
@@ -126,6 +129,8 @@ export async function updateCampaign(formData: FormData): Promise<void> {
       intended_use: intendedUse,
       death_country: deathCountry || null,
       death_city: deathCity || null,
+      repatriation_city:
+        intendedUse === 'repatriation' ? repatriationCity || null : null,
     })
     .eq('id', campaignId);
 
