@@ -14,6 +14,13 @@ web-build/
 .env.local
 .env*.local
 
+# supabase CLI state
+supabase/.temp/
+
+# local marketing/demo material (large media, not part of the app)
+intro-screenshots/
+intro-video/
+
 # misc
 .DS_Store
 *.log
