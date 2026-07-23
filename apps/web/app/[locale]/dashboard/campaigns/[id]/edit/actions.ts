@@ -12,12 +12,7 @@ import {
 import { normalizeCurrency } from '@/lib/stripe';
 import type { IntendedUse } from '@laal/types';
 
-const INTENDED_USES: IntendedUse[] = [
-  'repatriation',
-  'local_burial',
-  'family_support',
-  'mixed',
-];
+const INTENDED_USES: IntendedUse[] = ['local_burial', 'repatriation'];
 
 const EDITABLE_STATUSES = ['draft', 'pending_review'] as const;
 
@@ -66,7 +61,7 @@ export async function updateCampaign(formData: FormData): Promise<void> {
   const intendedUseRaw = String(formData.get('intended_use') ?? '');
   const intendedUse = INTENDED_USES.includes(intendedUseRaw as IntendedUse)
     ? (intendedUseRaw as IntendedUse)
-    : 'mixed';
+    : 'local_burial';
 
   const goalAmount = Number(formData.get('goal_amount'));
 

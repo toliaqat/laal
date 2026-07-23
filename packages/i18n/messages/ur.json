@@ -208,10 +208,8 @@
       "submit": "جائزے کے لیے جمع کرائیں"
     },
     "intendedUse": {
-      "repatriation": "میت کی وطن واپسی",
-      "localBurial": "مقامی تدفین",
-      "familySupport": "خاندانی معاونت",
-      "mixed": "مختلف امور"
+      "localBurial": "بیرونِ ملک تدفین",
+      "repatriation": "میت کی وطن واپسی"
     },
     "beneficiary": {
       "heading": "مدد کس کو ملے گی؟",
@@ -273,10 +271,8 @@
       "rejected": "مسترد"
     },
     "intendedUse": {
-      "repatriation": "میت کی وطن واپسی",
-      "local_burial": "مقامی تدفین",
-      "family_support": "خاندانی معاونت",
-      "mixed": "مختلف امور"
+      "local_burial": "بیرونِ ملک تدفین",
+      "repatriation": "میت کی وطن واپسی"
     },
     "documentsPage": {
       "meta": {

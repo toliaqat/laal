@@ -208,10 +208,8 @@
       "submit": "Submit for review"
     },
     "intendedUse": {
-      "repatriation": "Repatriation",
       "localBurial": "Local burial",
-      "familySupport": "Family support",
-      "mixed": "Mixed"
+      "repatriation": "Repatriation of the deceased"
     },
     "beneficiary": {
       "heading": "Who receives the support?",
@@ -273,10 +271,8 @@
       "rejected": "Rejected"
     },
     "intendedUse": {
-      "repatriation": "Repatriation",
       "local_burial": "Local burial",
-      "family_support": "Family support",
-      "mixed": "Mixed"
+      "repatriation": "Repatriation of the deceased"
     },
     "documentsPage": {
       "meta": {

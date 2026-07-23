@@ -24,11 +24,9 @@ export type CampaignStatus =
   | 'closed'
   | 'rejected';
 export type BeneficiaryType = 'organization' | 'individual';
-export type IntendedUse =
-  | 'repatriation'
-  | 'local_burial'
-  | 'family_support'
-  | 'mixed';
+// The DB enum also has legacy 'family_support' and 'mixed' values; the app
+// only offers these two.
+export type IntendedUse = 'local_burial' | 'repatriation';
 export type VerificationType = 'death' | 'relationship' | 'identity';
 export type VerificationStatus =
   | 'pending'

@@ -97,10 +97,8 @@ export function EditForm({
               className="select"
               defaultValue={campaign.intended_use}
             >
-              <option value="repatriation">{t('intendedUse.repatriation')}</option>
               <option value="local_burial">{t('intendedUse.local_burial')}</option>
-              <option value="family_support">{t('intendedUse.family_support')}</option>
-              <option value="mixed">{t('intendedUse.mixed')}</option>
+              <option value="repatriation">{t('intendedUse.repatriation')}</option>
             </select>
           </Field>
 

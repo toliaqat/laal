@@ -87,12 +87,10 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
               id="intended_use"
               name="intended_use"
               className="select"
-              defaultValue="mixed"
+              defaultValue="local_burial"
             >
-              <option value="repatriation">{t('intendedUse.repatriation')}</option>
               <option value="local_burial">{t('intendedUse.localBurial')}</option>
-              <option value="family_support">{t('intendedUse.familySupport')}</option>
-              <option value="mixed">{t('intendedUse.mixed')}</option>
+              <option value="repatriation">{t('intendedUse.repatriation')}</option>
             </select>
           </Field>
 
