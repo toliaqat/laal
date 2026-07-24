@@ -1,16 +1,17 @@
 import { notFound } from 'next/navigation';
+import { ActionForm, SubmitButton } from '@/components/form';
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { presignDownload } from '@/lib/r2';
 import {
-  approveCampaignForm,
-  rejectCampaignForm,
-  setVerificationForm,
+  approveCampaign,
+  rejectCampaign,
+  setVerification,
   ensureOnboarding,
-  releaseFundsForm,
-  pauseCampaignForm,
-  resumeCampaignForm,
-  closeCampaignForm,
-  recomputeAmountRaisedForm,
+  releaseFunds,
+  pauseCampaign,
+  resumeCampaign,
+  closeCampaign,
+  recomputeAmountRaised,
 } from '@/app/[locale]/admin/actions';
 import { canReleaseFunds } from '@laal/types';
 import type { VerificationStatus } from '@laal/types';
@@ -139,16 +140,12 @@ export default async function AdminCampaignDetailPage({
 
       {campaign.status === 'pending_review' && (
         <div className="row wrap" style={{ gap: '0.5rem' }}>
-          <form action={approveCampaignForm.bind(null, campaign.id)}>
-            <button type="submit" className="btn btn-primary btn-sm">
-              Approve fundraiser
-            </button>
-          </form>
-          <form action={rejectCampaignForm.bind(null, campaign.id)}>
-            <button type="submit" className="btn btn-danger btn-sm">
-              Reject campaign
-            </button>
-          </form>
+          <ActionForm action={approveCampaign.bind(null, campaign.id)} showDetail>
+            <SubmitButton size="sm">Approve fundraiser</SubmitButton>
+          </ActionForm>
+          <ActionForm action={rejectCampaign.bind(null, campaign.id)} showDetail>
+            <SubmitButton variant="danger" size="sm">Reject campaign</SubmitButton>
+          </ActionForm>
         </div>
       )}
 
@@ -226,16 +223,12 @@ export default async function AdminCampaignDetailPage({
                   </div>
                   {v.notes && <p className="small muted">{v.notes}</p>}
                   <div className="row wrap" style={{ gap: '0.4rem' }}>
-                    <form action={setVerificationForm.bind(null, v.id, 'approved')}>
-                      <button type="submit" className="btn btn-primary btn-sm">
-                        Mark need verified
-                      </button>
-                    </form>
-                    <form action={setVerificationForm.bind(null, v.id, 'rejected')}>
-                      <button type="submit" className="btn btn-danger btn-sm">
-                        Needs more info
-                      </button>
-                    </form>
+                    <ActionForm action={setVerification.bind(null, v.id, 'approved')} showDetail>
+                      <SubmitButton size="sm">Mark need verified</SubmitButton>
+                    </ActionForm>
+                    <ActionForm action={setVerification.bind(null, v.id, 'rejected')} showDetail>
+                      <SubmitButton variant="danger" size="sm">Needs more info</SubmitButton>
+                    </ActionForm>
                   </div>
                 </div>
               </Card>
@@ -305,15 +298,15 @@ export default async function AdminCampaignDetailPage({
                 ))}
               </ul>
             )}
-            <form action={releaseFundsForm.bind(null, campaign.id)}>
-              <button
-                type="submit"
-                disabled={!canRelease}
-                className="btn btn-primary btn-sm"
-              >
+            {canRelease ? (
+              <ActionForm action={releaseFunds.bind(null, campaign.id)} showDetail>
+                <SubmitButton size="sm">Deliver support</SubmitButton>
+              </ActionForm>
+            ) : (
+              <button type="submit" disabled className="btn btn-primary btn-sm">
                 Deliver support
               </button>
-            </form>
+            )}
           </div>
         </Card>
 
@@ -361,30 +354,22 @@ export default async function AdminCampaignDetailPage({
             </p>
             <div className="row wrap" style={{ gap: '0.4rem' }}>
               {campaign.status === 'active' && (
-                <form action={pauseCampaignForm.bind(null, campaign.id)}>
-                  <button type="submit" className="btn btn-ghost btn-sm">
-                    Pause
-                  </button>
-                </form>
+                <ActionForm action={pauseCampaign.bind(null, campaign.id)} showDetail>
+                  <SubmitButton variant="ghost" size="sm">Pause</SubmitButton>
+                </ActionForm>
               )}
               {campaign.status === 'paused' && (
-                <form action={resumeCampaignForm.bind(null, campaign.id)}>
-                  <button type="submit" className="btn btn-ghost btn-sm">
-                    Resume
-                  </button>
-                </form>
+                <ActionForm action={resumeCampaign.bind(null, campaign.id)} showDetail>
+                  <SubmitButton variant="ghost" size="sm">Resume</SubmitButton>
+                </ActionForm>
               )}
-              <form action={recomputeAmountRaisedForm.bind(null, campaign.id)}>
-                <button type="submit" className="btn btn-ghost btn-sm">
-                  Recompute raised
-                </button>
-              </form>
+              <ActionForm action={recomputeAmountRaised.bind(null, campaign.id)} showDetail>
+                <SubmitButton variant="ghost" size="sm">Recompute raised</SubmitButton>
+              </ActionForm>
               {campaign.status !== 'closed' && (
-                <form action={closeCampaignForm.bind(null, campaign.id)}>
-                  <button type="submit" className="btn btn-danger btn-sm">
-                    Close
-                  </button>
-                </form>
+                <ActionForm action={closeCampaign.bind(null, campaign.id)} showDetail>
+                  <SubmitButton variant="danger" size="sm">Close</SubmitButton>
+                </ActionForm>
               )}
             </div>
           </div>
@@ -395,20 +380,14 @@ export default async function AdminCampaignDetailPage({
 }
 
 function OnboardingLink({ beneficiaryId }: { beneficiaryId: string }) {
-  async function refresh() {
-    'use server';
-    const res = await ensureOnboarding(beneficiaryId);
-    if (res.ok && res.url) {
-      const { redirect } = await import('next/navigation');
-      redirect(res.url);
-    }
-  }
+  // ensureOnboarding redirects to the hosted Stripe flow on success and
+  // returns a visible error otherwise (previously failures were swallowed).
   return (
-    <form action={refresh}>
-      <button type="submit" className="btn btn-ghost btn-sm">
+    <ActionForm action={ensureOnboarding.bind(null, beneficiaryId)} showDetail>
+      <SubmitButton variant="ghost" size="sm">
         Create / refresh onboarding link
-      </button>
-    </form>
+      </SubmitButton>
+    </ActionForm>
   );
 }
 

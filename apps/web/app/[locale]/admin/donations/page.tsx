@@ -1,7 +1,8 @@
 import { Link } from '@/i18n/navigation';
+import { ActionForm, SubmitButton } from '@/components/form';
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { Badge, formatMoney, statusTone } from '@/components/ui';
-import { refundDonationForm } from './actions';
+import { refundDonation } from './actions';
 
 const STATUSES = ['pending', 'succeeded', 'refunded', 'failed'] as const;
 
@@ -125,11 +126,9 @@ export default async function AdminDonationsPage({
                   {d.status === 'succeeded' &&
                   d.campaign_id &&
                   !releasedCampaignIds.has(d.campaign_id) ? (
-                    <form action={refundDonationForm.bind(null, d.id)}>
-                      <button type="submit" className="btn btn-sm btn-ghost">
-                        Refund
-                      </button>
-                    </form>
+                    <ActionForm action={refundDonation.bind(null, d.id)} showDetail>
+                      <SubmitButton variant="ghost" size="sm">Refund</SubmitButton>
+                    </ActionForm>
                   ) : (
                     <span className="muted">—</span>
                   )}

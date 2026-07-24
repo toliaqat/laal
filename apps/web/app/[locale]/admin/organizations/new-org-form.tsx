@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useActionState, useState } from 'react';
 import { Button, Card, Field } from '@/components/ui';
+import { FormAlert } from '@/components/form';
 import { createOrganization } from './actions';
 
 const ORG_TYPES = [
@@ -15,6 +16,7 @@ const ORG_TYPES = [
 
 export function NewOrganizationForm() {
   const [open, setOpen] = useState(false);
+  const [state, formAction, pending] = useActionState(createOrganization, null);
 
   if (!open) {
     return (
@@ -32,7 +34,7 @@ export function NewOrganizationForm() {
           Cancel
         </Button>
       </div>
-      <form action={createOrganization} className="stack">
+      <form action={formAction} className="stack">
         <div className="grid">
           <Field label="Name">
             <input className="input" name="name" required />
@@ -68,8 +70,11 @@ export function NewOrganizationForm() {
             <input type="checkbox" name="can_be_verifier" /> Can be verifier
           </label>
         </div>
+        <FormAlert state={state} showDetail />
         <div className="row">
-          <Button type="submit">Create organization</Button>
+          <Button type="submit" disabled={pending}>
+            {pending ? 'Creating…' : 'Create organization'}
+          </Button>
         </div>
       </form>
     </Card>

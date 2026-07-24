@@ -1,6 +1,7 @@
 import { createAdminSupabase } from '@/lib/supabase/server';
+import { ActionForm, SubmitButton } from '@/components/form';
 import { Badge } from '@/components/ui';
-import { setUserRoleForm } from './actions';
+import { setUserRole } from './actions';
 
 const ROLES = ['donor', 'organizer', 'org_member', 'admin'] as const;
 
@@ -60,7 +61,7 @@ export default async function AccountsPage() {
                     : '—'}
                 </td>
                 <td>
-                  <form action={setUserRoleForm} className="row">
+                  <ActionForm action={setUserRole} className="row" showDetail>
                     <input type="hidden" name="profileId" value={p.id} />
                     <select
                       className="select"
@@ -74,10 +75,8 @@ export default async function AccountsPage() {
                         </option>
                       ))}
                     </select>
-                    <button type="submit" className="btn btn-ghost btn-sm">
-                      Save
-                    </button>
-                  </form>
+                    <SubmitButton variant="ghost" size="sm">Save</SubmitButton>
+                  </ActionForm>
                 </td>
               </tr>
             ))}

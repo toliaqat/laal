@@ -1,6 +1,7 @@
 import { Link } from '@/i18n/navigation';
+import { ActionForm, SubmitButton } from '@/components/form';
 import { createAdminSupabase } from '@/lib/supabase/server';
-import { setVerificationForm } from '@/app/[locale]/admin/actions';
+import { setVerification } from '@/app/[locale]/admin/actions';
 import { Badge, statusTone } from '@/components/ui';
 
 type CampaignRef = { id: string; title: string } | null;
@@ -76,16 +77,12 @@ export default async function VerificationQueuePage() {
                       className="row wrap"
                       style={{ gap: '0.4rem', justifyContent: 'flex-end' }}
                     >
-                      <form action={setVerificationForm.bind(null, v.id, 'approved')}>
-                        <button type="submit" className="btn btn-primary btn-sm">
-                          Approve
-                        </button>
-                      </form>
-                      <form action={setVerificationForm.bind(null, v.id, 'rejected')}>
-                        <button type="submit" className="btn btn-danger btn-sm">
-                          Reject
-                        </button>
-                      </form>
+                      <ActionForm action={setVerification.bind(null, v.id, 'approved')} showDetail>
+                        <SubmitButton size="sm">Approve</SubmitButton>
+                      </ActionForm>
+                      <ActionForm action={setVerification.bind(null, v.id, 'rejected')} showDetail>
+                        <SubmitButton variant="danger" size="sm">Reject</SubmitButton>
+                      </ActionForm>
                     </div>
                   </td>
                 </tr>

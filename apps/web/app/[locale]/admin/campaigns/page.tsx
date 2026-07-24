@@ -1,6 +1,7 @@
 import { Link } from '@/i18n/navigation';
+import { ActionForm, SubmitButton } from '@/components/form';
 import { createAdminSupabase } from '@/lib/supabase/server';
-import { approveCampaignForm, rejectCampaignForm } from '@/app/[locale]/admin/actions';
+import { approveCampaign, rejectCampaign } from '@/app/[locale]/admin/actions';
 import { Badge, formatMoney, statusTone } from '@/components/ui';
 
 export default async function ReviewQueuePage() {
@@ -60,22 +61,12 @@ export default async function ReviewQueuePage() {
                       className="row wrap"
                       style={{ gap: '0.4rem', justifyContent: 'flex-end' }}
                     >
-                      <form action={approveCampaignForm.bind(null, c.id)}>
-                        <button
-                          type="submit"
-                          className="btn btn-primary btn-sm"
-                        >
-                          Approve fundraiser
-                        </button>
-                      </form>
-                      <form action={rejectCampaignForm.bind(null, c.id)}>
-                        <button
-                          type="submit"
-                          className="btn btn-danger btn-sm"
-                        >
-                          Reject
-                        </button>
-                      </form>
+                      <ActionForm action={approveCampaign.bind(null, c.id)} showDetail>
+                        <SubmitButton size="sm">Approve fundraiser</SubmitButton>
+                      </ActionForm>
+                      <ActionForm action={rejectCampaign.bind(null, c.id)} showDetail>
+                        <SubmitButton variant="danger" size="sm">Reject</SubmitButton>
+                      </ActionForm>
                     </div>
                   </td>
                 </tr>

@@ -1,6 +1,7 @@
 import { Link } from '@/i18n/navigation';
+import { ActionForm, SubmitButton } from '@/components/form';
 import { createAdminSupabase } from '@/lib/supabase/server';
-import { releaseFundsForm } from '@/app/[locale]/admin/actions';
+import { releaseFunds } from '@/app/[locale]/admin/actions';
 import { Badge, Button, formatMoney } from '@/components/ui';
 import { canReleaseFunds } from '@laal/types';
 import type { VerificationStatus } from '@laal/types';
@@ -133,9 +134,9 @@ export default async function ReleasesPage() {
                     {formatMoney(r.releasable, r.currency)}
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    <form action={releaseFundsForm.bind(null, r.id)}>
-                      <Button type="submit">Release funds</Button>
-                    </form>
+                    <ActionForm action={releaseFunds.bind(null, r.id)} showDetail>
+                      <SubmitButton>Release funds</SubmitButton>
+                    </ActionForm>
                   </td>
                 </tr>
               ))}

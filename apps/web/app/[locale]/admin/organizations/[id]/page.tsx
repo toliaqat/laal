@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { ActionForm, SubmitButton } from '@/components/form';
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { Button, Card, Field } from '@/components/ui';
 import { inviteOrgMember, revokeOrgInvite, updateOrganization } from '../actions';
@@ -51,7 +52,7 @@ export default async function EditOrganizationPage({
       </div>
 
       <Card>
-        <form action={updateOrganization} className="stack">
+        <ActionForm action={updateOrganization} className="stack" showDetail>
           <input type="hidden" name="id" value={org.id} />
           <div className="grid">
             <Field label="Name">
@@ -138,12 +139,12 @@ export default async function EditOrganizationPage({
             </label>
           </div>
           <div className="row">
-            <Button type="submit">Save changes</Button>
+            <SubmitButton>Save changes</SubmitButton>
             <Button href="/admin/organizations" variant="ghost">
               Cancel
             </Button>
           </div>
-        </form>
+        </ActionForm>
       </Card>
 
       <Card>
@@ -174,7 +175,7 @@ export default async function EditOrganizationPage({
           They’ll get an email link to claim this organization, complete its
           profile, and connect a bank account via Stripe.
         </p>
-        <form action={inviteOrgMember} className="stack">
+        <ActionForm action={inviteOrgMember} className="stack" showDetail>
           <input type="hidden" name="organization_id" value={org.id} />
           <div className="grid">
             <Field label="Email">
@@ -188,9 +189,9 @@ export default async function EditOrganizationPage({
             </Field>
           </div>
           <div className="row">
-            <Button type="submit">Send invite</Button>
+            <SubmitButton pendingLabel="Sending…">Send invite</SubmitButton>
           </div>
-        </form>
+        </ActionForm>
 
         {(invites ?? []).filter((i) => i.status === 'pending').length > 0 && (
           <div className="stack" style={{ marginTop: '1rem' }}>
@@ -206,12 +207,10 @@ export default async function EditOrganizationPage({
                   <span className="small">
                     {i.email} · {i.member_role}
                   </span>
-                  <form action={revokeOrgInvite}>
+                  <ActionForm action={revokeOrgInvite} showDetail>
                     <input type="hidden" name="invite_id" value={i.id} />
-                    <Button type="submit" variant="ghost">
-                      Revoke
-                    </Button>
-                  </form>
+                    <SubmitButton variant="ghost">Revoke</SubmitButton>
+                  </ActionForm>
                 </div>
               ))}
           </div>

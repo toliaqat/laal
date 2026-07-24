@@ -1,10 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import {
-  createAdminSupabase,
-  getCurrentUser,
-} from '@/lib/supabase/server';
+import { createAdminSupabase } from '@/lib/supabase/server';
 import {
   createConnectAccount,
   createOnboardingLink,
@@ -17,62 +14,21 @@ import {
   sendPayoutReleased,
 } from '@/lib/email';
 import { logAudit } from '@/lib/audit';
+import { requireAdminId } from '@/lib/admin-auth';
+import { fail, succeed, type ActionState } from '@/lib/action-result';
+import { runAction } from '@/lib/run-action';
+import { redirect } from 'next/navigation';
 import { canReleaseFunds } from '@laal/types';
 import type { VerificationStatus } from '@laal/types';
 
-type ActionResult = { ok: boolean; error?: string; url?: string };
-
-// ---------------------------------------------------------------------------
-// Form-bound wrappers (return void so they satisfy the <form action> type).
-// ---------------------------------------------------------------------------
-
-export async function approveCampaignForm(id: string): Promise<void> {
-  await approveCampaign(id);
-}
-export async function rejectCampaignForm(id: string): Promise<void> {
-  await rejectCampaign(id);
-}
-export async function setVerificationForm(
-  verificationId: string,
-  status: VerificationStatus,
-): Promise<void> {
-  await setVerification(verificationId, status);
-}
-export async function releaseFundsForm(campaignId: string): Promise<void> {
-  await releaseFunds(campaignId);
-}
-export async function pauseCampaignForm(id: string): Promise<void> {
-  await pauseCampaign(id);
-}
-export async function resumeCampaignForm(id: string): Promise<void> {
-  await resumeCampaign(id);
-}
-export async function closeCampaignForm(id: string): Promise<void> {
-  await closeCampaign(id);
-}
-export async function recomputeAmountRaisedForm(id: string): Promise<void> {
-  await recomputeAmountRaised(id);
-}
+// All actions take (boundArgs..., prev, formData) so admin pages can write
+// <ActionForm action={approveCampaign.bind(null, id)}> and surface failures.
 
 /** Revalidate the pages that surface a single campaign's state. */
 function revalidateCampaign(id: string): void {
   revalidatePath(`/admin/campaigns/${id}`);
   revalidatePath('/admin/campaigns');
   revalidatePath('/admin');
-}
-
-/** Resolve the current admin's profile id, or throw if not an admin. */
-async function requireAdminId(): Promise<string> {
-  const user = await getCurrentUser();
-  if (!user) throw new Error('Not authenticated');
-  const supabase = createAdminSupabase();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, role')
-    .eq('id', user.id)
-    .single();
-  if (!profile || profile.role !== 'admin') throw new Error('Not authorized');
-  return profile.id;
 }
 
 /** Look up an organizer's email + name for a transactional notification. */
@@ -89,28 +45,33 @@ async function organizerContact(
 }
 
 /** Approve a campaign: set status to active and stamp published_at. */
-export async function approveCampaign(id: string): Promise<ActionResult> {
-  const adminId = await requireAdminId();
-  const supabase = createAdminSupabase();
-  // Only a campaign awaiting review may be approved. Without this guard a stale
-  // or crafted request could flip a 'completed' campaign (funds already
-  // released) back to 'active' — re-opening it for donations and a second
-  // release. The affected-row check also prevents a duplicate approval audit.
-  const { data, error } = await supabase
-    .from('campaigns')
-    .update({ status: 'active', published_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('status', 'pending_review')
-    .select('id, title, slug, organizer_id');
-  if (error) return { ok: false, error: error.message };
-  if (!data || data.length === 0) {
-    return { ok: false, error: 'Campaign is not pending review' };
-  }
-  await logAudit({
-    actorId: adminId,
-    action: 'campaign.approved',
-    entityType: 'campaign',
-    entityId: id,
+export async function approveCampaign(
+  id: string,
+  _prev: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  return runAction('admin-approve', async () => {
+    const adminId = await requireAdminId();
+    const supabase = createAdminSupabase();
+    // Only a campaign awaiting review may be approved. Without this guard a stale
+    // or crafted request could flip a 'completed' campaign (funds already
+    // released) back to 'active' — re-opening it for donations and a second
+    // release. The affected-row check also prevents a duplicate approval audit.
+    const { data, error } = await supabase
+      .from('campaigns')
+      .update({ status: 'active', published_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('status', 'pending_review')
+      .select('id, title, slug, organizer_id');
+    if (error) return fail('save_failed', undefined, error.message);
+    if (!data || data.length === 0) {
+      return fail('campaign_not_pending');
+    }
+    await logAudit({
+      actorId: adminId,
+      action: 'campaign.approved',
+      entityType: 'campaign',
+      entityId: id,
   });
   // Best-effort: tell the organizer their fundraiser is live. Never fail the
   // approval on an email error.
@@ -135,31 +96,37 @@ export async function approveCampaign(id: string): Promise<ActionResult> {
   revalidatePath('/admin/campaigns');
   revalidatePath(`/admin/campaigns/${id}`);
   revalidatePath('/admin');
-  return { ok: true };
+  return succeed();
+  });
 }
 
 /** Reject a campaign (only one still awaiting review). */
-export async function rejectCampaign(id: string): Promise<ActionResult> {
-  const adminId = await requireAdminId();
-  const supabase = createAdminSupabase();
-  // Mirror approveCampaign: only a pending-review campaign may be rejected, so a
-  // stale/crafted request can't reject a completed or active campaign and
-  // corrupt its state. (The UI only offers reject from pending_review.)
-  const { data, error } = await supabase
-    .from('campaigns')
-    .update({ status: 'rejected' })
-    .eq('id', id)
-    .eq('status', 'pending_review')
-    .select('id, title, organizer_id');
-  if (error) return { ok: false, error: error.message };
-  if (!data || data.length === 0) {
-    return { ok: false, error: 'Campaign is not pending review' };
-  }
-  await logAudit({
-    actorId: adminId,
-    action: 'campaign.rejected',
-    entityType: 'campaign',
-    entityId: id,
+export async function rejectCampaign(
+  id: string,
+  _prev: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  return runAction('admin-reject', async () => {
+    const adminId = await requireAdminId();
+    const supabase = createAdminSupabase();
+    // Mirror approveCampaign: only a pending-review campaign may be rejected, so a
+    // stale/crafted request can't reject a completed or active campaign and
+    // corrupt its state. (The UI only offers reject from pending_review.)
+    const { data, error } = await supabase
+      .from('campaigns')
+      .update({ status: 'rejected' })
+      .eq('id', id)
+      .eq('status', 'pending_review')
+      .select('id, title, organizer_id');
+    if (error) return fail('save_failed', undefined, error.message);
+    if (!data || data.length === 0) {
+      return fail('campaign_not_pending');
+    }
+    await logAudit({
+      actorId: adminId,
+      action: 'campaign.rejected',
+      entityType: 'campaign',
+      entityId: id,
   });
   // Best-effort: let the organizer know, with an invitation to fix and resubmit.
   const rejected = data[0];
@@ -182,50 +149,52 @@ export async function rejectCampaign(id: string): Promise<ActionResult> {
   revalidatePath('/admin/campaigns');
   revalidatePath(`/admin/campaigns/${id}`);
   revalidatePath('/admin');
-  return { ok: true };
+  return succeed();
+  });
 }
 
 /** Approve/reject a verification, recording the reviewing admin and time. */
 export async function setVerification(
   verificationId: string,
   status: VerificationStatus,
-): Promise<ActionResult> {
-  const adminId = await requireAdminId();
-  const supabase = createAdminSupabase();
-  // A verification is decided once. Scope the write to reviewable states so an
-  // already approved/rejected decision can't be flipped — these feed the
-  // fund-release gate, so a retroactive change (e.g. after release) would
-  // corrupt the trust record — and so re-decisions don't pile up duplicate
-  // audit entries. The affected-row check also closes the concurrent-review race.
-  const { data, error } = await supabase
-    .from('verifications')
-    .update({
-      status,
-      reviewed_by: adminId,
-      reviewed_at: new Date().toISOString(),
-    })
-    .eq('id', verificationId)
-    .in('status', ['pending', 'submitted'])
-    .select('campaign_id');
-  if (error) return { ok: false, error: error.message };
-  if (!data || data.length === 0) {
-    return {
-      ok: false,
-      error: 'Verification not found or already reviewed',
-    };
-  }
-  const campaignId = (data[0]?.campaign_id as string | null) ?? null;
-  await logAudit({
-    actorId: adminId,
-    action: `verification.${status}`,
-    entityType: 'verification',
-    entityId: verificationId,
-    metadata: { campaignId: campaignId ?? null },
+  _prev: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  return runAction('admin-verification', async () => {
+    const adminId = await requireAdminId();
+    const supabase = createAdminSupabase();
+    // A verification is decided once. Scope the write to reviewable states so an
+    // already approved/rejected decision can't be flipped — these feed the
+    // fund-release gate, so a retroactive change (e.g. after release) would
+    // corrupt the trust record — and so re-decisions don't pile up duplicate
+    // audit entries. The affected-row check also closes the concurrent-review race.
+    const { data, error } = await supabase
+      .from('verifications')
+      .update({
+        status,
+        reviewed_by: adminId,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq('id', verificationId)
+      .in('status', ['pending', 'submitted'])
+      .select('campaign_id');
+    if (error) return fail('save_failed', undefined, error.message);
+    if (!data || data.length === 0) {
+      return fail('verification_already_reviewed');
+    }
+    const campaignId = (data[0]?.campaign_id as string | null) ?? null;
+    await logAudit({
+      actorId: adminId,
+      action: `verification.${status}`,
+      entityType: 'verification',
+      entityId: verificationId,
+      metadata: { campaignId: campaignId ?? null },
   });
   if (campaignId) revalidatePath(`/admin/campaigns/${campaignId}`);
   revalidatePath('/admin/verifications');
   revalidatePath('/admin');
-  return { ok: true };
+  return succeed();
+  });
 }
 
 /**
@@ -234,61 +203,61 @@ export async function setVerification(
  */
 export async function ensureOnboarding(
   beneficiaryId: string,
-): Promise<ActionResult> {
-  const adminId = await requireAdminId();
-  const supabase = createAdminSupabase();
+  _prev: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  return runAction('admin-onboarding', async () => {
+    const adminId = await requireAdminId();
+    const supabase = createAdminSupabase();
 
-  const { data: beneficiary, error: bErr } = await supabase
-    .from('beneficiaries')
-    .select(
-      'id, type, organization_id, campaign_id, stripe_connect_account_id, organizations(id, contact_email, stripe_connect_account_id)',
-    )
-    .eq('id', beneficiaryId)
-    .single();
-  if (bErr || !beneficiary) {
-    return { ok: false, error: bErr?.message ?? 'Beneficiary not found' };
-  }
-
-  const org = Array.isArray(beneficiary.organizations)
-    ? beneficiary.organizations[0]
-    : beneficiary.organizations;
-
-  // Organization beneficiaries onboard via the org's connect account.
-  if (beneficiary.type === 'organization' && org) {
-    let accountId = org.stripe_connect_account_id;
-    if (!accountId) {
-      accountId = await createConnectAccount({
-        email: org.contact_email ?? undefined,
-      });
-      const { error } = await supabase
-        .from('organizations')
-        .update({ stripe_connect_account_id: accountId })
-        .eq('id', org.id);
-      if (error) return { ok: false, error: error.message };
-    }
-    const url = await createOnboardingLink(accountId);
-    await logAudit({
-      actorId: adminId,
-      action: 'beneficiary.onboarding_link',
-      entityType: 'beneficiary',
-      entityId: beneficiary.id,
-      metadata: { campaignId: beneficiary.campaign_id },
-    });
-    revalidatePath(`/admin/campaigns/${beneficiary.campaign_id}`);
-    return { ok: true, url };
-  }
-
-  // Individual (or org-less) beneficiary onboards on the beneficiary record.
-  let accountId = beneficiary.stripe_connect_account_id;
-  if (!accountId) {
-    accountId = await createConnectAccount({});
-    const { error } = await supabase
+    const { data: beneficiary, error: bErr } = await supabase
       .from('beneficiaries')
-      .update({ stripe_connect_account_id: accountId })
-      .eq('id', beneficiary.id);
-    if (error) return { ok: false, error: error.message };
+      .select(
+        'id, type, organization_id, campaign_id, stripe_connect_account_id, organizations(id, contact_email, stripe_connect_account_id)',
+      )
+      .eq('id', beneficiaryId)
+      .single();
+    if (bErr || !beneficiary) {
+      return fail('beneficiary_not_found', undefined, bErr?.message);
+    }
+
+    const org = Array.isArray(beneficiary.organizations)
+      ? beneficiary.organizations[0]
+      : beneficiary.organizations;
+
+    // Organization beneficiaries onboard via the org's connect account.
+    let url: string;
+    try {
+      if (beneficiary.type === 'organization' && org) {
+        let accountId = org.stripe_connect_account_id;
+        if (!accountId) {
+          accountId = await createConnectAccount({
+            email: org.contact_email ?? undefined,
+        });
+        const { error } = await supabase
+          .from('organizations')
+          .update({ stripe_connect_account_id: accountId })
+          .eq('id', org.id);
+        if (error) return fail('save_failed', undefined, error.message);
+      }
+      url = await createOnboardingLink(accountId);
+    } else {
+      // Individual (or org-less) beneficiary onboards on the beneficiary record.
+      let accountId = beneficiary.stripe_connect_account_id;
+      if (!accountId) {
+        accountId = await createConnectAccount({});
+        const { error } = await supabase
+          .from('beneficiaries')
+          .update({ stripe_connect_account_id: accountId })
+          .eq('id', beneficiary.id);
+        if (error) return fail('save_failed', undefined, error.message);
+      }
+      url = await createOnboardingLink(accountId);
+    }
+  } catch (err) {
+    console.error('[admin-onboarding]', err);
+    return fail('onboarding_link_failed');
   }
-  const url = await createOnboardingLink(accountId);
   await logAudit({
     actorId: adminId,
     action: 'beneficiary.onboarding_link',
@@ -297,7 +266,9 @@ export async function ensureOnboarding(
     metadata: { campaignId: beneficiary.campaign_id },
   });
   revalidatePath(`/admin/campaigns/${beneficiary.campaign_id}`);
-  return { ok: true, url };
+  // Hosted Stripe onboarding is a full-page flow — send the admin straight there.
+  redirect(url);
+  });
 }
 
 /**
@@ -305,67 +276,72 @@ export async function ensureOnboarding(
  * server-side, computes the un-released balance, transfers via Stripe, records
  * a payout row and notifies the beneficiary. Guards against double release.
  */
-export async function releaseFunds(campaignId: string): Promise<ActionResult> {
-  const adminId = await requireAdminId();
-  const supabase = createAdminSupabase();
+export async function releaseFunds(
+  campaignId: string,
+  _prev: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  return runAction('admin-release', async () => {
+    const adminId = await requireAdminId();
+    const supabase = createAdminSupabase();
 
-  const { data: campaign, error: cErr } = await supabase
-    .from('campaigns')
-    .select('id, title, currency, amount_raised, status')
-    .eq('id', campaignId)
-    .single();
-  if (cErr || !campaign) {
-    return { ok: false, error: cErr?.message ?? 'Campaign not found' };
-  }
+    const { data: campaign, error: cErr } = await supabase
+      .from('campaigns')
+      .select('id, title, currency, amount_raised, status')
+      .eq('id', campaignId)
+      .single();
+    if (cErr || !campaign) {
+      return fail('campaign_not_found', undefined, cErr?.message);
+    }
 
-  const { data: beneficiary, error: bErr } = await supabase
-    .from('beneficiaries')
-    .select(
-      'id, type, display_name, stripe_connect_account_id, stripe_onboarding_complete, organization_id, organizations(contact_email, stripe_connect_account_id, stripe_onboarding_complete), profiles:individual_profile_id(email)',
-    )
-    .eq('campaign_id', campaignId)
-    .eq('is_active', true)
-    .single();
-  if (bErr || !beneficiary) {
-    return { ok: false, error: bErr?.message ?? 'No active beneficiary' };
-  }
+    const { data: beneficiary, error: bErr } = await supabase
+      .from('beneficiaries')
+      .select(
+        'id, type, display_name, stripe_connect_account_id, stripe_onboarding_complete, organization_id, organizations(contact_email, stripe_connect_account_id, stripe_onboarding_complete), profiles:individual_profile_id(email)',
+      )
+      .eq('campaign_id', campaignId)
+      .eq('is_active', true)
+      .single();
+    if (bErr || !beneficiary) {
+      return fail('beneficiary_not_found', undefined, bErr?.message);
+    }
 
-  const org = Array.isArray(beneficiary.organizations)
-    ? beneficiary.organizations[0]
-    : beneficiary.organizations;
+    const org = Array.isArray(beneficiary.organizations)
+      ? beneficiary.organizations[0]
+      : beneficiary.organizations;
 
-  const destinationAccountId =
-    beneficiary.type === 'organization'
-      ? org?.stripe_connect_account_id ?? beneficiary.stripe_connect_account_id
-      : beneficiary.stripe_connect_account_id;
-  const onboardingComplete =
-    beneficiary.type === 'organization'
-      ? Boolean(org?.stripe_onboarding_complete) ||
-        beneficiary.stripe_onboarding_complete
-      : beneficiary.stripe_onboarding_complete;
+    const destinationAccountId =
+      beneficiary.type === 'organization'
+        ? org?.stripe_connect_account_id ?? beneficiary.stripe_connect_account_id
+        : beneficiary.stripe_connect_account_id;
+    const onboardingComplete =
+      beneficiary.type === 'organization'
+        ? Boolean(org?.stripe_onboarding_complete) ||
+          beneficiary.stripe_onboarding_complete
+        : beneficiary.stripe_onboarding_complete;
 
-  // Load verifications (latest of each type).
-  const { data: verifications } = await supabase
-    .from('verifications')
-    .select('type, status, created_at')
-    .eq('campaign_id', campaignId)
-    .order('created_at', { ascending: false });
+    // Load verifications (latest of each type).
+    const { data: verifications } = await supabase
+      .from('verifications')
+      .select('type, status, created_at')
+      .eq('campaign_id', campaignId)
+      .order('created_at', { ascending: false });
 
-  const death =
-    verifications?.find((v) => v.type === 'death')?.status ?? null;
-  const relationship =
-    verifications?.find((v) => v.type === 'relationship')?.status ?? null;
+    const death =
+      verifications?.find((v) => v.type === 'death')?.status ?? null;
+    const relationship =
+      verifications?.find((v) => v.type === 'relationship')?.status ?? null;
 
-  // Re-check the release gate server-side — never trust the client.
-  const eligible = canReleaseFunds({
-    beneficiaryType: beneficiary.type,
-    beneficiaryOnboardingComplete: onboardingComplete,
-    deathVerification: death as VerificationStatus | null,
-    relationshipVerification: relationship as VerificationStatus | null,
+    // Re-check the release gate server-side — never trust the client.
+    const eligible = canReleaseFunds({
+      beneficiaryType: beneficiary.type,
+      beneficiaryOnboardingComplete: onboardingComplete,
+      deathVerification: death as VerificationStatus | null,
+      relationshipVerification: relationship as VerificationStatus | null,
   });
-  if (!eligible) return { ok: false, error: 'Release gate not satisfied' };
+  if (!eligible) return fail('release_gate_not_satisfied');
   if (!destinationAccountId) {
-    return { ok: false, error: 'Beneficiary has no Stripe account' };
+    return fail('release_no_stripe_account');
   }
 
   // Compute the un-released balance in MAJOR units.
@@ -380,7 +356,7 @@ export async function releaseFunds(campaignId: string): Promise<ActionResult> {
 
   const releasable = Number(campaign.amount_raised ?? 0) - alreadyReleased;
   if (releasable <= 0) {
-    return { ok: false, error: 'Nothing left to release' };
+    return fail('release_nothing_left');
   }
   const releasableMinor = toMinorUnits(releasable);
 
@@ -394,7 +370,7 @@ export async function releaseFunds(campaignId: string): Promise<ActionResult> {
     .eq('status', 'active')
     .select('id');
   if (!claimed || claimed.length === 0) {
-    return { ok: false, error: 'Campaign already released or not active' };
+    return fail('release_already_claimed');
   }
 
   // Durably record the payout *intent* BEFORE any money moves. This is the
@@ -419,7 +395,7 @@ export async function releaseFunds(campaignId: string): Promise<ActionResult> {
       .from('campaigns')
       .update({ status: 'active' })
       .eq('id', campaignId);
-    return { ok: false, error: insertErr?.message ?? 'Could not record payout' };
+    return fail('payout_record_failed', undefined, insertErr?.message);
   }
 
   let transfer;
@@ -446,10 +422,11 @@ export async function releaseFunds(campaignId: string): Promise<ActionResult> {
       .from('campaigns')
       .update({ status: 'active' })
       .eq('id', campaignId);
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : 'Stripe transfer failed',
-    };
+    return fail(
+      'transfer_failed',
+      undefined,
+      err instanceof Error ? err.message : undefined,
+    );
   }
 
   // Money has moved — attach the transfer id and advance the payout. If this
@@ -496,82 +473,101 @@ export async function releaseFunds(campaignId: string): Promise<ActionResult> {
   revalidatePath(`/admin/campaigns/${campaignId}`);
   revalidatePath('/admin/campaigns');
   revalidatePath('/admin');
-  return { ok: true };
+  return succeed();
+  });
 }
 
 /** Pause an active campaign (active -> 'paused'). */
-export async function pauseCampaign(id: string): Promise<ActionResult> {
-  const adminId = await requireAdminId();
-  const supabase = createAdminSupabase();
-  const { data, error } = await supabase
-    .from('campaigns')
-    .update({ status: 'paused' })
-    .eq('id', id)
-    .eq('status', 'active')
-    .select('id');
-  if (error) return { ok: false, error: error.message };
-  if (!data || data.length === 0) {
-    return { ok: false, error: 'Campaign is not active' };
-  }
-  await logAudit({
-    actorId: adminId,
-    action: 'campaign.paused',
-    entityType: 'campaign',
-    entityId: id,
+export async function pauseCampaign(
+  id: string,
+  _prev: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  return runAction('admin-pause', async () => {
+    const adminId = await requireAdminId();
+    const supabase = createAdminSupabase();
+    const { data, error } = await supabase
+      .from('campaigns')
+      .update({ status: 'paused' })
+      .eq('id', id)
+      .eq('status', 'active')
+      .select('id');
+    if (error) return fail('save_failed', undefined, error.message);
+    if (!data || data.length === 0) {
+      return fail('campaign_not_active');
+    }
+    await logAudit({
+      actorId: adminId,
+      action: 'campaign.paused',
+      entityType: 'campaign',
+      entityId: id,
   });
   revalidateCampaign(id);
-  return { ok: true };
+  return succeed();
+  });
 }
 
 /** Resume a paused campaign (paused -> 'active'). */
-export async function resumeCampaign(id: string): Promise<ActionResult> {
-  const adminId = await requireAdminId();
-  const supabase = createAdminSupabase();
-  const { data, error } = await supabase
-    .from('campaigns')
-    .update({ status: 'active' })
-    .eq('id', id)
-    .eq('status', 'paused')
-    .select('id');
-  if (error) return { ok: false, error: error.message };
-  if (!data || data.length === 0) {
-    return { ok: false, error: 'Campaign is not paused' };
-  }
-  await logAudit({
-    actorId: adminId,
-    action: 'campaign.resumed',
-    entityType: 'campaign',
-    entityId: id,
+export async function resumeCampaign(
+  id: string,
+  _prev: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  return runAction('admin-resume', async () => {
+    const adminId = await requireAdminId();
+    const supabase = createAdminSupabase();
+    const { data, error } = await supabase
+      .from('campaigns')
+      .update({ status: 'active' })
+      .eq('id', id)
+      .eq('status', 'paused')
+      .select('id');
+    if (error) return fail('save_failed', undefined, error.message);
+    if (!data || data.length === 0) {
+      return fail('campaign_not_paused');
+    }
+    await logAudit({
+      actorId: adminId,
+      action: 'campaign.resumed',
+      entityType: 'campaign',
+      entityId: id,
   });
   revalidateCampaign(id);
-  return { ok: true };
+  return succeed();
+  });
 }
 
 /** Close a campaign (status -> 'closed'). */
-export async function closeCampaign(id: string): Promise<ActionResult> {
-  const adminId = await requireAdminId();
-  const supabase = createAdminSupabase();
-  // Guard the transition and confirm a row actually changed: a campaign that
-  // is already closed (or a stale/duplicate request) must not write a spurious
-  // 'campaign.closed' entry to the audit log.
-  const { data, error } = await supabase
-    .from('campaigns')
-    .update({ status: 'closed' })
-    .eq('id', id)
-    .neq('status', 'closed')
-    .select('id');
-  if (error) return { ok: false, error: error.message };
-  if (!data || data.length === 0) {
-    return { ok: false, error: 'Campaign not found or already closed' };
-  }
-  await logAudit({
-    actorId: adminId,
-    action: 'campaign.closed',
-    entityType: 'campaign',
-    entityId: id,
+export async function closeCampaign(
+  id: string,
+  _prev: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  return runAction('admin-close', async () => {
+    const adminId = await requireAdminId();
+    const supabase = createAdminSupabase();
+    // Guard the transition and confirm a row actually changed: a campaign that
+    // is already closed (or a stale/duplicate request) must not write a spurious
+    // 'campaign.closed' entry to the audit log.
+    const { data, error } = await supabase
+      .from('campaigns')
+      .update({ status: 'closed' })
+      .eq('id', id)
+      .neq('status', 'closed')
+      .select('id');
+    if (error) return fail('save_failed', undefined, error.message);
+    if (!data || data.length === 0) {
+      return fail('campaign_already_closed');
+    }
+    await logAudit({
+      actorId: adminId,
+      action: 'campaign.closed',
+      entityType: 'campaign',
+      entityId: id,
   });
   revalidateCampaign(id);
-  return { ok: true };
+  return succeed();
+  });
 }
 
 /**
@@ -579,33 +575,39 @@ export async function closeCampaign(id: string): Promise<ActionResult> {
  * writing the result back. This is the one legitimate place to write
  * campaigns.amount_raised.
  */
-export async function recomputeAmountRaised(id: string): Promise<ActionResult> {
-  const adminId = await requireAdminId();
-  const supabase = createAdminSupabase();
+export async function recomputeAmountRaised(
+  id: string,
+  _prev: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  return runAction('admin-recompute', async () => {
+    const adminId = await requireAdminId();
+    const supabase = createAdminSupabase();
 
-  const { data: donations, error: dErr } = await supabase
-    .from('donations')
-    .select('amount, status')
-    .eq('campaign_id', id);
-  if (dErr) return { ok: false, error: dErr.message };
+    const { data: donations, error: dErr } = await supabase
+      .from('donations')
+      .select('amount, status')
+      .eq('campaign_id', id);
+    if (dErr) return fail('save_failed', undefined, dErr.message);
 
-  const total = (donations ?? [])
-    .filter((d) => d.status === 'succeeded')
-    .reduce((sum, d) => sum + Number(d.amount ?? 0), 0);
+    const total = (donations ?? [])
+      .filter((d) => d.status === 'succeeded')
+      .reduce((sum, d) => sum + Number(d.amount ?? 0), 0);
 
-  const { error } = await supabase
-    .from('campaigns')
-    .update({ amount_raised: total })
-    .eq('id', id);
-  if (error) return { ok: false, error: error.message };
+    const { error } = await supabase
+      .from('campaigns')
+      .update({ amount_raised: total })
+      .eq('id', id);
+    if (error) return fail('save_failed', undefined, error.message);
 
-  await logAudit({
-    actorId: adminId,
-    action: 'campaign.amount_recomputed',
-    entityType: 'campaign',
-    entityId: id,
-    metadata: { amountRaised: total },
+    await logAudit({
+      actorId: adminId,
+      action: 'campaign.amount_recomputed',
+      entityType: 'campaign',
+      entityId: id,
+      metadata: { amountRaised: total },
   });
   revalidateCampaign(id);
-  return { ok: true };
+  return succeed();
+  });
 }
