@@ -17,6 +17,9 @@ primary_region = 'iad'  # US East — close to the Supabase us-east-1 project
     NEXT_PUBLIC_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1Z2RuZHNtdGxqaWhudWhwbmtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5ODY0MzIsImV4cCI6MjA5NzU2MjQzMn0.9MONxE2OkSxKSwzPO_Bf2jcbpxzCZNDbuXS_0xWVW9g'
     NEXT_PUBLIC_APP_URL = 'https://laal.app'
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = ''
+    # Public by design; inlined into the client bundle at build time. Set the
+    # value once the Sentry project exists (empty disables the client SDK).
+    NEXT_PUBLIC_SENTRY_DSN = ''
 
 [http_service]
   internal_port = 3000

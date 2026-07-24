@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import createNextIntlPlugin from 'next-intl/plugin';
+import { withSentryConfig } from '@sentry/nextjs';
 
 const monorepoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -24,4 +25,10 @@ const nextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+// Sentry wraps last. Source-map upload stays off until CI has an auth token;
+// server stack traces are still readable without it.
+export default withSentryConfig(withNextIntl(nextConfig), {
+  silent: true,
+  sourcemaps: { disable: true },
+  telemetry: false,
+});

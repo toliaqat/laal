@@ -1,4 +1,5 @@
 import { unstable_rethrow } from 'next/navigation';
+import * as Sentry from '@sentry/nextjs';
 import { ActionError, fail, type ActionState } from './action-result';
 
 /**
@@ -22,6 +23,8 @@ export async function runAction(
       return fail(err.code, err.values, err.message);
     }
     console.error(`[${tag}]`, err);
+    // Every 'unexpected' a user sees becomes a traceable event.
+    Sentry.captureException(err, { tags: { action: tag } });
     return fail('unexpected');
   }
 }
