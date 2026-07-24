@@ -26,5 +26,7 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${base}/login`);
+  // Failed or missing code exchange: land on login with a visible explanation
+  // instead of silently dropping the user there.
+  return NextResponse.redirect(`${base}/login?error=oauth`);
 }

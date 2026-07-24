@@ -6,9 +6,9 @@ import { GoogleButton } from '../google-button';
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; error?: string }>;
 }) {
-  const { next } = await searchParams;
+  const { next, error } = await searchParams;
   const t = await getTranslations('auth');
 
   return (
@@ -19,6 +19,12 @@ export default async function LoginPage({
           {t('login.subtitle')}
         </p>
       </div>
+
+      {error === 'oauth' ? (
+        <p className="error-text" style={{ margin: 0 }}>
+          {t('login.oauthError')}
+        </p>
+      ) : null}
 
       <LoginForm next={next} />
 
