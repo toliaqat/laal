@@ -1,0 +1,17 @@
+{
+  "extends": "next/core-web-vitals",
+  "overrides": [
+    {
+      "files": ["app/**/actions.ts", "app/actions/**/*.ts"],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "ThrowStatement > NewExpression[callee.name='Error']",
+            "message": "Server actions must not throw raw Error for recoverable failures — return fail(code) or throw ActionError (lib/action-result.ts). For genuine invariants (hidden-field tampering), add an eslint-disable comment with a justification."
+          }
+        ]
+      }
+    }
+  ]
+}

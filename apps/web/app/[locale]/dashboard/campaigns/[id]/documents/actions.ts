@@ -47,6 +47,7 @@ export async function uploadDocument(
     const type = String(formData.get('type') ?? '').trim();
     const file = formData.get('file');
 
+    // eslint-disable-next-line no-restricted-syntax -- hidden-field invariant, not user-recoverable
     if (!campaignId) throw new Error('Missing campaign.'); // hidden field
     if (!DOC_TYPES.includes(type as DocumentType)) {
       return fail('doc_type_invalid');
@@ -94,6 +95,7 @@ export async function deleteDocument(
   return runAction('documents', async () => {
     const campaignId = String(formData.get('campaignId') ?? '').trim();
     const documentId = String(formData.get('documentId') ?? '').trim();
+    // eslint-disable-next-line no-restricted-syntax -- hidden-field invariant, not user-recoverable
     if (!campaignId || !documentId) throw new Error('Missing document.');
 
     const { supabase } = await requireOwnedCampaign(campaignId);

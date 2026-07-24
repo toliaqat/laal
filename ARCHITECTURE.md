@@ -173,3 +173,34 @@ upstream is content/review; everything downstream is money movement.
 
 **Orgs are additive, not blocking:** the individual-beneficiary track makes the
 app useful with zero orgs onboarded; partners are a trust upgrade layered on top.
+
+## 7. Server-action error handling
+
+Every server action follows one contract (`apps/web/lib/action-result.ts`):
+
+- Signature: `(prev: ActionState, formData: FormData) => Promise<ActionState>`
+  (admin actions prepend bound args, e.g. `approveCampaign.bind(null, id)`).
+- The body runs inside `runAction('tag', async () => { ... })`
+  (`apps/web/lib/run-action.ts`), which rethrows Next control flow
+  (`unstable_rethrow` — load-bearing: without it every success `redirect()`
+  becomes an error), converts thrown `ActionError`s, and turns anything else
+  into a logged `fail('unexpected')`. Never remove that rethrow.
+- **User-recoverable failures return `fail(code)`** — never `throw`. `code`
+  keys into the `errors.*` namespace in `packages/i18n/messages/{en,ur}.json`;
+  both locales must gain the key in the same commit (enforced by
+  `packages/i18n/src/messages-parity.test.ts`). Urdu copy goes through the
+  translation-review pass, not machine translation.
+- Shared helpers below an action (cover-image validation, org/admin auth
+  guards) `throw new ActionError(code)` instead; `runAction` converts it.
+- Genuine invariants (hidden-field tampering) may `throw new Error` with an
+  `eslint-disable-next-line no-restricted-syntax` justification — the lint
+  rule in `apps/web/.eslintrc.json` bans raw throws in action files otherwise.
+- `fail(..., detail)` carries the raw Supabase/Stripe message. It renders only
+  behind `showDetail` (admin surfaces); public forms show the translated code.
+- Forms: client components use `useActionState` + `<FormAlert state={state}>`
+  directly; server-component pages wrap forms in `<ActionForm action={...}>`
+  with `<SubmitButton>` for pending state (`apps/web/components/form.tsx`).
+- Backstops: `app/[locale]/error.tsx` (translated recovery page + digest) and
+  `app/global-error.tsx` (self-contained, bilingual) catch whatever still
+  throws; Sentry (`instrumentation.ts`) records every `unexpected` and
+  boundary hit.

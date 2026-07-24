@@ -105,13 +105,16 @@ export type ActionState =
  * boundary. `runAction` converts it into `fail(code, values, detail)`.
  */
 export class ActionError extends Error {
-  constructor(
-    public readonly code: ErrorCode,
-    public readonly values?: ErrorValues,
-    detail?: string,
-  ) {
+  readonly code: ErrorCode;
+  readonly values?: ErrorValues;
+
+  // No TS parameter properties here — they break Node's strip-only TS mode,
+  // which runs these files directly under `node --test`.
+  constructor(code: ErrorCode, values?: ErrorValues, detail?: string) {
     super(detail ?? code);
     this.name = 'ActionError';
+    this.code = code;
+    this.values = values;
   }
 }
 

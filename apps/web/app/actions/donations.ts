@@ -25,6 +25,7 @@ export async function startDonation(
 
     if (!campaignId) {
       // Hidden field — absence means tampering, not a user mistake.
+      // eslint-disable-next-line no-restricted-syntax -- hidden-field invariant, not user-recoverable
       throw new Error('Missing campaign details.');
     }
 

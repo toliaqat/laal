@@ -12,5 +12,7 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  // Test files run via `node --test` (native TS), which requires explicit .ts
+  // import extensions that tsc rejects here (same pattern as packages/types).
+  "exclude": ["node_modules", "**/*.test.ts"]
 }

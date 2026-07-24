@@ -28,6 +28,7 @@ export async function updateOrgProfile(
 ): Promise<ActionState> {
   return runAction('org-profile', async () => {
     const orgId = str(formData, 'organization_id');
+    // eslint-disable-next-line no-restricted-syntax -- hidden-field invariant, not user-recoverable
     if (!orgId) throw new Error('Missing organization id');
     const profileId = await requireOrgLead(orgId);
     const supabase = createAdminSupabase();
@@ -75,6 +76,7 @@ export async function startOrgOnboarding(
 ): Promise<ActionState> {
   return runAction('org-onboarding', async () => {
     const orgId = str(formData, 'organization_id');
+    // eslint-disable-next-line no-restricted-syntax -- hidden-field invariant, not user-recoverable
     if (!orgId) throw new Error('Missing organization id');
     const profileId = await requireOrgLead(orgId);
     const supabase = createAdminSupabase();

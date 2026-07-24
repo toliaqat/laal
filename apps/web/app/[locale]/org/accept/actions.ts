@@ -33,6 +33,7 @@ export async function acceptOrgInvite(
 ): Promise<ActionState> {
   return runAction('org-invite', async () => {
     const token = str(formData, 'token');
+    // eslint-disable-next-line no-restricted-syntax -- hidden-field invariant, not user-recoverable
     if (!token) throw new Error('Missing invite token');
 
     const user = await getCurrentUser();

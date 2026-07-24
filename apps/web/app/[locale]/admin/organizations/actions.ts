@@ -90,6 +90,7 @@ export async function updateOrganization(
     const supabase = createAdminSupabase();
 
     const id = str(formData, 'id');
+    // eslint-disable-next-line no-restricted-syntax -- hidden-field invariant, not user-recoverable
     if (!id) throw new Error('Missing organization id');
 
     const name = str(formData, 'name');
@@ -219,6 +220,7 @@ export async function revokeOrgInvite(
     const adminId = await requireAdminId();
     const supabase = createAdminSupabase();
     const inviteId = str(formData, 'invite_id');
+    // eslint-disable-next-line no-restricted-syntax -- hidden-field invariant, not user-recoverable
     if (!inviteId) throw new Error('Missing invite id');
 
     const { data, error } = await supabase
