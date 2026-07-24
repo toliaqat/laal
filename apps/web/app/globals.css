@@ -141,6 +141,16 @@ p { margin: 0 0 1rem; }
 .hint { font-size: 0.8rem; color: var(--muted); }
 .error-text { color: var(--danger); font-size: 0.85rem; }
 
+/* ---- alerts (form outcomes; RTL-safe logical properties) ---- */
+.alert {
+  border: 1px solid; border-radius: var(--radius-sm);
+  padding-block: 0.6rem; padding-inline: 0.85rem;
+  font-size: 0.9rem; line-height: 1.45;
+}
+.alert-danger { background: #f4ddd7; color: #8c4234; border-color: #e8c6bc; }
+.alert-success { background: #e8efe2; color: #3f5636; border-color: #cfe0c4; }
+.alert-info { background: var(--accent-soft, #f6ecd9); color: var(--ink-soft); border-color: var(--line); }
+
 /* ---- badges ---- */
 .badge {
   display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.75rem;

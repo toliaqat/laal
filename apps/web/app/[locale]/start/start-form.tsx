@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useActionState, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button, Card, Field } from '@/components/ui';
+import { FormAlert } from '@/components/form';
 import { CoverImageInput } from '@/components/cover-image-input';
 import { createCampaign } from './actions';
 
@@ -10,6 +11,7 @@ type OrgOption = { id: string; name: string };
 
 export function StartForm({ orgs }: { orgs: OrgOption[] }) {
   const t = useTranslations('start');
+  const [state, formAction, pending] = useActionState(createCampaign, null);
   const [kind, setKind] = useState<'organization' | 'individual'>(
     orgs.length > 0 ? 'organization' : 'individual',
   );
@@ -18,7 +20,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
   >('local_burial');
 
   return (
-    <form action={createCampaign} className="stack">
+    <form action={formAction} className="stack">
       <Card large>
         <div className="stack">
           <Field label={t('form.titleLabel')}>
@@ -213,8 +215,10 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
         </div>
       </Card>
 
-      <Button type="submit" variant="primary" block>
-        {t('form.submit')}
+      <FormAlert state={state} />
+
+      <Button type="submit" variant="primary" block disabled={pending}>
+        {pending ? t('form.submitting') : t('form.submit')}
       </Button>
     </form>
   );

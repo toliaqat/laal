@@ -1,6 +1,7 @@
 import 'server-only';
 
 import sharp from 'sharp';
+import { ActionError } from '@/lib/action-result';
 import {
   coverImageKey,
   coverKeyFromUrl,
@@ -29,19 +30,22 @@ export function hasCoverFile(value: FormDataEntryValue | null): boolean {
 }
 
 /**
- * Validate a cover-image upload by type and size, throwing a user-facing error
- * if it is unusable. Call this BEFORE any expensive work (e.g. creating the
+ * Validate a cover-image upload by type and size, throwing a recoverable
+ * {@link ActionError} (converted to an inline form message by runAction) if it
+ * is unusable. Call this BEFORE any expensive work (e.g. creating the
  * campaign) so a bad file fails fast. Returns the validated File.
  */
 export function assertValidCoverFile(value: FormDataEntryValue | null): File {
   if (!(value instanceof File) || value.size === 0) {
-    throw new Error('Please choose an image to upload.');
+    throw new ActionError('cover_missing');
   }
   if (value.size > MAX_BYTES) {
-    throw new Error('Image is too large (max 8MB).');
+    throw new ActionError('cover_too_large', {
+      maxMb: Math.floor(MAX_BYTES / (1024 * 1024)),
+    });
   }
   if (!ALLOWED.includes(value.type)) {
-    throw new Error('Only JPG, PNG or WebP images are allowed.');
+    throw new ActionError('cover_invalid_type');
   }
   return value;
 }

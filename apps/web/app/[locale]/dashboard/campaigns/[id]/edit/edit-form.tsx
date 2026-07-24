@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useActionState, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { Beneficiary, Campaign } from '@laal/types';
 import { Button, Card, Field } from '@/components/ui';
+import { FormAlert } from '@/components/form';
 import { CoverImageInput } from '@/components/cover-image-input';
 import { updateCampaign } from './actions';
 
@@ -21,11 +22,12 @@ export function EditForm({
   const t = useTranslations('dashboard');
   const initialKind: 'organization' | 'individual' =
     beneficiary?.type === 'organization' ? 'organization' : 'individual';
+  const [state, formAction, pending] = useActionState(updateCampaign, null);
   const [kind, setKind] = useState<'organization' | 'individual'>(initialKind);
   const [intendedUse, setIntendedUse] = useState(campaign.intended_use);
 
   return (
-    <form action={updateCampaign} className="stack">
+    <form action={formAction} className="stack">
       <input type="hidden" name="campaign_id" value={campaign.id} />
 
       <Card large>
@@ -232,9 +234,11 @@ export function EditForm({
         </div>
       </Card>
 
+      <FormAlert state={state} />
+
       <div className="row wrap">
-        <Button type="submit" variant="primary">
-          {t('editForm.save')}
+        <Button type="submit" variant="primary" disabled={pending}>
+          {pending ? t('editForm.submitting') : t('editForm.save')}
         </Button>
         <Button href="/dashboard" variant="ghost">
           {t('editForm.cancel')}

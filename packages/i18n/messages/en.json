@@ -24,7 +24,8 @@
     "loading": "Loading…",
     "cancel": "Cancel",
     "save": "Save",
-    "back": "Back"
+    "back": "Back",
+    "submitting": "Please wait…"
   },
   "home": {
     "meta": {
@@ -106,7 +107,8 @@
       "emailLabel": "Email",
       "passwordLabel": "Password",
       "submit": "Sign in",
-      "submitting": "Signing in…"
+      "submitting": "Signing in…",
+      "oauthError": "Google sign-in didn't complete. Please try again or use your email and password."
     },
     "signup": {
       "title": "Join Laal",
@@ -172,7 +174,8 @@
       "messageLabel": "Leave a message of condolence (optional)",
       "messagePlaceholder": "A few words for the family…",
       "submit": "Help Now",
-      "submitWithAmount": "Help Now · {amount}"
+      "submitWithAmount": "Help Now · {amount}",
+      "submitting": "Preparing checkout…"
     },
     "supporters": {
       "anonymous": "Anonymous",
@@ -209,7 +212,8 @@
       "deathCityHint": "The city where the death occurred, even if the deceased has since been moved",
       "repatriationCityLabel": "City of burial in Pakistan",
       "repatriationCityHint": "The city where the deceased will be taken for burial",
-      "submit": "Submit for review"
+      "submit": "Submit for review",
+      "submitting": "Creating your fundraiser…"
     },
     "intendedUse": {
       "localBurial": "Local burial",
@@ -292,7 +296,8 @@
       "uploadedHeading": "Uploaded",
       "empty": "No documents uploaded yet.",
       "remove": "Remove",
-      "backToDashboard": "← Back to dashboard"
+      "backToDashboard": "← Back to dashboard",
+      "uploading": "Uploading…"
     },
     "editPage": {
       "meta": {
@@ -322,7 +327,8 @@
       "displayNameLabel": "Name of the person we'll support",
       "relationshipLabel": "Relationship to the deceased",
       "save": "Save changes",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "submitting": "Saving…"
     }
   },
   "org": {
@@ -498,6 +504,71 @@
       "restartTitle": "Restart needed",
       "restartBody": "Laal needs to restart to switch language direction.",
       "restartConfirm": "Restart now"
+    }
+  },
+  "errors": {
+    "unexpected": "Something went wrong on our side. Your details are still in the form — please try again in a moment.",
+    "not_authorized": "You don't have permission to do that.",
+    "save_failed": "Your changes couldn't be saved. Please try again.",
+    "title_required": "Please enter a title for the fundraiser.",
+    "deceased_name_required": "Please enter the name of the deceased.",
+    "goal_amount_invalid": "The goal amount must be a positive number.",
+    "beneficiary_kind_required": "Please choose who receives the funds.",
+    "beneficiary_org_required": "Please select a partner organisation.",
+    "beneficiary_name_required": "Please enter the beneficiary's display name.",
+    "org_not_selectable": "That organisation can't receive funds right now. Please choose another or select an individual beneficiary.",
+    "cover_missing": "Please choose an image to upload.",
+    "cover_too_large": "The photo is too large (max {maxMb}MB). Please choose a smaller image.",
+    "cover_invalid_type": "Only JPG, PNG or WebP images can be used.",
+    "file_required": "Please choose a file to upload.",
+    "file_too_large": "The file is too large (max {maxMb}MB).",
+    "file_invalid_type": "Only PDF or image files (PDF, JPG, PNG, WebP) are allowed.",
+    "doc_type_invalid": "Please choose a valid document type.",
+    "donation_amount_invalid": "Please enter a donation amount between {min} and {max}.",
+    "campaign_not_found": "This fundraiser could not be found.",
+    "campaign_not_accepting": "This fundraiser is not currently accepting donations.",
+    "checkout_failed": "We couldn't start the donation checkout. Please try again.",
+    "org_name_required": "Please enter the organisation's name.",
+    "org_type_invalid": "Please choose an organisation type.",
+    "org_status_invalid": "That status isn't valid.",
+    "org_not_found": "Organisation not found.",
+    "org_not_designated": "This fundraiser is not designated to an organisation.",
+    "onboarding_link_failed": "The onboarding link couldn't be created. Please try again.",
+    "email_invalid": "Please enter a valid email address.",
+    "invite_not_found": "This invitation could not be found.",
+    "invite_email_mismatch": "This invitation was sent to a different email address. Please sign in with that address to accept it.",
+    "invite_used": "This invitation has already been used or revoked.",
+    "invite_expired": "This invitation has expired. Please ask for a new one.",
+    "invite_email_failed": "The invitation couldn't be emailed. Nothing was saved — please try again.",
+    "verification_not_found": "Verification not found.",
+    "verification_already_reviewed": "This verification has already been reviewed.",
+    "verification_status_invalid": "That review decision isn't valid.",
+    "campaign_not_pending": "This campaign is not awaiting review.",
+    "campaign_not_active": "This campaign is not active.",
+    "campaign_not_paused": "This campaign is not paused.",
+    "campaign_already_closed": "This campaign was not found or is already closed.",
+    "release_gate_not_satisfied": "The release requirements aren't met yet (verification and bank onboarding must be complete).",
+    "release_no_stripe_account": "The beneficiary has no Stripe account yet.",
+    "release_nothing_left": "There is nothing left to release.",
+    "release_already_claimed": "Funds were already released, or the campaign is not active.",
+    "payout_record_failed": "The payout couldn't be recorded, so nothing was transferred. Please retry.",
+    "transfer_failed": "The Stripe transfer failed. The campaign has been re-opened for retry.",
+    "beneficiary_not_found": "Beneficiary not found.",
+    "donation_not_found": "Donation not found.",
+    "refund_only_succeeded": "Only a succeeded donation can be refunded.",
+    "refund_no_payment": "This donation has no payment to refund.",
+    "refund_after_release": "Funds for this campaign have been released; a refund now requires reversing the Stripe transfer.",
+    "refund_failed": "The Stripe refund failed.",
+    "refund_record_failed": "The refund was issued, but recording it failed — please reconcile.",
+    "refund_already_done": "This donation was already refunded.",
+    "role_invalid": "That role isn't valid.",
+    "last_admin": "You can't demote the last remaining admin.",
+    "boundary": {
+      "title": "Something went wrong",
+      "body": "We're sorry — an unexpected error occurred. You can try again.",
+      "retry": "Try again",
+      "home": "Back to home",
+      "reference": "Reference: {digest}"
     }
   }
 }
