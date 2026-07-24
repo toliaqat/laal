@@ -17,7 +17,9 @@ const DOC_TYPES: DocumentType[] = [
   'relationship_proof',
   'other',
 ];
-const MAX_BYTES = 8 * 1024 * 1024;
+// 20MB: scanned death certificates arrive as large PDFs/photos that can't be
+// downscaled client-side. Must stay below serverActions.bodySizeLimit (25mb).
+const MAX_BYTES = 20 * 1024 * 1024;
 const MAX_MB = Math.floor(MAX_BYTES / (1024 * 1024));
 const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 

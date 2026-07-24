@@ -18,7 +18,9 @@ const nextConfig = {
   outputFileTracingRoot: monorepoRoot,
   // Allow document uploads (death certificates etc.) through server actions.
   experimental: {
-    serverActions: { bodySizeLimit: '8mb' },
+    // Above the 20MB app-level file caps so our friendly validation message
+    // fires before the framework rejects the request body outright.
+    serverActions: { bodySizeLimit: '25mb' },
   },
 };
 

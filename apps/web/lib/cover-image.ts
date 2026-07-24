@@ -20,7 +20,10 @@ import {
  * The browser preview is convenience only; this module is the source of truth.
  */
 
-const MAX_BYTES = 8 * 1024 * 1024; // 8MB
+// Generous cap: the client downscales before upload, so this only catches
+// files that bypassed it. Must stay below serverActions.bodySizeLimit (25mb)
+// so this friendly check fires before the framework's 413.
+const MAX_BYTES = 20 * 1024 * 1024; // 20MB
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_DIMENSION = 1600;
 

@@ -231,10 +231,11 @@
     },
     "cover": {
       "label": "Cover photo (optional)",
-      "hint": "A photo of your loved one helps people connect with their story. JPG, PNG or WebP, up to 8MB.",
+      "hint": "A photo of your loved one helps people connect with their story. JPG, PNG or WebP, up to 20MB.",
       "photoOfAlt": "Photo of {name}",
       "photoAlt": "Cover photo",
-      "remove": "Remove current photo"
+      "remove": "Remove current photo",
+      "tooLarge": "This photo is too large (max {maxMb}MB). Please choose a smaller one."
     }
   },
   "dashboard": {
@@ -291,7 +292,7 @@
       "uploadTitle": "Upload a document",
       "typeLabel": "Document type",
       "fileLabel": "File",
-      "fileHint": "PDF or image, up to 8MB.",
+      "fileHint": "PDF or image, up to 20MB.",
       "uploadButton": "Upload document",
       "uploadedHeading": "Uploaded",
       "empty": "No documents uploaded yet.",

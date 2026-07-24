@@ -37,7 +37,9 @@ primary_region = 'iad'  # US East — close to the Supabase us-east-1 project
 
 [[vm]]
   size = 'shared-cpu-1x'
-  memory = '512mb'
+  # 1GB: 25mb multipart bodies are buffered in memory and sharp needs decode
+  # headroom for full-size phone photos.
+  memory = '1gb'
 
 # Runtime env (non-secret). The server (createServerSupabase, middleware) reads
 # these at request time, so they must be present at runtime too — not just as
