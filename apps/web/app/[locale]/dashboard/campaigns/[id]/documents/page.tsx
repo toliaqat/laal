@@ -3,7 +3,8 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { createServerSupabase, getCurrentUser } from '@/lib/supabase/server';
-import { Container, Card, Button, Badge } from '@/components/ui';
+import { Container, Card, Badge } from '@/components/ui';
+import { ActionForm, SubmitButton } from '@/components/form';
 import { uploadDocument, deleteDocument } from './actions';
 
 export async function generateMetadata({
@@ -60,7 +61,12 @@ export default async function DocumentsPage({
 
       <Card large style={{ marginTop: '1.5rem' }}>
         <h3 style={{ marginTop: 0 }}>{t('documentsPage.uploadTitle')}</h3>
-        <form action={uploadDocument} className="stack" style={{ gap: '1rem' }}>
+        <ActionForm
+          action={uploadDocument}
+          className="stack"
+          style={{ gap: '1rem' }}
+          successMessage={t('documentsPage.uploadSuccess')}
+        >
           <input type="hidden" name="campaignId" value={id} />
           <div className="field">
             <label className="label">{t('documentsPage.typeLabel')}</label>
@@ -83,10 +89,10 @@ export default async function DocumentsPage({
             />
             <span className="hint">{t('documentsPage.fileHint')}</span>
           </div>
-          <Button type="submit" variant="primary">
+          <SubmitButton pendingLabel={t('documentsPage.uploading')}>
             {t('documentsPage.uploadButton')}
-          </Button>
-        </form>
+          </SubmitButton>
+        </ActionForm>
       </Card>
 
       <h3 style={{ marginTop: '2rem' }}>{t('documentsPage.uploadedHeading')}</h3>
@@ -108,13 +114,13 @@ export default async function DocumentsPage({
                       ? t(`docStatus.${d.status}`)
                       : d.status}
                   </Badge>
-                  <form action={deleteDocument}>
+                  <ActionForm action={deleteDocument}>
                     <input type="hidden" name="campaignId" value={id} />
                     <input type="hidden" name="documentId" value={d.id} />
-                    <button type="submit" className="btn btn-ghost btn-sm">
+                    <SubmitButton variant="ghost" size="sm">
                       {t('documentsPage.remove')}
-                    </button>
-                  </form>
+                    </SubmitButton>
+                  </ActionForm>
                 </span>
               </div>
             </Card>

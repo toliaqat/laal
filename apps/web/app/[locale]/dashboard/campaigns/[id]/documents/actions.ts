@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createServerSupabase, getCurrentUser } from '@/lib/supabase/server';
 import { uploadObject, documentKey, deleteObject } from '@/lib/r2';
+import { fail, succeed, type ActionState } from '@/lib/action-result';
+import { runAction } from '@/lib/run-action';
 import type { DocumentType } from '@laal/types';
 
 const DOC_TYPES: DocumentType[] = [
@@ -16,6 +18,7 @@ const DOC_TYPES: DocumentType[] = [
   'other',
 ];
 const MAX_BYTES = 8 * 1024 * 1024;
+const MAX_MB = Math.floor(MAX_BYTES / (1024 * 1024));
 const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 
 /** Load the campaign, requiring the current user to be its organizer. */
@@ -33,62 +36,77 @@ async function requireOwnedCampaign(campaignId: string) {
 }
 
 /** Upload a supporting document to R2 and record it. Organizer-only. */
-export async function uploadDocument(formData: FormData): Promise<void> {
-  const campaignId = String(formData.get('campaignId') ?? '').trim();
-  const type = String(formData.get('type') ?? '').trim();
-  const file = formData.get('file');
+export async function uploadDocument(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction('documents', async () => {
+    const campaignId = String(formData.get('campaignId') ?? '').trim();
+    const type = String(formData.get('type') ?? '').trim();
+    const file = formData.get('file');
 
-  if (!campaignId) throw new Error('Missing campaign.');
-  if (!DOC_TYPES.includes(type as DocumentType)) {
-    throw new Error('Please choose a valid document type.');
-  }
-  if (!(file instanceof File) || file.size === 0) {
-    throw new Error('Please choose a file to upload.');
-  }
-  if (file.size > MAX_BYTES) throw new Error('File is too large (max 8MB).');
-  if (!ALLOWED.includes(file.type)) {
-    throw new Error('Only PDF or image files (PDF, JPG, PNG, WebP) are allowed.');
-  }
+    if (!campaignId) throw new Error('Missing campaign.'); // hidden field
+    if (!DOC_TYPES.includes(type as DocumentType)) {
+      return fail('doc_type_invalid');
+    }
+    if (!(file instanceof File) || file.size === 0) {
+      return fail('file_required');
+    }
+    if (file.size > MAX_BYTES) {
+      return fail('file_too_large', { maxMb: MAX_MB });
+    }
+    if (!ALLOWED.includes(file.type)) {
+      return fail('file_invalid_type');
+    }
 
-  const { supabase, userId } = await requireOwnedCampaign(campaignId);
+    const { supabase, userId } = await requireOwnedCampaign(campaignId);
 
-  const key = documentKey(campaignId, file.name);
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  await uploadObject(key, bytes, file.type);
+    const key = documentKey(campaignId, file.name);
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    await uploadObject(key, bytes, file.type);
 
-  const { error } = await supabase.from('documents').insert({
-    campaign_id: campaignId,
-    type,
-    storage_path: key,
-    status: 'submitted',
-    uploaded_by: userId,
+    const { error } = await supabase.from('documents').insert({
+      campaign_id: campaignId,
+      type,
+      storage_path: key,
+      status: 'submitted',
+      uploaded_by: userId,
+    });
+    if (error) {
+      // Roll back the orphaned object if the DB write fails.
+      await deleteObject(key).catch(() => {});
+      console.error('[documents]', error);
+      return fail('save_failed', undefined, error.message);
+    }
+
+    revalidatePath(`/dashboard/campaigns/${campaignId}/documents`);
+    return succeed();
   });
-  if (error) {
-    // Roll back the orphaned object if the DB write fails.
-    await deleteObject(key).catch(() => {});
-    throw new Error(error.message);
-  }
-
-  revalidatePath(`/dashboard/campaigns/${campaignId}/documents`);
 }
 
 /** Remove a document (R2 object + row). Organizer-only. */
-export async function deleteDocument(formData: FormData): Promise<void> {
-  const campaignId = String(formData.get('campaignId') ?? '').trim();
-  const documentId = String(formData.get('documentId') ?? '').trim();
-  if (!campaignId || !documentId) throw new Error('Missing document.');
+export async function deleteDocument(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction('documents', async () => {
+    const campaignId = String(formData.get('campaignId') ?? '').trim();
+    const documentId = String(formData.get('documentId') ?? '').trim();
+    if (!campaignId || !documentId) throw new Error('Missing document.');
 
-  const { supabase } = await requireOwnedCampaign(campaignId);
+    const { supabase } = await requireOwnedCampaign(campaignId);
 
-  const { data: doc } = await supabase
-    .from('documents')
-    .select('id, storage_path, campaign_id')
-    .eq('id', documentId)
-    .maybeSingle();
-  if (!doc || doc.campaign_id !== campaignId) redirect('/dashboard');
+    const { data: doc } = await supabase
+      .from('documents')
+      .select('id, storage_path, campaign_id')
+      .eq('id', documentId)
+      .maybeSingle();
+    if (!doc || doc.campaign_id !== campaignId) redirect('/dashboard');
 
-  await deleteObject(doc.storage_path).catch(() => {});
-  await supabase.from('documents').delete().eq('id', documentId);
+    await deleteObject(doc.storage_path).catch(() => {});
+    await supabase.from('documents').delete().eq('id', documentId);
 
-  revalidatePath(`/dashboard/campaigns/${campaignId}/documents`);
+    revalidatePath(`/dashboard/campaigns/${campaignId}/documents`);
+    return succeed();
+  });
 }

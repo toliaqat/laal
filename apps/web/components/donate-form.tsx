@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useActionState, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { FormAlert } from '@/components/form';
 import { startDonation } from '@/app/actions/donations';
 
 const PRESETS = [10, 25, 50];
@@ -32,6 +33,7 @@ export function DonateForm({
   campaignTitle: string;
 }) {
   const t = useTranslations('campaigns');
+  const [state, formAction, pending] = useActionState(startDonation, null);
   const [selected, setSelected] = useState<number>(25);
   const [custom, setCustom] = useState<string>('');
   const sym = symbolFor(currency);
@@ -48,7 +50,7 @@ export function DonateForm({
   const invalid = !Number.isFinite(numeric) || numeric < 1 || overCap;
 
   return (
-    <form action={startDonation} className="stack" style={{ gap: '1rem' }}>
+    <form action={formAction} className="stack" style={{ gap: '1rem' }}>
       <input type="hidden" name="campaignId" value={campaignId} />
       <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="currency" value={currency} />
@@ -147,10 +149,18 @@ export function DonateForm({
         />
       </div>
 
-      <button type="submit" className="btn btn-primary btn-block" disabled={invalid}>
-        {invalid
-          ? t('donate.submit')
-          : t('donate.submitWithAmount', { amount: `${sym}${effectiveAmount}` })}
+      <FormAlert state={state} />
+
+      <button
+        type="submit"
+        className="btn btn-primary btn-block"
+        disabled={invalid || pending}
+      >
+        {pending
+          ? t('donate.submitting')
+          : invalid
+            ? t('donate.submit')
+            : t('donate.submitWithAmount', { amount: `${sym}${effectiveAmount}` })}
       </button>
     </form>
   );

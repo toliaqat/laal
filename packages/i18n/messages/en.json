@@ -297,7 +297,8 @@
       "empty": "No documents uploaded yet.",
       "remove": "Remove",
       "backToDashboard": "← Back to dashboard",
-      "uploading": "Uploading…"
+      "uploading": "Uploading…",
+      "uploadSuccess": "Document uploaded."
     },
     "editPage": {
       "meta": {
