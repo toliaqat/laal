@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { createAdminSupabase, getCurrentUser } from '@/lib/supabase/server';
 import { Button, Card, Field } from '@/components/ui';
+import { ActionForm, SubmitButton } from '@/components/form';
 import { acceptOrgInvite } from './actions';
 
 const ORG_TYPES = [
@@ -94,16 +95,16 @@ export default async function AcceptInvitePage({
           <>
             <h1>{t('joinOrg', { name: org.name })}</h1>
             <p className="muted">{t('joinOrgBody')}</p>
-            <form action={acceptOrgInvite} className="stack">
+            <ActionForm action={acceptOrgInvite} className="stack">
               <input type="hidden" name="token" value={token} />
-              <Button type="submit">{t('acceptAndContinue')}</Button>
-            </form>
+              <SubmitButton>{t('acceptAndContinue')}</SubmitButton>
+            </ActionForm>
           </>
         ) : (
           <>
             <h1>{t('setupOrgTitle')}</h1>
             <p className="muted">{t('setupOrgBody')}</p>
-            <form action={acceptOrgInvite} className="stack">
+            <ActionForm action={acceptOrgInvite} className="stack">
               <input type="hidden" name="token" value={token} />
               <Field label={t('orgNameLabel')}>
                 <input className="input" name="name" required />
@@ -123,8 +124,8 @@ export default async function AcceptInvitePage({
               <Field label={t('fieldDescription')}>
                 <textarea className="textarea" name="description" rows={4} />
               </Field>
-              <Button type="submit">{t('createAndContinue')}</Button>
-            </form>
+              <SubmitButton>{t('createAndContinue')}</SubmitButton>
+            </ActionForm>
           </>
         )}
       </Card>

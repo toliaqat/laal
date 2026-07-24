@@ -4,6 +4,7 @@ import { createAdminSupabase, getCurrentUser } from '@/lib/supabase/server';
 import { getMyMemberships } from '@/lib/org-auth';
 import { presignDownload } from '@/lib/r2';
 import { Button, Card, Field } from '@/components/ui';
+import { ActionForm, SubmitButton } from '@/components/form';
 import { reviewVerification, startOrgOnboarding, updateOrgProfile } from './actions';
 
 function money(amount: number, currency: string): string {
@@ -157,14 +158,14 @@ export default async function OrgPortalPage({
                   </span>
                 </div>
                 {isLead && !org.stripe_onboarding_complete && (
-                  <form action={startOrgOnboarding} style={{ marginTop: '0.75rem' }}>
+                  <ActionForm action={startOrgOnboarding} style={{ marginTop: '0.75rem' }}>
                     <input type="hidden" name="organization_id" value={org.id} />
-                    <Button type="submit">
+                    <SubmitButton>
                       {org.stripe_connect_account_id
                         ? t('finishBankSetup')
                         : t('connectBank')}
-                    </Button>
-                  </form>
+                    </SubmitButton>
+                  </ActionForm>
                 )}
                 {org.status !== 'verified' && (
                   <p className="muted small" style={{ marginTop: '0.5rem' }}>
@@ -278,18 +279,18 @@ export default async function OrgPortalPage({
                             <span className="small muted">{t('reviewed')}</span>
                           ) : (
                             <span className="row" style={{ gap: '0.5rem' }}>
-                              <form action={reviewVerification}>
+                              <ActionForm action={reviewVerification}>
                                 <input type="hidden" name="verification_id" value={v.id} />
                                 <input type="hidden" name="status" value="approved" />
-                                <Button type="submit">{t('approve')}</Button>
-                              </form>
-                              <form action={reviewVerification}>
+                                <SubmitButton>{t('approve')}</SubmitButton>
+                              </ActionForm>
+                              <ActionForm action={reviewVerification}>
                                 <input type="hidden" name="verification_id" value={v.id} />
                                 <input type="hidden" name="status" value="rejected" />
-                                <Button type="submit" variant="ghost">
+                                <SubmitButton variant="ghost">
                                   {t('reject')}
-                                </Button>
-                              </form>
+                                </SubmitButton>
+                              </ActionForm>
                             </span>
                           )}
                         </li>
@@ -303,7 +304,7 @@ export default async function OrgPortalPage({
               {isLead && (
                 <Card>
                   <h3>{t('orgProfile')}</h3>
-                  <form action={updateOrgProfile} className="stack">
+                  <ActionForm action={updateOrgProfile} className="stack">
                     <input type="hidden" name="organization_id" value={org.id} />
                     <Field label={t('fieldName')}>
                       <input className="input" name="name" defaultValue={org.name ?? ''} required />
@@ -340,9 +341,9 @@ export default async function OrgPortalPage({
                       </Field>
                     </div>
                     <div className="row">
-                      <Button type="submit">{t('saveProfile')}</Button>
+                      <SubmitButton>{t('saveProfile')}</SubmitButton>
                     </div>
-                  </form>
+                  </ActionForm>
                 </Card>
               )}
             </div>

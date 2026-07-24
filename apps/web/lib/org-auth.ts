@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { createAdminSupabase, getCurrentUser } from '@/lib/supabase/server';
+import { ActionError } from '@/lib/action-result';
 
 export type OrgMembership = {
   profileId: string;
@@ -27,7 +28,7 @@ export async function getMyMemberships(): Promise<OrgMembership[]> {
 /** Require that the current user is a member of `orgId`; returns their profile id. */
 export async function requireOrgMember(orgId: string): Promise<string> {
   const user = await getCurrentUser();
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new ActionError('not_authorized');
   const supabase = createAdminSupabase();
   const { data } = await supabase
     .from('organization_members')
@@ -35,14 +36,14 @@ export async function requireOrgMember(orgId: string): Promise<string> {
     .eq('organization_id', orgId)
     .eq('profile_id', user.id)
     .maybeSingle();
-  if (!data) throw new Error('Not a member of this organization');
+  if (!data) throw new ActionError('not_authorized');
   return user.id;
 }
 
 /** Require that the current user is a LEAD of `orgId` (manage profile/onboarding). */
 export async function requireOrgLead(orgId: string): Promise<string> {
   const user = await getCurrentUser();
-  if (!user) throw new Error('Not authenticated');
+  if (!user) throw new ActionError('not_authorized');
   const supabase = createAdminSupabase();
   const { data } = await supabase
     .from('organization_members')
@@ -51,6 +52,6 @@ export async function requireOrgLead(orgId: string): Promise<string> {
     .eq('profile_id', user.id)
     .eq('org_role', 'lead')
     .maybeSingle();
-  if (!data) throw new Error('Not authorized (organization lead required)');
+  if (!data) throw new ActionError('not_authorized');
   return user.id;
 }
