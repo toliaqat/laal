@@ -23,6 +23,8 @@ export function EditForm({
   const initialKind: 'organization' | 'individual' =
     beneficiary?.type === 'organization' ? 'organization' : 'individual';
   const [state, formAction, pending] = useActionState(updateCampaign, null);
+  // Restore typed edits after a failed submit (React resets the form).
+  const fields = (state && !state.ok && state.fields) || {};
   const [kind, setKind] = useState<'organization' | 'individual'>(initialKind);
   const [intendedUse, setIntendedUse] = useState(campaign.intended_use);
 
@@ -38,7 +40,7 @@ export function EditForm({
               name="title"
               className="input"
               required
-              defaultValue={campaign.title}
+              defaultValue={fields.title ?? campaign.title}
             />
           </Field>
 
@@ -51,7 +53,7 @@ export function EditForm({
               name="story"
               className="textarea"
               rows={6}
-              defaultValue={campaign.story ?? ''}
+              defaultValue={fields.story ?? campaign.story ?? ''}
             />
           </Field>
 
@@ -72,7 +74,7 @@ export function EditForm({
                   min="1"
                   step="1"
                   required
-                  defaultValue={campaign.goal_amount}
+                  defaultValue={fields.goal_amount ?? campaign.goal_amount}
                 />
               </Field>
             </div>
@@ -120,7 +122,7 @@ export function EditForm({
                   id="death_country"
                   name="death_country"
                   className="input"
-                  defaultValue={campaign.death_country ?? ''}
+                  defaultValue={fields.death_country ?? campaign.death_country ?? ''}
                 />
               </Field>
             </div>
@@ -133,7 +135,7 @@ export function EditForm({
                   id="death_city"
                   name="death_city"
                   className="input"
-                  defaultValue={campaign.death_city ?? ''}
+                  defaultValue={fields.death_city ?? campaign.death_city ?? ''}
                 />
               </Field>
             </div>
@@ -148,7 +150,7 @@ export function EditForm({
                 id="repatriation_city"
                 name="repatriation_city"
                 className="input"
-                defaultValue={campaign.repatriation_city ?? ''}
+                defaultValue={fields.repatriation_city ?? campaign.repatriation_city ?? ''}
               />
             </Field>
           )}
@@ -226,7 +228,7 @@ export function EditForm({
                   id="relationship_to_deceased"
                   name="relationship_to_deceased"
                   className="input"
-                  defaultValue={beneficiary?.relationship_to_deceased ?? ''}
+                  defaultValue={fields.relationship_to_deceased ?? beneficiary?.relationship_to_deceased ?? ''}
                 />
               </Field>
             </div>

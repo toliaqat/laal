@@ -34,6 +34,8 @@ export function DonateForm({
 }) {
   const t = useTranslations('campaigns');
   const [state, formAction, pending] = useActionState(startDonation, null);
+  // Restore typed input after a failed submit (React resets the form).
+  const fields = (state && !state.ok && state.fields) || {};
   const [selected, setSelected] = useState<number>(25);
   const [custom, setCustom] = useState<string>('');
   const sym = symbolFor(currency);
@@ -120,6 +122,7 @@ export function DonateForm({
           type="text"
           autoComplete="name"
           placeholder={t('donate.namePlaceholder')}
+          defaultValue={fields.donorName}
         />
       </div>
 
@@ -131,6 +134,7 @@ export function DonateForm({
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
+          defaultValue={fields.donorEmail}
         />
       </div>
 
@@ -146,6 +150,7 @@ export function DonateForm({
           className="textarea"
           maxLength={450}
           placeholder={t('donate.messagePlaceholder')}
+          defaultValue={fields.message}
         />
       </div>
 

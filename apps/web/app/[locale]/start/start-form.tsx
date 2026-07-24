@@ -12,6 +12,8 @@ type OrgOption = { id: string; name: string };
 export function StartForm({ orgs }: { orgs: OrgOption[] }) {
   const t = useTranslations('start');
   const [state, formAction, pending] = useActionState(createCampaign, null);
+  // Restore typed input after a failed submit (React resets the form).
+  const fields = (state && !state.ok && state.fields) || {};
   const [kind, setKind] = useState<'organization' | 'individual'>(
     orgs.length > 0 ? 'organization' : 'individual',
   );
@@ -30,6 +32,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
               className="input"
               required
               placeholder={t('form.titlePlaceholder')}
+              defaultValue={fields.title}
             />
           </Field>
 
@@ -39,6 +42,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
               name="deceased_name"
               className="input"
               required
+              defaultValue={fields.deceased_name}
             />
           </Field>
 
@@ -51,6 +55,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
               name="story"
               className="textarea"
               rows={6}
+              defaultValue={fields.story}
             />
           </Field>
 
@@ -67,6 +72,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
                   min="1"
                   step="1"
                   required
+                  defaultValue={fields.goal_amount}
                 />
               </Field>
             </div>
@@ -114,6 +120,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
                   id="death_country"
                   name="death_country"
                   className="input"
+                  defaultValue={fields.death_country}
                 />
               </Field>
             </div>
@@ -122,7 +129,12 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
                 label={t('form.deathCityLabel')}
                 hint={t('form.deathCityHint')}
               >
-                <input id="death_city" name="death_city" className="input" />
+                <input
+                  id="death_city"
+                  name="death_city"
+                  className="input"
+                  defaultValue={fields.death_city}
+                />
               </Field>
             </div>
           </div>
@@ -136,6 +148,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
                 id="repatriation_city"
                 name="repatriation_city"
                 className="input"
+                defaultValue={fields.repatriation_city}
               />
             </Field>
           )}
@@ -201,6 +214,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
                   id="display_name"
                   name="display_name"
                   className="input"
+                  defaultValue={fields.display_name}
                 />
               </Field>
               <Field label={t('beneficiary.relationshipLabel')}>
@@ -208,6 +222,7 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
                   id="relationship_to_deceased"
                   name="relationship_to_deceased"
                   className="input"
+                  defaultValue={fields.relationship_to_deceased}
                 />
               </Field>
             </div>

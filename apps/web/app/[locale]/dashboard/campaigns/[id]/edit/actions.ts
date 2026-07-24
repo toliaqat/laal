@@ -10,7 +10,7 @@ import {
   uploadCoverImage,
 } from '@/lib/cover-image';
 import { normalizeCurrency } from '@/lib/stripe';
-import { fail, type ActionState } from '@/lib/action-result';
+import { echoFields, fail, type ActionState } from '@/lib/action-result';
 import { runAction } from '@/lib/run-action';
 import type { IntendedUse } from '@laal/types';
 
@@ -23,11 +23,25 @@ const EDITABLE_STATUSES = ['draft', 'pending_review'] as const;
  * are re-checked server-side; the client is never trusted. Redirects to
  * /dashboard on success; recoverable problems come back as ActionState.
  */
+// Echoed back on failure so the form restores the organizer's edits.
+const ECHO_FIELDS = [
+  'title',
+  'story',
+  'goal_amount',
+  'death_country',
+  'death_city',
+  'repatriation_city',
+  'display_name',
+  'relationship_to_deceased',
+] as const;
+
 export async function updateCampaign(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  return runAction('update-campaign', async () => {
+  return runAction(
+    'update-campaign',
+    async () => {
     const user = await getCurrentUser();
     if (!user) {
       redirect('/login');
@@ -198,5 +212,7 @@ export async function updateCampaign(
     revalidatePath('/dashboard');
     revalidatePath(`/dashboard/campaigns/${campaignId}/edit`);
     redirect('/dashboard');
-  });
+    },
+    echoFields(formData, ECHO_FIELDS),
+  );
 }

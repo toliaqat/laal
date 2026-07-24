@@ -200,6 +200,10 @@ Every server action follows one contract (`apps/web/lib/action-result.ts`):
 - Forms: client components use `useActionState` + `<FormAlert state={state}>`
   directly; server-component pages wrap forms in `<ActionForm action={...}>`
   with `<SubmitButton>` for pending state (`apps/web/components/form.tsx`).
+- Input preservation: React resets uncontrolled inputs after a form action, so
+  input-heavy actions pass `echoFields(formData, [...])` as `runAction`'s third
+  argument and their forms feed `state.fields` back into `defaultValue`s
+  (start, edit, donate). File inputs cannot be restored — browser restriction.
 - Backstops: `app/[locale]/error.tsx` (translated recovery page + digest) and
   `app/global-error.tsx` (self-contained, bilingual) catch whatever still
   throws; Sentry (`instrumentation.ts`) records every `unexpected` and

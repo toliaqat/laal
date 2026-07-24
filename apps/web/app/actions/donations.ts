@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { createDonationCheckout, toMinorUnits } from '@/lib/stripe';
 import { createServerSupabase } from '@/lib/supabase/server';
-import { fail, type ActionState } from '@/lib/action-result';
+import { echoFields, fail, type ActionState } from '@/lib/action-result';
 import { runAction } from '@/lib/run-action';
 
 // Donation bounds (major currency units). Capped at 50 for launch to limit
@@ -20,7 +20,9 @@ export async function startDonation(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  return runAction('donation', async () => {
+  return runAction(
+    'donation',
+    async () => {
     const campaignId = String(formData.get('campaignId') ?? '').trim();
 
     if (!campaignId) {
@@ -88,5 +90,7 @@ export async function startDonation(
     }
 
     redirect(url);
-  });
+    },
+    echoFields(formData, ['donorName', 'donorEmail', 'message']),
+  );
 }

@@ -97,6 +97,12 @@ export type ActionState =
        * admin-only `showDetail` flag; never shown to public users.
        */
       detail?: string;
+      /**
+       * Echo of the submitted text fields. React 19 resets uncontrolled
+       * inputs after a form action completes, so input-heavy forms feed these
+       * back as defaultValues to keep the user's typing on failure.
+       */
+      fields?: Record<string, string>;
     }
   | null; // initial useActionState value
 
@@ -128,4 +134,17 @@ export function fail(
 
 export function succeed(message?: string): ActionState {
   return { ok: true, message };
+}
+
+/** Snapshot the named text fields from a FormData for echo-back on failure. */
+export function echoFields(
+  formData: FormData,
+  names: readonly string[],
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const name of names) {
+    const value = formData.get(name);
+    if (typeof value === 'string') out[name] = value;
+  }
+  return out;
 }

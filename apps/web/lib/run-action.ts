@@ -14,17 +14,25 @@ import { ActionError, fail, type ActionState } from './action-result';
 export async function runAction(
   tag: string,
   fn: () => Promise<ActionState>,
+  /** Echo of submitted text fields, attached to every failure this wrapper
+   * produces so input-heavy forms can restore the user's typing. */
+  fields?: Record<string, string>,
 ): Promise<ActionState> {
+  const withFields = (state: ActionState): ActionState =>
+    state && !state.ok && fields && !state.fields
+      ? { ...state, fields }
+      : state;
+
   try {
-    return await fn();
+    return withFields(await fn());
   } catch (err) {
     unstable_rethrow(err);
     if (err instanceof ActionError) {
-      return fail(err.code, err.values, err.message);
+      return withFields(fail(err.code, err.values, err.message));
     }
     console.error(`[${tag}]`, err);
     // Every 'unexpected' a user sees becomes a traceable event.
     Sentry.captureException(err, { tags: { action: tag } });
-    return fail('unexpected');
+    return withFields(fail('unexpected'));
   }
 }

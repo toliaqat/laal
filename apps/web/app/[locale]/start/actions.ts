@@ -12,7 +12,7 @@ import {
   uploadCoverImage,
 } from '@/lib/cover-image';
 import { normalizeCurrency } from '@/lib/stripe';
-import { fail, type ActionState } from '@/lib/action-result';
+import { echoFields, fail, type ActionState } from '@/lib/action-result';
 import { runAction } from '@/lib/run-action';
 import type { IntendedUse } from '@laal/types';
 
@@ -37,11 +37,27 @@ function slugify(title: string): string {
  * single active beneficiary (a verified org OR an individual). Redirects to
  * /dashboard on success; recoverable problems come back as ActionState.
  */
+// Text fields echoed back on failure so the form can restore typed input
+// (React resets uncontrolled inputs after a form action completes).
+const ECHO_FIELDS = [
+  'title',
+  'deceased_name',
+  'story',
+  'goal_amount',
+  'death_country',
+  'death_city',
+  'repatriation_city',
+  'display_name',
+  'relationship_to_deceased',
+] as const;
+
 export async function createCampaign(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  return runAction('create-campaign', async () => {
+  return runAction(
+    'create-campaign',
+    async () => {
     const user = await getCurrentUser();
     if (!user) {
       redirect('/login');
@@ -208,5 +224,7 @@ export async function createCampaign(
     await admin.from('verifications').insert(verifications);
 
     redirect('/dashboard');
-  });
+    },
+    echoFields(formData, ECHO_FIELDS),
+  );
 }
