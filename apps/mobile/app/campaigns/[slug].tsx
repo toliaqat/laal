@@ -54,7 +54,7 @@ function trustBadges(trust: CampaignTrust | null): TrustBadge[] {
  */
 const TRUST_COLUMNS =
   'campaign_id, slug, reviewed, beneficiary_type, beneficiary_display_name, ' +
-  'beneficiary_relationship, organization_name, organization_type, ' +
+  'organization_name, organization_type, ' +
   'death_verified, relationship_verified, death_verifier_type, ' +
   'organizer_first_name, organizer_relationship';
 
@@ -72,6 +72,10 @@ function statusKey(status: Campaign['status']): string | null {
       return 'mobile.detail.statusCompleted';
     case 'closed':
       return 'mobile.detail.statusClosed';
+    // Only the organizer and admins can reach a paused fundraiser now: 'paused'
+    // is not a publicly-readable status (RLS — see the note in
+    // supabase/migrations/0013_public_trust_projection.sql), because pausing is
+    // the platform's takedown lever. The calm copy stays for those viewers.
     case 'paused':
       return 'mobile.detail.statusPaused';
     default:
@@ -276,11 +280,15 @@ export default function CampaignDetailScreen() {
   // null and we then claim no institution.
   const badges = trustBadges(trust);
   const verifier = trust?.death_verified ? trust.death_verifier_type : null;
-  // An organization beneficiary is named by the organization itself
-  // (display_name is a copy made at creation time and can drift).
+  // An organization beneficiary is named by the organization itself, with no
+  // fallback to display_name: the projection supplies organization_name only for
+  // a VERIFIED org, and display_name is a stale copy of that same name — so a
+  // fallback would publish a pending/suspended partner's name that the view's
+  // status gate deliberately withheld. Mirrors beneficiaryName() in
+  // apps/web/lib/campaign-trust.ts, which carries the unit tests.
   const reaches =
     trust?.beneficiary_type === 'organization'
-      ? (trust.organization_name ?? trust.beneficiary_display_name)
+      ? (trust.organization_name ?? null)
       : (trust?.beneficiary_display_name ?? null);
   const starterName = trust?.organizer_first_name?.trim() || null;
   const starterRelationship = trust?.organizer_relationship?.trim() || null;
@@ -402,10 +410,15 @@ export default function CampaignDetailScreen() {
               {t('mobile.detail.whereSupportGoes')}
             </Text>
             <Text style={styles.beneficiaryText}>
-              {trust?.beneficiary_relationship
+              {/* The relationship comes from `organizer_relationship`: it is the
+                  same beneficiaries column, but projected only when the
+                  individual beneficiary IS the organizer (the app's only writer
+                  of it). 0013 stopped projecting it a second time as
+                  `beneficiary_relationship`. */}
+              {starterRelationship
                 ? t('mobile.detail.fundsReachWithRelation', {
                     name: reaches,
-                    relation: trust.beneficiary_relationship,
+                    relation: starterRelationship,
                   })
                 : t('mobile.detail.fundsReach', { name: reaches })}
             </Text>

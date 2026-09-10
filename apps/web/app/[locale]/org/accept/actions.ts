@@ -98,8 +98,10 @@ export async function acceptOrgInvite(
         .select('id')
         .single();
       if (orgErr || !org) {
+        // `detail` is always serialized to the client, so provider text stays
+        // server-side on this non-admin surface.
         console.error('[org-invite]', orgErr);
-        return fail('save_failed', undefined, orgErr?.message);
+        return fail('save_failed');
       }
       organizationId = org.id as string;
     }
@@ -113,7 +115,10 @@ export async function acceptOrgInvite(
       );
     if (memberErr) {
       console.error('[org-invite]', memberErr);
-      return fail('save_failed', undefined, memberErr.message);
+      // `detail` is always serialized to the client, so provider text stays
+      // server-side on this non-admin surface.
+      console.error('[org-accept]', memberErr);
+      return fail('save_failed');
     }
 
     // Promote a plain donor to org_member for clarity; never downgrade a higher role.

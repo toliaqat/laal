@@ -11,6 +11,7 @@ import {
 } from '@/lib/cover-image';
 import { normalizeCurrency } from '@/lib/stripe';
 import { echoFields, fail, type ActionState } from '@/lib/action-result';
+import { checkBeneficiaryDisplayName } from '@/lib/beneficiary-name';
 import { runAction } from '@/lib/run-action';
 import type { IntendedUse } from '@laal/types';
 
@@ -120,6 +121,13 @@ export async function updateCampaign(
       if (!displayName) {
         return fail('beneficiary_name_required');
       }
+      // The public trust projection hands this string to anon, so the database
+      // bounds its shape (beneficiaries_display_name_public_shape, 0013). Check
+      // the same rule here so the organizer is told what to change instead of a
+      // raw check violation coming back as a generic "couldn't save".
+      if (!checkBeneficiaryDisplayName(displayName).ok) {
+        return fail('beneficiary_name_shape');
+      }
     } else {
       return fail('beneficiary_kind_required');
     }
@@ -156,7 +164,7 @@ export async function updateCampaign(
 
     if (campaignError) {
       console.error('[update-campaign]', campaignError);
-      return fail('save_failed', undefined, campaignError.message);
+      return fail('save_failed');
     }
 
     // ---- Cover image: replace, remove, or leave as-is ----
@@ -206,7 +214,7 @@ export async function updateCampaign(
 
     if (beneficiaryError) {
       console.error('[update-campaign]', beneficiaryError);
-      return fail('save_failed', undefined, beneficiaryError.message);
+      return fail('save_failed');
     }
 
     revalidatePath('/dashboard');

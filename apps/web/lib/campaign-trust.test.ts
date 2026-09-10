@@ -22,7 +22,6 @@ function row(overrides: Partial<CampaignTrust> = {}): CampaignTrust {
     reviewed: false,
     beneficiary_type: null,
     beneficiary_display_name: null,
-    beneficiary_relationship: null,
     organization_name: null,
     organization_type: null,
     death_verified: false,
@@ -104,6 +103,35 @@ test('organization beneficiaries are named by the organization', () => {
   assert.equal(
     beneficiaryName(
       row({ beneficiary_type: 'individual', beneficiary_display_name: 'Family of Ahmed K.' }),
+    ),
+    'Family of Ahmed K.',
+  );
+});
+
+test('an unverified partner organization is not named at all', () => {
+  // The projection supplies organization_name only for a VERIFIED org (0013
+  // restates organizations_select_public's status gate as a join condition,
+  // since RLS does not apply inside a definer view). beneficiary_display_name is
+  // a stale copy of that same org name, so falling back to it would publish the
+  // pending/suspended partner the gate withheld.
+  assert.equal(
+    beneficiaryName(
+      row({
+        beneficiary_type: 'organization',
+        organization_name: null,
+        beneficiary_display_name: 'Some Pending Funeral Home',
+      }),
+    ),
+    null,
+  );
+  // A family's own display name is unaffected.
+  assert.equal(
+    beneficiaryName(
+      row({
+        beneficiary_type: 'individual',
+        organization_name: null,
+        beneficiary_display_name: 'Family of Ahmed K.',
+      }),
     ),
     'Family of Ahmed K.',
   );

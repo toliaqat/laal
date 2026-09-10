@@ -24,6 +24,7 @@ export type ErrorCode =
   | 'beneficiary_kind_required'
   | 'beneficiary_org_required'
   | 'beneficiary_name_required'
+  | 'beneficiary_name_shape'
   | 'org_not_selectable'
   // Cover image
   | 'cover_missing'
@@ -97,8 +98,14 @@ export type ActionState =
       /** ICU params for the translated message. */
       values?: ErrorValues;
       /**
-       * Raw underlying message (Supabase/Stripe). Rendered only behind the
-       * admin-only `showDetail` flag; never shown to public users.
+       * Raw underlying message (Supabase/Stripe).
+       *
+       * IMPORTANT: `showDetail` on `FormAlert` controls *rendering* only — this
+       * string is always serialized to the client. So only pass a `detail` from
+       * an action whose every caller is an admin. On organizer-, supporter- or
+       * partner-facing actions, `console.error` the provider error instead and
+       * return `fail(code)` with no detail, or Postgres and Stripe internals
+       * (constraint names, RLS messages, schema hints) reach the browser.
        */
       detail?: string;
       /**

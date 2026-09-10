@@ -49,7 +49,10 @@ export async function updateOrgProfile(
       .eq('id', orgId);
     if (error) {
       console.error('[org-profile]', error);
-      return fail('save_failed', undefined, error.message);
+      // `detail` is always serialized to the client, so provider text stays
+      // server-side on this non-admin surface.
+      console.error('[org]', error);
+      return fail('save_failed');
     }
 
     await logAudit({
@@ -87,7 +90,10 @@ export async function startOrgOnboarding(
       .eq('id', orgId)
       .single();
     if (error || !org) {
-      return fail('org_not_found', undefined, error?.message);
+      // `detail` is always serialized to the client, so provider text stays
+      // server-side on this non-admin surface.
+      console.error('[org]', error);
+      return fail('org_not_found');
     }
 
     let accountId = org.stripe_connect_account_id as string | null;
@@ -101,7 +107,10 @@ export async function startOrgOnboarding(
           .eq('id', orgId);
         if (upErr) {
           console.error('[org-onboarding]', upErr);
-          return fail('save_failed', undefined, upErr.message);
+          // `detail` is always serialized to the client, so provider text stays
+          // server-side on this non-admin surface.
+          console.error('[org]', upErr);
+          return fail('save_failed');
         }
       }
       url = await createOnboardingLink(accountId, { basePath: '/org/onboarding' });
@@ -186,8 +195,10 @@ export async function reviewVerification(
       .in('status', ['pending', 'submitted'])
       .select('id');
     if (error) {
+      // `detail` is always serialized to the client, so provider text stays
+      // server-side on this non-admin surface.
       console.error('[org-verification]', error);
-      return fail('save_failed', undefined, error.message);
+      return fail('save_failed');
     }
     if (!updated || updated.length === 0) {
       return fail('verification_already_reviewed');

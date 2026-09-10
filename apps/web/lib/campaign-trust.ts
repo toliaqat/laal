@@ -51,13 +51,22 @@ export function deathVerifierType(
 
 /**
  * Who receives the support. For an organization beneficiary the org's own name
- * is the truth (`display_name` is a copy of it made at creation time and can
- * drift); for a family it is the display name they chose.
+ * is the only acceptable source, with **no fallback** to
+ * `beneficiary_display_name`: that column is a copy of the org name taken at
+ * creation time, and the projection supplies `organization_name` only for a
+ * *verified* org (0013 restates `organizations_select_public`'s status gate as a
+ * join condition, because RLS does not apply inside a definer view). Falling
+ * back would therefore publish exactly the name that gate refused — a pending
+ * or suspended partner's. No name is the correct output there; the page still
+ * says a partner organization receives the funds.
+ *
+ * For a family it is the display name they chose ("Family of Ahmed K."), whose
+ * shape is bounded by beneficiaries_display_name_public_shape.
  */
 export function beneficiaryName(trust: CampaignTrust | null): string | null {
   if (!trust) return null;
   if (trust.beneficiary_type === 'organization') {
-    return trust.organization_name ?? trust.beneficiary_display_name ?? null;
+    return trust.organization_name ?? null;
   }
   return trust.beneficiary_display_name ?? null;
 }

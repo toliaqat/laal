@@ -21,6 +21,36 @@ class WebhookPersistenceError extends Error {
   }
 }
 
+/**
+ * A write that will NEVER succeed however often it is retried: a campaign id
+ * that does not exist (foreign key), a malformed uuid, a check-constraint
+ * violation. Retrying is pointless, so this answers 200 — otherwise Stripe
+ * retries for three days and Sentry alerts on every single retry, burying the
+ * one alert that matters. It is still reported once, loudly: money was taken
+ * and we genuinely cannot record it, which needs a human.
+ */
+class WebhookPermanentError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'WebhookPermanentError';
+  }
+}
+
+/**
+ * Postgres SQLSTATE classes that no amount of retrying fixes:
+ *   22xxx data exception (e.g. 22P02 invalid uuid text)
+ *   23xxx integrity constraint violation (23503 FK, 23502 not-null, 23514 check)
+ *   42xxx syntax error / access rule violation (missing column, RLS refusal)
+ * Everything else (connection loss, timeouts, 5xx from PostgREST, no code at
+ * all) is assumed transient and retried. 23505 unique_violation is excluded
+ * deliberately: for us that means "already recorded", which is a success.
+ */
+function isPermanentDbError(code: string | undefined): boolean {
+  if (!code) return false;
+  if (code === '23505') return false;
+  return /^(22|23|42)/.test(code);
+}
+
 export async function POST(req: Request): Promise<Response> {
   const body = await req.text();
   const sig = req.headers.get('stripe-signature');
@@ -90,6 +120,8 @@ export async function POST(req: Request): Promise<Response> {
       // Ask Stripe to retry — the money exists but we failed to record it.
       return new Response('Failed to record donation', { status: 500 });
     }
+    // Permanent failures are reported (above) and then acknowledged, so the
+    // three-day retry storm — and its alert storm — never starts.
     // Everything else stays best-effort: a 200 stops Stripe hammering us with
     // retries for application-level errors it cannot help with.
   }
@@ -146,9 +178,12 @@ async function handleCheckoutCompleted(
   const admin = createAdminSupabase();
 
   // Idempotent: stripe_payment_intent_id is UNIQUE and ignoreDuplicates makes a
-  // re-delivery a no-op, so `inserted` is non-empty ONLY for a genuinely new
-  // row. That is what gates the receipt below — Stripe retries on timeouts, and
-  // without this the supporter gets the same receipt several times.
+  // re-delivery a no-op. NOTE what this does NOT tell us: whether the receipt
+  // has been sent. An insert that commits while our response is lost (the exact
+  // timeout the 500-and-retry path exists for) would come back as a duplicate
+  // on the retry, so gating the receipt on "did I insert?" loses it forever.
+  // The receipt has its own marker instead: donations.receipt_sent_at, claimed
+  // atomically below (migration 0014).
   const { data: inserted, error: upsertError } = await admin
     .from('donations')
     .upsert(
@@ -174,41 +209,107 @@ async function handleCheckoutCompleted(
 
   if (upsertError) {
     console.error('[stripe webhook] failed to upsert donation:', upsertError);
-    throw new WebhookPersistenceError(
-      `donation upsert failed for ${paymentIntentId}: ${upsertError.message}`,
-    );
+    const detail = `donation upsert failed for ${paymentIntentId}: ${upsertError.message} (${upsertError.code ?? 'no code'})`;
+    // A bad campaign id, a malformed uuid or a violated constraint will fail
+    // identically forever: report it and acknowledge, instead of inviting three
+    // days of retries. Anything that might heal (Supabase down, timeout) asks
+    // Stripe to come back.
+    throw isPermanentDbError(upsertError.code)
+      ? new WebhookPermanentError(detail)
+      : new WebhookPersistenceError(detail);
   }
 
   if (!inserted || inserted.length === 0) {
-    // Already recorded by an earlier delivery — do not re-send the receipt.
+    // Already recorded by an earlier delivery. Fall through anyway: that
+    // delivery may have committed the row and then died before sending the
+    // receipt; the receipt claim below is what decides, not this branch.
+    console.info(
+      `[stripe webhook] donation for ${paymentIntentId} already recorded; checking receipt`,
+    );
+  }
+
+  // Nothing to send without an address, and nothing to record either — leaving
+  // receipt_sent_at null keeps its meaning honest ("a receipt is owed and
+  // unsent" never applies to a supporter who gave no email).
+  if (!donorEmail) return;
+
+  // Exactly-once claim on the receipt. Single-statement compare-and-set, so
+  // concurrent deliveries cannot both win.
+  const claimedAt = new Date().toISOString();
+  const { data: claimed, error: claimError } = await admin
+    .from('donations')
+    .update({ receipt_sent_at: claimedAt })
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .is('receipt_sent_at', null)
+    .select('id');
+
+  if (claimError) {
+    const detail = `receipt claim failed for ${paymentIntentId}: ${claimError.message} (${claimError.code ?? 'no code'})`;
+    console.error('[stripe webhook]', detail);
+    // Unknown receipt state: ask Stripe to retry (the insert dedupes, so the
+    // retry is free) rather than risk never sending it.
+    throw isPermanentDbError(claimError.code)
+      ? new WebhookPermanentError(detail)
+      : new WebhookPersistenceError(detail);
+  }
+
+  if (!claimed || claimed.length === 0) {
+    // Someone else already sent it (or is sending it now).
     return;
   }
 
+  /** Hand the claim back so a later delivery retries the send. */
+  const releaseClaim = async (): Promise<void> => {
+    const { error } = await admin
+      .from('donations')
+      .update({ receipt_sent_at: null })
+      .eq('stripe_payment_intent_id', paymentIntentId)
+      .eq('receipt_sent_at', claimedAt);
+    if (error) {
+      console.error(
+        '[stripe webhook] failed to release receipt claim:',
+        error.message,
+      );
+    }
+  };
+
   // Look up the campaign for the receipt (title + slug).
-  const { data: campaign } = await admin
+  const { data: campaign, error: campaignError } = await admin
     .from('campaigns')
     .select('title, slug')
     .eq('id', campaignId)
     .maybeSingle();
 
-  if (donorEmail && campaign) {
-    const result = await sendDonationReceipt({
-      to: donorEmail,
-      // Greeting only: chosen name first, cardholder name as a fallback.
-      donorName: chosenName ?? cardholderName ?? undefined,
-      amount,
-      currency,
-      locale,
-      campaignTitle: campaign.title,
-      campaignSlug: campaign.slug,
-      paymentReference: paymentIntentId,
-    });
-    if (!result.ok) {
-      // Receipt delivery is not worth a Stripe retry (the donation is safely
-      // recorded), but it should be visible.
-      console.error('[stripe webhook] failed to send receipt:', result.error);
-      Sentry.captureMessage(`donation receipt failed: ${result.error}`, 'warning');
-    }
+  if (campaignError || !campaign) {
+    await releaseClaim();
+    const detail = `receipt skipped for ${paymentIntentId}: campaign ${campaignId} unreadable (${campaignError?.message ?? 'not found'})`;
+    console.error('[stripe webhook]', detail);
+    // A missing campaign will still be missing on every retry; a read error
+    // might not be.
+    throw campaign === null && !campaignError
+      ? new WebhookPermanentError(detail)
+      : new WebhookPersistenceError(detail);
+  }
+
+  const result = await sendDonationReceipt({
+    to: donorEmail,
+    // Greeting only: chosen name first, cardholder name as a fallback.
+    donorName: chosenName ?? cardholderName ?? undefined,
+    amount,
+    currency,
+    locale,
+    campaignTitle: campaign.title,
+    campaignSlug: campaign.slug,
+    paymentReference: paymentIntentId,
+  });
+
+  if (!result.ok) {
+    // The donation itself is safely recorded, so this is not worth a Stripe
+    // retry of the whole event — but the claim must go back, or a redelivery
+    // would see "already sent" for a receipt nobody received.
+    await releaseClaim();
+    console.error('[stripe webhook] failed to send receipt:', result.error);
+    Sentry.captureMessage(`donation receipt failed: ${result.error}`, 'warning');
   }
 }
 

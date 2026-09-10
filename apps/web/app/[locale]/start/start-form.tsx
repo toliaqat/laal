@@ -209,7 +209,10 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
 
           {kind === 'individual' && (
             <div className="stack">
-              <Field label={t('beneficiary.displayNameLabel')}>
+              <Field
+                label={t('beneficiary.displayNameLabel')}
+                hint={t('beneficiary.displayNameHint')}
+              >
                 <input
                   id="display_name"
                   name="display_name"

@@ -22,7 +22,7 @@ import {
   loadSupporterMessages,
 } from './supporters';
 import { loadCampaignUpdates } from './updates';
-import { loadCampaignTrust } from './trust';
+import { loadCampaignTrustForViewer } from './trust';
 import { ShareButtons } from './share-buttons';
 import styles from './campaign.module.css';
 import { Container, Card, Progress, Badge, formatMoney } from '@/components/ui';
@@ -76,6 +76,10 @@ function stateKeys(status: Campaign['status']): {
         title: 'detail.state.closedTitle',
         body: 'detail.state.closedBody',
       };
+    // Kept, but only the organizer and admins can now reach a paused page:
+    // 'paused' is not in PUBLIC_CAMPAIGN_STATUSES (lib/campaign-auth.ts) because
+    // pausing is the platform's takedown lever, so RLS 404s it for everyone
+    // else. See the long note in 0013_public_trust_projection.sql.
     case 'paused':
       return {
         title: 'detail.state.pausedTitle',
@@ -138,6 +142,7 @@ export default async function CampaignPage({
   const { slug, locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('campaigns');
+  const tc = await getTranslations('common');
   const format = await getFormatter();
   const campaign = await getCampaign(slug);
 
@@ -149,7 +154,11 @@ export default async function CampaignPage({
     countSupporterMessages(campaign.id),
     loadSupporterMessages(campaign.id, 0),
     loadCampaignUpdates(campaign.id),
-    loadCampaignTrust(campaign.id),
+    // Viewer-aware: the public projection for a supporter, and — because the
+    // projection has no owner branch — an RLS-scoped read of the base tables so
+    // an organizer previewing a draft/pending/paused fundraiser still sees who
+    // the support reaches. Nothing anonymous is widened.
+    loadCampaignTrustForViewer(campaign.id),
   ]);
 
   // What we may honestly claim about this fundraiser, and who support reaches.
@@ -245,12 +254,10 @@ export default async function CampaignPage({
                   {t.rich('detail.supportReaches', {
                     name: () => <strong className="ugc">{reaches}</strong>,
                   })}
-                  {trust?.beneficiary_relationship ? (
-                    <span className="ugc">
-                      {' '}
-                      ({trust.beneficiary_relationship})
-                    </span>
-                  ) : null}
+                  {/* The relationship is no longer repeated here: it is the
+                      same column as `organizer_relationship`, rendered once
+                      below in "Started by Ahmed, brother" where it is
+                      grammatical — and 0013 no longer projects it twice. */}
                   .
                 </p>
               )}
@@ -290,7 +297,10 @@ export default async function CampaignPage({
 
         <Card style={{ margin: '1.5rem 0' }}>
           <div className="stack" style={{ gap: '0.75rem' }}>
-            <Progress value={pct} />
+            {/* The label is the progressbar's accessible name — without it the
+                component falls back to a hard-coded English string, which is
+                wrong on the Urdu default locale. */}
+            <Progress value={pct} label={tc('progressLabel')} />
             <p style={{ margin: 0 }}>
               <strong style={{ fontSize: '1.15rem' }}>
                 {formatMoney(campaign.amount_raised, campaign.currency, locale)}

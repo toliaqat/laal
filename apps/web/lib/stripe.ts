@@ -2,6 +2,10 @@ import 'server-only';
 
 import Stripe from 'stripe';
 import { APP_URL, STRIPE_SECRET_KEY } from '@/lib/env';
+import {
+  checkoutExpiresAt,
+  deriveIdempotencyKey,
+} from '@/lib/checkout-idempotency';
 
 let _stripe: Stripe | null = null;
 
@@ -92,58 +96,73 @@ export async function createDonationCheckout(params: {
   message?: string;
   /** True when checkout started from the mobile app's in-app browser. */
   fromApp?: boolean;
-  /** Stripe idempotency key — a double submit reuses the same session. */
-  idempotencyKey?: string;
+  /**
+   * Per-form-render entropy from <DonateForm> (already normalized by the
+   * action). The idempotency key is derived from this PLUS a hash of the whole
+   * request below, so a double-click replays one Session while two supporters
+   * with byte-identical forms can never share one.
+   */
+  attemptNonce?: string;
 }): Promise<{ id: string; url: string | null }> {
   const returnBase = `${APP_URL()}/${params.locale}/campaigns/${params.campaignSlug}`;
-  const session = await stripe().checkout.sessions.create(
-    {
-      mode: 'payment',
-      // Stripe supports no Urdu locale; 'auto' avoids forcing English copy.
-      locale: params.locale === 'en' ? 'en' : 'auto',
-      customer_email: params.donorEmail,
-      // Session expiry: Stripe requires >= 30 minutes, so 31 gives a little
-      // clock-skew headroom. Quantized to the same 10-minute window the
-      // caller's idempotency key uses — a retried submit must send IDENTICAL
-      // parameters, and a per-second timestamp would make Stripe reject the
-      // reused key instead of returning the existing session.
-      expires_at: Math.ceil(Date.now() / 1000 / 600) * 600 + 31 * 60,
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: params.currency.toLowerCase(),
-            unit_amount: params.amountMinor,
-            product_data: {
-              // Shown on Stripe's page, its receipt and the supporter's bank
-              // statement — BRAND.md bans "Donation" in user-facing copy.
-              name: `Support — ${params.campaignTitle}`,
-            },
+  // Built as a named value so the idempotency key can hash THIS OBJECT rather
+  // than a hand-maintained list of fields. Anything added below is covered
+  // automatically; nothing can silently fall out of the key again (an earlier
+  // version omitted `locale` and `is_anonymous`, which Stripe rejects as an
+  // idempotency conflict on a reused key).
+  const sessionParams: Stripe.Checkout.SessionCreateParams = {
+    mode: 'payment',
+    // Stripe supports no Urdu locale; 'auto' avoids forcing English copy.
+    locale: params.locale === 'en' ? 'en' : 'auto',
+    customer_email: params.donorEmail,
+    // Quantized to a 10-minute window (see lib/checkout-idempotency.ts): a
+    // retried submit must send IDENTICAL parameters, and a per-second
+    // timestamp would make Stripe reject the reused key instead of replaying
+    // the existing session.
+    expires_at: checkoutExpiresAt(),
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: params.currency.toLowerCase(),
+          unit_amount: params.amountMinor,
+          product_data: {
+            // Shown on Stripe's page, its receipt and the supporter's bank
+            // statement — BRAND.md bans "Donation" in user-facing copy.
+            name: `Support — ${params.campaignTitle}`,
           },
         },
-      ],
-      metadata: {
-        campaign_id: params.campaignId,
-        // The name the supporter CHOSE. The webhook publishes this and never
-        // customer_details.name (the cardholder's legal name).
-        donor_name: params.donorName?.slice(0, 120) ?? '',
-        donor_profile_id: params.donorProfileId ?? '',
-        is_anonymous: String(Boolean(params.isAnonymous)),
-        message: params.message?.slice(0, 450) ?? '',
-        locale: params.locale,
       },
-      payment_intent_data: {
-        metadata: { campaign_id: params.campaignId },
-      },
-      // `from=app` survives the Stripe round trip so the thank-you page can
-      // offer the way back into the Laal app.
-      success_url: `${returnBase}/thank-you?session_id={CHECKOUT_SESSION_ID}${
-        params.fromApp ? '&from=app' : ''
-      }`,
-      // Land back on the form with an acknowledgement instead of silence.
-      cancel_url: `${returnBase}?checkout=cancelled#help`,
+    ],
+    metadata: {
+      campaign_id: params.campaignId,
+      // The name the supporter CHOSE. The webhook publishes this and never
+      // customer_details.name (the cardholder's legal name).
+      donor_name: params.donorName?.slice(0, 120) ?? '',
+      donor_profile_id: params.donorProfileId ?? '',
+      is_anonymous: String(Boolean(params.isAnonymous)),
+      message: params.message?.slice(0, 450) ?? '',
+      locale: params.locale,
     },
-    params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : undefined,
+    payment_intent_data: {
+      metadata: { campaign_id: params.campaignId },
+    },
+    // `from=app` survives the Stripe round trip so the thank-you page can
+    // offer the way back into the Laal app.
+    success_url: `${returnBase}/thank-you?session_id={CHECKOUT_SESSION_ID}${
+      params.fromApp ? '&from=app' : ''
+    }`,
+    // Land back on the form with an acknowledgement instead of silence.
+    cancel_url: `${returnBase}?checkout=cancelled#help`,
+  };
+
+  const session = await stripe().checkout.sessions.create(
+    sessionParams,
+    params.attemptNonce
+      ? {
+          idempotencyKey: deriveIdempotencyKey(params.attemptNonce, sessionParams),
+        }
+      : undefined,
   );
   return { id: session.id, url: session.url };
 }

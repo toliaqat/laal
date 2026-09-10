@@ -18,6 +18,28 @@ const MIN_DONATION = 1;
 const MAX_DONATION = 50; // launch cap — keep in sync with app/actions/donations.ts
 const MESSAGE_MAX = 450;
 
+/**
+ * Per-attempt entropy for the Stripe idempotency key (see
+ * lib/checkout-idempotency.ts). It MUST differ between visitors: two anonymous
+ * supporters giving the same preset amount to the same fundraiser otherwise
+ * submit byte-identical forms, and Stripe would replay the first supporter's
+ * Checkout Session to the second — losing one of the two gifts silently.
+ * `useId` cannot do this job: it is stable per component position, i.e. the
+ * SAME string in every visitor's browser.
+ */
+function newAttemptNonce(): string {
+  const c = globalThis.crypto;
+  if (c?.randomUUID) return c.randomUUID();
+  if (c?.getRandomValues) {
+    return Array.from(c.getRandomValues(new Uint8Array(16)), (b) =>
+      b.toString(16).padStart(2, '0'),
+    ).join('');
+  }
+  // No Web Crypto: send nothing and let the server mint one. That costs
+  // double-submit protection, never correctness.
+  return '';
+}
+
 export function DonateForm({
   campaignId,
   currency,
@@ -39,6 +61,8 @@ export function DonateForm({
   const [message, setMessage] = useState('');
   const [cancelled, setCancelled] = useState(false);
   const [fromApp, setFromApp] = useState(false);
+  // Minted after hydration (not in useState) so server and client markup match.
+  const [attemptNonce, setAttemptNonce] = useState('');
   const alertRef = useRef<HTMLDivElement>(null);
 
   const headingId = useId();
@@ -82,6 +106,13 @@ export function DonateForm({
     }
   }, [state]);
 
+  // One nonce per form render. Re-minted after a failed submit so a supporter
+  // retrying identical values gets a NEW Stripe request instead of replaying
+  // the failed one, which Stripe would otherwise keep returning for the key.
+  useEffect(() => {
+    setAttemptNonce(newAttemptNonce());
+  }, [state]);
+
   // Move focus to the failure alert so screen-reader and keyboard users learn
   // about it instead of being left at the (unchanged) submit button.
   useEffect(() => {
@@ -121,6 +152,7 @@ export function DonateForm({
       >
         <input type="hidden" name="campaignId" value={campaignId} />
         <input type="hidden" name="amount" value={effectiveAmount} />
+        <input type="hidden" name="attemptNonce" value={attemptNonce} />
         {fromApp ? <input type="hidden" name="from" value="app" /> : null}
 
         <div role="group" aria-labelledby={amountGroupId}>

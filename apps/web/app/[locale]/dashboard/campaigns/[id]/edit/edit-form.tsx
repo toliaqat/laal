@@ -211,15 +211,19 @@ export function EditForm({
 
           {kind === 'individual' && (
             <div className="stack">
-              <Field label={t('editForm.displayNameLabel')}>
+              <Field
+                label={t('editForm.displayNameLabel')}
+                hint={t('editForm.displayNameHint')}
+              >
                 <input
                   id="display_name"
                   name="display_name"
                   className="input"
                   defaultValue={
-                    beneficiary?.type === 'individual'
+                    fields.display_name ??
+                    (beneficiary?.type === 'individual'
                       ? beneficiary.display_name
-                      : ''
+                      : '')
                   }
                 />
               </Field>

@@ -142,8 +142,10 @@ export function Field({
  *   as text. Pass `showPercent={false}` where the surrounding copy already
  *   states it.
  *
- * `label` should be a translated string (`common.progressLabel`); it becomes the
- * accessible name of the progressbar.
+ * `label` is a required translated string (`common.progressLabel`) and becomes the
+ * accessible name of the progressbar. It is required on purpose: an English
+ * fallback here silently shipped an untranslated accessible name on the
+ * Urdu-default site, and a required prop turns that omission into a build error.
  */
 export function Progress({
   value,
@@ -151,7 +153,7 @@ export function Progress({
   showPercent = true,
 }: {
   value: number;
-  label?: string;
+  label: string;
   showPercent?: boolean;
 }) {
   const pct = Math.max(0, Math.min(100, value));
@@ -161,7 +163,7 @@ export function Progress({
       <div
         className="progress"
         role="progressbar"
-        aria-label={label ?? 'Support progress'}
+        aria-label={label}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={rounded}

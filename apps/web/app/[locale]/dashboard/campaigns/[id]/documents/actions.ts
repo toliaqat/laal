@@ -79,7 +79,10 @@ export async function uploadDocument(
       // Roll back the orphaned object if the DB write fails.
       await deleteObject(key).catch(() => {});
       console.error('[documents]', error);
-      return fail('save_failed', undefined, error.message);
+      // `detail` is always serialized to the client, so provider text stays
+      // server-side on this non-admin surface.
+      console.error('[documents]', error);
+      return fail('save_failed');
     }
 
     revalidatePath(`/dashboard/campaigns/${campaignId}/documents`);

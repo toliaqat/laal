@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminSupabase } from '@/lib/supabase/server';
+import { PUBLIC_CAMPAIGN_STATUSES } from '@/lib/campaign-auth';
 
 /**
  * Public "words of support" wall. Donations are private under RLS (they hold
@@ -12,19 +13,25 @@ import { createAdminSupabase } from '@/lib/supabase/server';
 const SUPPORTERS_PAGE_SIZE = 20;
 
 // A campaign's supporters are only public once the campaign itself is public.
-// Keep in sync with campaigns_select_public (0013_public_trust_projection.sql)
-// and the row filter of public.campaign_trust_public. 'paused' belongs here:
-// pausing is a temporary hold, the page stays shareable and readable, and
-// omitting it used to blank the whole supporter wall of a paused fundraiser.
-const PUBLIC_STATUSES = ['active', 'paused', 'completed', 'closed'];
+// The list itself lives in lib/campaign-auth.ts (PUBLIC_CAMPAIGN_STATUSES) —
+// this module used to keep its own copy, which drifted. That constant documents
+// why 'paused' is not in it.
+const PUBLIC_STATUSES: readonly string[] = PUBLIC_CAMPAIGN_STATUSES;
 
 export type SupporterMessage = {
   id: string;
   /** Display name, or null when the donor chose to stay anonymous. */
   name: string | null;
   message: string;
-  amount: number;
-  currency: string;
+  /**
+   * Exact contribution amounts are NOT part of the public wall payload: the
+   * wall reads as a guestbook, not a leaderboard, and hiding them in the
+   * component while still shipping them in the props left every amount sitting
+   * in the HTML for anonymous supporters. Present only if a future
+   * owner-scoped loader supplies them.
+   */
+  amount?: number;
+  currency?: string;
   createdAt: string;
 };
 
@@ -72,7 +79,12 @@ export async function loadSupporterMessages(
   const from = Math.max(0, Math.floor(offset));
   const { data } = await admin
     .from('donations')
-    .select('id, donor_name, is_anonymous, message, amount, currency, created_at')
+    // `amount` / `currency` are deliberately not selected — see SupporterMessage.
+    // Note this module is `'use server'`, so every export here is a public
+    // endpoint: an `includeAmounts` flag would be caller-controlled, i.e. an
+    // anonymous visitor could just ask for the amounts. If an organizer surface
+    // ever needs them, it needs its own owner-scoped (non-action) loader.
+    .select('id, donor_name, is_anonymous, message, created_at')
     .eq('campaign_id', campaignId)
     .eq('status', 'succeeded')
     .not('message', 'is', null)
@@ -89,8 +101,6 @@ export async function loadSupporterMessages(
       // Defensive: never reveal a name when the donation is anonymous.
       name: r.is_anonymous ? null : ((r.donor_name as string | null) ?? null),
       message: (r.message as string) ?? '',
-      amount: Number(r.amount ?? 0),
-      currency: (r.currency as string) || 'EUR',
       createdAt: r.created_at as string,
     }));
 

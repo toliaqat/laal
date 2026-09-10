@@ -10,10 +10,21 @@ import { Container, Card, Button, formatMoney } from '@/components/ui';
 type Params = { slug: string; locale: string };
 type Search = { session_id?: string; from?: string };
 
-/** What we can honestly say about the money, based on the Checkout Session. */
+/**
+ * What we can honestly say about the money, based on the Checkout Session.
+ *
+ * `hasEmail` is a BOOLEAN on purpose. A `session_id` behaves as a bearer token
+ * and leaks the way URL parameters always leak — browser history, a proudly
+ * shared "look, I supported this" link, proxy logs, and the Referer header on
+ * the WhatsApp/deep links this very page renders — while nothing at all ties
+ * the viewer to the person who paid. Rendering
+ * `session.customer_details.email` therefore handed a supporter's address (an
+ * anonymous supporter's included) to anyone holding the link. We only need to
+ * know WHETHER an address was collected, so that is all we carry.
+ */
 type Outcome =
-  | { kind: 'paid'; amount: string; email: string | null }
-  | { kind: 'pending'; email: string | null }
+  | { kind: 'paid'; amount: string; hasEmail: boolean }
+  | { kind: 'pending'; hasEmail: boolean }
   | { kind: 'unknown' };
 
 export async function generateMetadata({
@@ -56,8 +67,8 @@ async function resolveOutcome(
   // A session from a different fundraiser must not confirm support for this one.
   if (session.metadata?.campaign_id !== campaignId) return { kind: 'unknown' };
 
-  const email = session.customer_details?.email ?? null;
-  if (session.payment_status !== 'paid') return { kind: 'pending', email };
+  const hasEmail = Boolean(session.customer_details?.email);
+  if (session.payment_status !== 'paid') return { kind: 'pending', hasEmail };
 
   const amount = toMajorUnits(session.amount_total ?? 0);
   return {
@@ -67,7 +78,7 @@ async function resolveOutcome(
       (session.currency ?? currency).toUpperCase(),
       locale,
     ),
-    email,
+    hasEmail,
   };
 }
 
@@ -146,8 +157,8 @@ export default async function ThankYouPage({
                   style={{ fontSize: '1.05rem', lineHeight: 1.7 }}
                 >
                   {t('thankYou.body1')}{' '}
-                  {outcome.email
-                    ? t('thankYou.receiptSent', { email: outcome.email })
+                  {outcome.hasEmail
+                    ? t('thankYou.receiptSent')
                     : t('thankYou.receiptNone')}
                 </p>
                 <p

@@ -1,9 +1,9 @@
 'use server';
 
-import { createHash } from 'node:crypto';
 import { redirect } from 'next/navigation';
 import { getLocale } from 'next-intl/server';
 import { createDonationCheckout, toMinorUnits } from '@/lib/stripe';
+import { normalizeAttemptNonce } from '@/lib/checkout-idempotency';
 import { createServerSupabase, getCurrentUser } from '@/lib/supabase/server';
 import { echoFields, fail, type ActionState } from '@/lib/action-result';
 import { runAction } from '@/lib/run-action';
@@ -96,6 +96,14 @@ export async function startDonation(
     // 'always'), so thread the active locale through to Stripe.
     const locale = await getLocale();
 
+    // Per-attempt entropy for the Stripe idempotency key. <DonateForm> mints a
+    // fresh nonce on every form render (and after a failed submit), so an
+    // impatient double-click reuses one Checkout Session while two supporters
+    // filling in identical values can never collide. Missing/malformed (the
+    // no-JavaScript case) falls back to a server-side random value, which
+    // simply means no double-click protection for that submit.
+    const attemptNonce = normalizeAttemptNonce(formData.get('attemptNonce'));
+
     let url: string | null;
     try {
       const session = await createDonationCheckout({
@@ -111,15 +119,7 @@ export async function startDonation(
         isAnonymous,
         message: message || undefined,
         fromApp,
-        idempotencyKey: checkoutIdempotencyKey({
-          campaignId,
-          amount,
-          donorEmail,
-          donorName,
-          message,
-          userId: user?.id ?? '',
-          fromApp,
-        }),
+        attemptNonce,
       });
       url = session.url;
     } catch (err) {
@@ -136,38 +136,4 @@ export async function startDonation(
     // isAnonymous is echoed too, so the checkbox survives a failed submit.
     echoFields(formData, ['donorName', 'donorEmail', 'message', 'isAnonymous']),
   );
-}
-
-/**
- * Stable key for an identical submit within the same 10-minute window, so an
- * impatient double-click reuses one Checkout Session instead of creating two.
- * Deliberately time-bucketed: a supporter who genuinely wants to give the same
- * amount twice can, a few minutes later. The 10-minute window must match the
- * expiry quantization in lib/stripe.ts, or a reused key would carry different
- * parameters and Stripe would reject it.
- */
-function checkoutIdempotencyKey(parts: {
-  campaignId: string;
-  amount: number;
-  donorEmail: string;
-  donorName: string;
-  message: string;
-  userId: string;
-  fromApp: boolean;
-}): string {
-  const bucket = Math.floor(Date.now() / (10 * 60 * 1000));
-  return createHash('sha256')
-    .update(
-      [
-        parts.campaignId,
-        parts.amount,
-        parts.donorEmail,
-        parts.donorName,
-        parts.message,
-        parts.userId,
-        String(parts.fromApp),
-        bucket,
-      ].join('|'),
-    )
-    .digest('hex');
 }

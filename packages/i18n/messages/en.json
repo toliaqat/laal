@@ -272,7 +272,7 @@
       "pendingBody": "Thank you for standing with this family. Your bank is still completing the transfer, so it isn’t final yet — we’ll email you the moment it clears.",
       "neutralTitle": "Thank you for your kindness",
       "neutralBody": "If you just completed a contribution, it will appear on the fundraiser shortly. Nothing is charged until your payment is confirmed.",
-      "receiptSent": "A receipt is on its way to {email}.",
+      "receiptSent": "A receipt is on its way to the email address you gave.",
       "receiptNone": "You didn’t add an email address, so there’s no receipt to send — your support still counts.",
       "nextHeading": "What happens next",
       "next1": "Your contribution is held securely by Laal — never in anyone’s personal account.",
@@ -329,7 +329,8 @@
       "selectOrgPlaceholder": "Select an organisation…",
       "individualOption": "An individual (myself / family)",
       "displayNameLabel": "Name of the person we'll support",
-      "relationshipLabel": "Relationship to the deceased"
+      "relationshipLabel": "Relationship to the deceased",
+      "displayNameHint": "Shown publicly, so “Family of Ahmed K.” is enough — please leave out full legal names, phone numbers, emails and addresses."
     },
     "cover": {
       "label": "Cover photo (optional)",
@@ -432,7 +433,8 @@
       "relationshipLabel": "Relationship to the deceased",
       "save": "Save changes",
       "cancel": "Cancel",
-      "submitting": "Saving…"
+      "submitting": "Saving…",
+      "displayNameHint": "Shown publicly, so “Family of Ahmed K.” is enough — please leave out full legal names, phone numbers, emails and addresses."
     },
     "updates": "Updates",
     "updatesHint": "Updates become visible on the fundraiser page once it is live.",
@@ -729,7 +731,8 @@
     },
     "update_body_required": "Please write a few words before posting.",
     "update_body_too_long": "That update is too long (max {max} characters). Please shorten it.",
-    "update_not_found": "That update could not be found. It may already have been removed."
+    "update_not_found": "That update could not be found. It may already have been removed.",
+    "beneficiary_name_shape": "This name is shown publicly, so please keep it simple — something like “Family of Ahmed K.”, with no numbers, email addresses or links."
   },
   "notFound": {
     "metaTitle": "Page not found — Laal",

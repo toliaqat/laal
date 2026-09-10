@@ -26,12 +26,13 @@ const MAX_BODY = 2000;
 
 /**
  * Refresh the organizer's list and every locale variant of the public page.
- * The public route is `/[locale]/campaigns/[slug]`, so a bare
- * `/campaigns/{slug}` path would never match a rendered page.
+ * BOTH routes are locale-prefixed (`/[locale]/dashboard/...` and
+ * `/[locale]/campaigns/[slug]`), so a bare `/dashboard/...` or `/campaigns/...`
+ * path never matches a rendered page — it was silently a no-op.
  */
 function revalidateUpdates(campaignId: string, slug: string): void {
-  revalidatePath(`/dashboard/campaigns/${campaignId}/updates`);
   for (const locale of locales) {
+    revalidatePath(`/${locale}/dashboard/campaigns/${campaignId}/updates`);
     revalidatePath(`/${locale}/campaigns/${slug}`);
   }
 }
@@ -67,8 +68,12 @@ export async function postUpdate(
         body,
       });
       if (error) {
-        console.error('[campaign-updates]', error);
-        return fail('save_failed', undefined, error.message);
+        // The Postgres/PostgREST message stays server-side. `detail` only
+        // controls whether the client *renders* the string — it is serialized
+        // into the payload either way, and it can carry constraint names, row
+        // contents and policy internals.
+        console.error('[campaign-updates] insert failed', error);
+        return fail('save_failed');
       }
 
       revalidateUpdates(campaignId, campaign.slug);
@@ -107,8 +112,9 @@ export async function deleteUpdate(
       .eq('id', updateId)
       .eq('campaign_id', campaignId);
     if (error) {
-      console.error('[campaign-updates]', error);
-      return fail('save_failed', undefined, error.message);
+      // Server-side only — see the note in postUpdate.
+      console.error('[campaign-updates] delete failed', error);
+      return fail('save_failed');
     }
 
     revalidateUpdates(campaignId, campaign.slug);

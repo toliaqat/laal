@@ -194,9 +194,11 @@ export interface CampaignTrust {
   reviewed: boolean;
   /** Null when no active beneficiary has been recorded yet. */
   beneficiary_type: BeneficiaryType | null;
+  /**
+   * Individual beneficiaries only — 0013 does not project a display name for
+   * organizations, so the org name below is the only public name for those.
+   */
   beneficiary_display_name: string | null;
-  /** Individual beneficiaries only: "brother", "wife", … */
-  beneficiary_relationship: string | null;
   /** Organization beneficiaries only. */
   organization_name: string | null;
   organization_type: OrgType | null;

@@ -45,6 +45,23 @@ const nextConfig = {
   // Pin the workspace root — also where standalone output is rooted.
   outputFileTracingRoot: monorepoRoot,
   images: { remotePatterns: coverImageHosts() },
+  /**
+   * The thank-you page carries `?session_id=...` (a Stripe bearer token) and
+   * renders outbound WhatsApp/share links, so a permissive referrer would hand
+   * that token to third parties in the Referer header. `strict-origin-when-
+   * cross-origin` sends only the origin off-site — never the path or query —
+   * and it is the right default for every page, not just that one.
+   */
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        ],
+      },
+    ];
+  },
   // Allow document uploads (death certificates etc.) through server actions.
   experimental: {
     // Above the 20MB app-level file caps so our friendly validation message

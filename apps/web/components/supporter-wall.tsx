@@ -32,7 +32,10 @@ export function SupporterWall({
   initialHasMore,
   /**
    * Product call: the wall reads as a warm guestbook, not a leaderboard, so
-   * exact amounts are hidden by default. Pass `showAmounts` to restore them.
+   * exact amounts are never shown. The public loader no longer selects them
+   * either (see supporters.ts) — hiding them here alone still shipped every
+   * amount in the payload for anonymous supporters. Amounts render only if a
+   * caller both asks for them and supplies rows that carry them.
    */
   showAmounts = false,
 }: {
@@ -94,10 +97,10 @@ export function SupporterWall({
                 {s.name?.trim() || t('supporters.anonymous')}
               </strong>
               <span className="muted small">
-                {showAmounts && (
+                {showAmounts && s.amount != null && (
                   <>
                     <span className="num">
-                      {formatMoney(s.amount, s.currency, locale)}
+                      {formatMoney(s.amount, s.currency ?? 'EUR', locale)}
                     </span>{' '}
                     ·{' '}
                   </>
