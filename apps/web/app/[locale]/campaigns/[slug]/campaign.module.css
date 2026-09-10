@@ -74,3 +74,17 @@
     border-top: 1px solid var(--line);
   }
 }
+
+/* ---- trust block (badges + who support reaches + who started it) ----
+   Sits with the title rather than at the foot of the page: it answers the
+   question a supporter asks before giving, not after. The start border is a
+   quiet "this is verified information" marker that works in both directions
+   (inline-start flips under RTL). */
+.trust {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.6rem;
+  padding-inline-start: 0.75rem;
+  border-inline-start: 2px solid var(--line);
+}

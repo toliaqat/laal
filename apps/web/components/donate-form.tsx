@@ -1,6 +1,13 @@
 'use client';
 
-import { useActionState, useEffect, useId, useRef, useState } from 'react';
+import {
+  useActionState,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { FormAlert } from '@/components/form';
 import { Alert, formatMoney } from '@/components/ui';
@@ -49,6 +56,8 @@ export function DonateForm({
 
   const money = (amount: number) => formatMoney(amount, currency, locale);
   const cap = money(MAX_DONATION);
+  /** Rich-text tag that isolates a money run inside translated copy. */
+  const capRun = (chunks: ReactNode) => <bdi className="num">{chunks}</bdi>;
 
   const tierCopy: Record<number, string> = {
     10: t('donate.tier10'),
@@ -118,7 +127,10 @@ export function DonateForm({
           <div id={amountGroupId} className="label" style={{ marginBottom: '0.5rem' }}>
             {t('donate.chooseHelp')}{' '}
             <span className="hint">
-              {t('donate.upToCap', { cap })}
+              {/* `<n>` wraps the amount in the catalog so it can carry `.num`:
+                  isolated and LTR, so an Urdu page reads €50, not 50€, and the
+                  parenthesised hint never splits the amount across lines. */}
+              {t.rich('donate.upToCap', { cap, n: capRun })}
             </span>
           </div>
           <div className="row wrap">
@@ -135,7 +147,7 @@ export function DonateForm({
                   }}
                   aria-pressed={active}
                 >
-                  <bdi>{money(p)}</bdi>
+                  <bdi className="num">{money(p)}</bdi>
                 </button>
               );
             })}
@@ -174,7 +186,7 @@ export function DonateForm({
           </span>
           {overCap ? (
             <span className="error-text" id={overCapId}>
-              {t('donate.overCap', { cap })}
+              {t.rich('donate.overCap', { cap, n: capRun })}
             </span>
           ) : null}
         </div>
@@ -264,7 +276,7 @@ export function DonateForm({
             t('donate.submit')
           ) : (
             <>
-              {t('donate.submit')} · <bdi>{money(numeric)}</bdi>
+              {t('donate.submit')} · <bdi className="num">{money(numeric)}</bdi>
             </>
           )}
         </button>

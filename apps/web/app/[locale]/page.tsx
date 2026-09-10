@@ -4,13 +4,17 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Campaign } from '@laal/types';
 import { createServerSupabase } from '@/lib/supabase/server';
-import { Container, Card, Button } from '@/components/ui';
+import { Container, Card, Button, formatMoney } from '@/components/ui';
 import {
   CampaignCard,
   CampaignCardSkeletonGrid,
   CampaignGrid,
 } from '@/components/campaign-card';
-import { PhoneHero, PhoneShowcase } from '@/components/phone-mockup';
+import {
+  PhoneHero,
+  PhoneShowcase,
+  type MockupCopy,
+} from '@/components/phone-mockup';
 
 export async function generateMetadata({
   params,
@@ -23,6 +27,11 @@ export async function generateMetadata({
 }
 
 const FEATURED_LIMIT = 6;
+
+/* The marketing mockup shows money, so it goes through the same locale-aware
+   formatter as the real product and uses the platform's default currency
+   (campaigns.currency defaults to EUR) — not a hard-coded "$3,920". */
+const MOCKUP_CURRENCY = 'EUR';
 
 type Featured = { ok: true; campaigns: Campaign[] } | { ok: false };
 
@@ -128,6 +137,62 @@ export default async function HomePage({
 
   const appFeatures = [t('showcase.feature1'), t('showcase.feature2'), t('showcase.feature3')];
 
+  /* Every string on the phone mockup is translated: Urdu is the default locale,
+     so a hard-coded English app screen would be the first thing most visitors
+     see. Amounts are formatted here (the mockup stays presentational). */
+  const money = (amount: number) => formatMoney(amount, MOCKUP_CURRENCY, locale);
+  const mockup: MockupCopy = {
+    listTitle: t('mockup.listTitle'),
+    verified: t('mockup.verified'),
+    lead: t('mockup.lead'),
+    inMemoryOf: t('mockup.inMemoryOf'),
+    /* Word order differs by language, so the whole phrase is one message and
+       the number is wrapped for bidi isolation. */
+    ofGoal: (goal: string) =>
+      t.rich('mockup.ofGoal', {
+        amount: goal,
+        n: (chunks) => <span className="num">{chunks}</span>,
+      }),
+    raisedLabel: t('mockup.raisedLabel'),
+    cards: [
+      {
+        title: t('mockup.card1Title'),
+        name: t('mockup.card1Name'),
+        pct: 78,
+        raised: money(3920),
+        goal: money(5000),
+      },
+      {
+        title: t('mockup.card2Title'),
+        name: t('mockup.card2Name'),
+        pct: 54,
+        raised: money(2700),
+        goal: money(5000),
+      },
+      {
+        title: t('mockup.card3Title'),
+        name: t('mockup.card3Name'),
+        pct: 92,
+        raised: money(4600),
+        goal: money(5000),
+      },
+    ],
+    detailTitle: t('mockup.card1Title'),
+    detailName: t('mockup.card1Name'),
+    detailPct: 78,
+    detailRaised: money(3920),
+    detailGoal: money(5000),
+    story: t('mockup.story'),
+    beneficiary: t.rich('mockup.beneficiary', {
+      name: t('mockup.beneficiaryName'),
+      b: (chunks) => <strong>{chunks}</strong>,
+    }),
+    cta: t('mockup.cta'),
+    ctaNote: t('mockup.ctaNote'),
+    heroAlt: t('mockup.heroAlt'),
+    showcaseAlt: t('mockup.showcaseAlt'),
+  };
+
   return (
     <main>
       {/* ---------- Hero ---------- */}
@@ -183,7 +248,7 @@ export default async function HomePage({
             </div>
 
             <div className="hero-art reveal-soft" style={{ animationDelay: '0.3s' }}>
-              <PhoneHero />
+              <PhoneHero copy={mockup} />
             </div>
           </div>
         </Container>
@@ -228,9 +293,7 @@ export default async function HomePage({
             <div className="stack" style={{ gap: '0.6rem' }}>
               <span className="eyebrow">{t('what.eyebrow')}</span>
               <h2 style={{ marginTop: 0 }}>{t('what.title')}</h2>
-              <p className="muted" style={{ fontSize: '1.05rem', lineHeight: 1.8 }}>
-                {t('what.body')}
-              </p>
+              <p className="muted prose">{t('what.body')}</p>
             </div>
           </div>
         </Container>
@@ -274,12 +337,10 @@ export default async function HomePage({
       <section className="showcase section">
         <Container>
           <div className="showcase-grid">
-            <div className="stack" style={{ gap: '0.5rem' }}>
+            <div className="stack showcase-copy" style={{ gap: '0.5rem' }}>
               <span className="eyebrow">{t('showcase.eyebrow')}</span>
               <h2 style={{ marginTop: 0 }}>{t('showcase.title')}</h2>
-              <p className="muted" style={{ fontSize: '1.05rem', lineHeight: 1.7 }}>
-                {t('showcase.body')}
-              </p>
+              <p className="muted prose">{t('showcase.body')}</p>
               <div className="feature-list">
                 {appFeatures.map((f) => (
                   <div key={f} className="feature-item">
@@ -321,7 +382,7 @@ export default async function HomePage({
               </div>
             </div>
 
-            <PhoneShowcase />
+            <PhoneShowcase copy={mockup} />
           </div>
         </Container>
       </section>
@@ -361,9 +422,7 @@ export default async function HomePage({
             <div className="stack" style={{ gap: '0.6rem' }}>
               <span className="eyebrow">{t('cta.eyebrow')}</span>
               <h2 style={{ marginTop: 0 }}>{t('cta.title')}</h2>
-              <p className="muted" style={{ fontSize: '1.05rem', lineHeight: 1.7 }}>
-                {t('cta.body')}
-              </p>
+              <p className="muted prose">{t('cta.body')}</p>
               <div className="row wrap" style={{ marginTop: '0.5rem' }}>
                 <Button href="/start" variant="primary">
                   {t('cta.ctaPrimary')}

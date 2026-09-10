@@ -5,9 +5,15 @@ import {
   getTranslations,
   setRequestLocale,
 } from 'next-intl/server';
-import type { Campaign, Beneficiary } from '@laal/types';
+import type { Campaign } from '@laal/types';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { APP_URL } from '@/lib/env';
+import {
+  beneficiaryName,
+  deathVerifierType,
+  startedBy,
+  trustBadges,
+} from '@/lib/campaign-trust';
 import { DonateForm } from '@/components/donate-form';
 import { SupporterWall } from '@/components/supporter-wall';
 import { CampaignUpdates } from '@/components/campaign-updates';
@@ -16,6 +22,7 @@ import {
   loadSupporterMessages,
 } from './supporters';
 import { loadCampaignUpdates } from './updates';
+import { loadCampaignTrust } from './trust';
 import { ShareButtons } from './share-buttons';
 import styles from './campaign.module.css';
 import { Container, Card, Progress, Badge, formatMoney } from '@/components/ui';
@@ -32,18 +39,16 @@ async function getCampaign(slug: string): Promise<Campaign | null> {
   return (data as Campaign | null) ?? null;
 }
 
-async function getActiveBeneficiary(
-  campaignId: string,
-): Promise<Beneficiary | null> {
-  const supabase = await createServerSupabase();
-  const { data } = await supabase
-    .from('beneficiaries')
-    .select('*')
-    .eq('campaign_id', campaignId)
-    .eq('is_active', true)
-    .maybeSingle();
-  return (data as Beneficiary | null) ?? null;
-}
+/**
+ * Badge tone per trust state. "Fundraiser reviewed" is deliberately the neutral
+ * tone: it means a human read the fundraiser, not that anything is verified —
+ * only the two verification states earn the green.
+ */
+const TRUST_TONES = {
+  reviewed: 'default',
+  needVerified: 'success',
+  familyVerified: 'success',
+} as const;
 
 function toDate(value: string | null): Date | null {
   if (!value) return null;
@@ -140,13 +145,20 @@ export default async function CampaignPage({
     notFound();
   }
 
-  const beneficiary = await getActiveBeneficiary(campaign.id);
-
-  const [supporterCount, firstSupporters, updates] = await Promise.all([
+  const [supporterCount, firstSupporters, updates, trust] = await Promise.all([
     countSupporterMessages(campaign.id),
     loadSupporterMessages(campaign.id, 0),
     loadCampaignUpdates(campaign.id),
+    loadCampaignTrust(campaign.id),
   ]);
+
+  // What we may honestly claim about this fundraiser, and who support reaches.
+  // All of it comes from the public trust projection — the beneficiary and
+  // verification tables themselves are invisible to a supporter under RLS.
+  const badges = trustBadges(trust);
+  const verifier = deathVerifierType(trust);
+  const reaches = beneficiaryName(trust);
+  const starter = startedBy(trust);
 
   // Locale-aware: the deceased's dates used to be hard-coded to en-GB, which
   // rendered Latin months on the Urdu page.
@@ -192,12 +204,79 @@ export default async function CampaignPage({
             ) : null}
           </div>
           <h1 className={styles.title}>{campaign.title}</h1>
+
+          {/* The trust promise, directly under the title — it is the reason a
+              supporter can give to a stranger's fundraiser at all. Each badge
+              is one proven fact; nothing here is rendered on hope. */}
+          {badges.length > 0 && (
+            <div
+              className="row wrap"
+              style={{ gap: '0.4rem' }}
+              // role + label: without a role the label is not exposed, and a
+              // bare run of badges tells a screen-reader user nothing about
+              // what they are.
+              role="group"
+              aria-label={t('detail.trust.heading')}
+            >
+              {badges.map((badge) => (
+                <Badge key={badge} tone={TRUST_TONES[badge]}>
+                  {t(`detail.trust.${badge}`)}
+                </Badge>
+              ))}
+            </div>
+          )}
+
           <p className="muted" style={{ margin: 0 }}>
             {t.rich('detail.inMemoryOf', {
-              name: () => <strong>{campaign.deceased_name}</strong>,
+              name: () => <strong className="ugc">{campaign.deceased_name}</strong>,
             })}
             {dates ? ` · ${dates}` : ''}
           </p>
+
+          {/* Who the money reaches, who confirmed the need, and who started the
+              fundraiser — kept together with the badges instead of floating as
+              muted small print at the bottom of the page, which is where the
+              "your support reaches X" line used to sit (and where it silently
+              rendered empty for everyone but the organizer). */}
+          {(reaches || verifier || starter) && (
+            <div className={styles.trust}>
+              {reaches && (
+                <p style={{ margin: 0 }}>
+                  {t.rich('detail.supportReaches', {
+                    name: () => <strong className="ugc">{reaches}</strong>,
+                  })}
+                  {trust?.beneficiary_relationship ? (
+                    <span className="ugc">
+                      {' '}
+                      ({trust.beneficiary_relationship})
+                    </span>
+                  ) : null}
+                  .
+                </p>
+              )}
+              {verifier && (
+                <p className="small muted" style={{ margin: 0 }}>
+                  {t('detail.trust.confirmedWith', {
+                    verifier: t(`detail.trust.verifier.${verifier}`),
+                  })}
+                </p>
+              )}
+              {starter && (
+                <p className="small muted" style={{ margin: 0 }}>
+                  {starter.relationship
+                    ? t.rich('detail.startedByWithRelationship', {
+                        name: () => <span className="ugc">{starter.name}</span>,
+                        relationship: () => (
+                          <span className="ugc">{starter.relationship}</span>
+                        ),
+                      })
+                    : t.rich('detail.startedBy', {
+                        name: () => <span className="ugc">{starter.name}</span>,
+                      })}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {campaign.cover_image_url && (
@@ -260,24 +339,6 @@ export default async function CampaignPage({
               />
             </Card>
           </section>
-        )}
-
-        {beneficiary && (
-          <p
-            className="small muted"
-            style={{
-              borderTop: '1px solid var(--line)',
-              paddingTop: '1rem',
-            }}
-          >
-            {t.rich('detail.supportReaches', {
-              name: () => <strong>{beneficiary.display_name}</strong>,
-            })}
-            {beneficiary.relationship_to_deceased
-              ? ` (${beneficiary.relationship_to_deceased})`
-              : ''}
-            .
-          </p>
         )}
 
         <Card large style={{ marginTop: '2rem' }}>

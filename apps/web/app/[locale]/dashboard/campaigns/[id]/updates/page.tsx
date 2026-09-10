@@ -105,6 +105,11 @@ export default async function UpdatesPage({
 
       <p style={{ marginTop: '1.5rem' }}>
         <Link href="/dashboard" className="nav-link">
+          {/* The glyph mirrors in RTL via .ar-flip-glyph, so it stays out of the
+              translated string. */}
+          <span aria-hidden className="ar-flip-glyph">
+            &larr;
+          </span>{' '}
           {t('updatesPage.backToDashboard')}
         </Link>
       </p>

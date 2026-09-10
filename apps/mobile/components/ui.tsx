@@ -52,8 +52,6 @@ export function ReviewedChip({ label }: { label?: string }) {
   );
 }
 
-/** @deprecated Use {@link ReviewedChip}; kept so existing imports keep working. */
-export const VerifiedChip = ReviewedChip;
 
 /**
  * Format a money amount with its ISO currency, localized to the active locale.

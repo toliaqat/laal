@@ -1,7 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { locales, localeNames, type Locale } from '@laal/i18n';
 import { usePathname, useRouter } from '@/i18n/navigation';
 
@@ -11,6 +11,7 @@ import { usePathname, useRouter } from '@/i18n/navigation';
  * swaps the URL prefix and re-renders with the new catalog + direction.
  */
 export function LanguageSwitcher() {
+  const t = useTranslations('nav');
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
@@ -29,7 +30,7 @@ export function LanguageSwitcher() {
   }
 
   return (
-    <div className="lang-switch" role="group" aria-label="Language">
+    <div className="lang-switch" role="group" aria-label={t('language')}>
       {locales.map((l) => (
         <button
           key={l}

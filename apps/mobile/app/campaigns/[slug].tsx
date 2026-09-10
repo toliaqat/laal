@@ -14,26 +14,49 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import { useTranslation } from 'react-i18next';
-import type { Beneficiary, Campaign, CampaignUpdate } from '@laal/types';
+import type { Campaign, CampaignTrust, CampaignUpdate } from '@laal/types';
 import { supabase, WEB_APP_URL } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { formatRelative } from '@/lib/format';
 import { ProgressBar } from '@/components/progress-bar';
-import { PrimaryButton, VerifiedChip } from '@/components/ui';
+import { PrimaryButton, ReviewedChip, formatMoney } from '@/components/ui';
 import { accentShadow, colors, radius, serif, spacing } from '@/lib/theme';
 
-function formatMoney(amount: number, currency: string, locale: string) {
-  try {
-    const fmtLocale = locale === 'ur' ? 'ur-PK-u-nu-latn' : locale;
-    return new Intl.NumberFormat(fmtLocale, {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  } catch {
-    return `${currency} ${amount}`;
+/**
+ * The trust facts a supporter may be shown, derived from the public projection.
+ * Mirrors `trustBadges` in apps/web/lib/campaign-trust.ts (which carries the
+ * unit tests) — the two surfaces must never disagree about what is proven.
+ *
+ * This screen used to render an unconditional "Verified fundraiser" chip. An
+ * admin can activate a fundraiser before the death certificate is approved, so
+ * that chip was a false trust claim in a bereavement product. "Reviewed" and
+ * "verified" are different facts and now come from different columns.
+ */
+type TrustBadge = 'reviewed' | 'needVerified' | 'familyVerified';
+
+function trustBadges(trust: CampaignTrust | null): TrustBadge[] {
+  if (!trust) return [];
+  const badges: TrustBadge[] = [];
+  if (trust.reviewed) badges.push('reviewed');
+  if (trust.death_verified) badges.push('needVerified');
+  // Organizations have no relationship check (they are vetted at onboarding —
+  // ARCHITECTURE.md §4), so a family claim never applies to them.
+  if (trust.beneficiary_type === 'individual' && trust.relationship_verified) {
+    badges.push('familyVerified');
   }
+  return badges;
 }
+
+/**
+ * Columns of `campaign_trust_public` (0013_public_trust_projection.sql). Listed
+ * explicitly rather than `*` so widening the view later cannot quietly widen
+ * what this screen reads.
+ */
+const TRUST_COLUMNS =
+  'campaign_id, slug, reviewed, beneficiary_type, beneficiary_display_name, ' +
+  'beneficiary_relationship, organization_name, organization_type, ' +
+  'death_verified, relationship_verified, death_verifier_type, ' +
+  'organizer_first_name, organizer_relationship';
 
 /** Newest-first, matching the web feed. One extra row reveals "there's more". */
 const UPDATES_PAGE_SIZE = 10;
@@ -63,7 +86,7 @@ export default function CampaignDetailScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [beneficiary, setBeneficiary] = useState<Beneficiary | null>(null);
+  const [trust, setTrust] = useState<CampaignTrust | null>(null);
   const [updates, setUpdates] = useState<UpdateRow[]>([]);
   const [moreUpdates, setMoreUpdates] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -96,11 +119,13 @@ export default function CampaignDetailScreen() {
 
     if (found) {
       const [{ data: b }, { data: u }] = await Promise.all([
+        // beneficiaries / verifications / profiles are all organizer-or-admin
+        // under RLS, so a supporter's client can only see these facts through
+        // the public trust projection.
         supabase
-          .from('beneficiaries')
-          .select('*')
+          .from('campaign_trust_public')
+          .select(TRUST_COLUMNS)
           .eq('campaign_id', found.id)
-          .eq('is_active', true)
           .maybeSingle(),
         supabase
           .from('campaign_updates')
@@ -109,12 +134,12 @@ export default function CampaignDetailScreen() {
           .order('created_at', { ascending: false })
           .limit(UPDATES_PAGE_SIZE + 1),
       ]);
-      setBeneficiary((b as Beneficiary | null) ?? null);
+      setTrust((b as CampaignTrust | null) ?? null);
       const rows = (u as UpdateRow[] | null) ?? [];
       setUpdates(rows.slice(0, UPDATES_PAGE_SIZE));
       setMoreUpdates(rows.length > UPDATES_PAGE_SIZE);
     } else {
-      setBeneficiary(null);
+      setTrust(null);
       setUpdates([]);
       setMoreUpdates(false);
     }
@@ -246,11 +271,24 @@ export default function CampaignDetailScreen() {
 
   const inactiveKey = statusKey(campaign.status);
 
+  // Only what the projection proves. `verifier` is named only alongside an
+  // approved death verification; an admin confirming from documents leaves it
+  // null and we then claim no institution.
+  const badges = trustBadges(trust);
+  const verifier = trust?.death_verified ? trust.death_verifier_type : null;
+  // An organization beneficiary is named by the organization itself
+  // (display_name is a copy made at creation time and can drift).
+  const reaches =
+    trust?.beneficiary_type === 'organization'
+      ? (trust.organization_name ?? trust.beneficiary_display_name)
+      : (trust?.beneficiary_display_name ?? null);
+  const starterName = trust?.organizer_first_name?.trim() || null;
+  const starterRelationship = trust?.organizer_relationship?.trim() || null;
+
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.headRow}>
-          <VerifiedChip label={t('mobile.detail.verifiedFundraiser')} />
           <Pressable
             onPress={toggleFollow}
             disabled={followBusy}
@@ -280,6 +318,25 @@ export default function CampaignDetailScreen() {
         <Text style={styles.memory}>
           {t('mobile.common.inMemoryOf', { name: campaign.deceased_name })}
         </Text>
+
+        {/* One chip per proven fact — nothing when nothing is proven. */}
+        {badges.length > 0 ? (
+          <View style={styles.trustRow}>
+            {badges.map((badge) => (
+              <ReviewedChip key={badge} label={t(`mobile.detail.trust.${badge}`)} />
+            ))}
+          </View>
+        ) : null}
+        {starterName ? (
+          <Text style={styles.startedBy}>
+            {starterRelationship
+              ? t('mobile.detail.startedByWithRelationship', {
+                  name: starterName,
+                  relationship: starterRelationship,
+                })
+              : t('mobile.detail.startedBy', { name: starterName })}
+          </Text>
+        ) : null}
 
         {campaign.cover_image_url ? (
           <Image
@@ -339,21 +396,26 @@ export default function CampaignDetailScreen() {
           </View>
         ) : null}
 
-        {beneficiary ? (
+        {reaches ? (
           <View style={styles.beneficiaryCard}>
             <Text style={styles.beneficiaryLabel}>
               {t('mobile.detail.whereSupportGoes')}
             </Text>
             <Text style={styles.beneficiaryText}>
-              {beneficiary.relationship_to_deceased
+              {trust?.beneficiary_relationship
                 ? t('mobile.detail.fundsReachWithRelation', {
-                    name: beneficiary.display_name,
-                    relation: beneficiary.relationship_to_deceased,
+                    name: reaches,
+                    relation: trust.beneficiary_relationship,
                   })
-                : t('mobile.detail.fundsReach', {
-                    name: beneficiary.display_name,
-                  })}
+                : t('mobile.detail.fundsReach', { name: reaches })}
             </Text>
+            {verifier ? (
+              <Text style={styles.beneficiaryNote}>
+                {t('mobile.detail.trust.confirmedWith', {
+                  verifier: t(`mobile.detail.trust.verifier.${verifier}`),
+                })}
+              </Text>
+            ) : null}
           </View>
         ) : null}
       </ScrollView>
@@ -442,6 +504,14 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   memory: { fontSize: 15, color: colors.muted },
+  trustRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  startedBy: { fontSize: 13, color: colors.muted },
   // 16:9, matching the web cover cap so a portrait photo can't eat the screen.
   cover: {
     width: '100%',
@@ -467,6 +537,9 @@ const styles = StyleSheet.create({
     letterSpacing: 1.1,
     fontWeight: '700',
     color: colors.muted,
+    // Caps are presentation, not copy: Urdu has no case, so the label text
+    // stays sentence case in the catalogs and English is uppercased here.
+    textTransform: 'uppercase',
   },
   updateCard: {
     padding: spacing.lg,
@@ -506,8 +579,12 @@ const styles = StyleSheet.create({
     letterSpacing: 1.1,
     fontWeight: '700',
     color: colors.muted,
+    // Caps are presentation, not copy: Urdu has no case, so the label text
+    // stays sentence case in the catalogs and English is uppercased here.
+    textTransform: 'uppercase',
   },
   beneficiaryText: { fontSize: 14, lineHeight: 21, color: colors.inkSoft },
+  beneficiaryNote: { fontSize: 12, lineHeight: 19, color: colors.muted },
   footer: {
     padding: spacing.lg,
     borderTopWidth: 1,

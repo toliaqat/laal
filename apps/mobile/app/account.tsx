@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import type { Profile } from '@laal/types';
 import { supabase, WEB_APP_URL } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
-import { Avatar, PrimaryButton } from '@/components/ui';
+import { Avatar, formatMoney, PrimaryButton } from '@/components/ui';
 import { LanguageToggle } from '@/components/language-toggle';
 import { cardShadow, colors, radius, serif, spacing } from '@/lib/theme';
 
@@ -36,19 +36,6 @@ type DonationItem = {
   created_at: string;
   campaign: CampaignRef;
 };
-
-function formatMoney(amount: number, currency: string, locale: string) {
-  try {
-    const fmtLocale = locale === 'ur' ? 'ur-PK-u-nu-latn' : locale;
-    return new Intl.NumberFormat(fmtLocale, {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  } catch {
-    return `${currency} ${amount}`;
-  }
-}
 
 function formatDate(iso: string, locale: string) {
   try {

@@ -36,6 +36,7 @@ export default async function DashboardPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('dashboard');
+  const tc = await getTranslations('common');
 
   const user = await getCurrentUser();
   if (!user) {
@@ -89,23 +90,29 @@ export default async function DashboardPage({
                 <Card key={c.id}>
                   <div className="stack">
                     <div className="row-between wrap" style={{ gap: '0.75rem' }}>
-                      <h3 style={{ margin: 0 }}>{c.title}</h3>
+                      <h3 className="ugc" style={{ margin: 0 }}>
+                        {c.title}
+                      </h3>
                       <Badge tone={statusTone(c.status)}>
                         {t(`status.${c.status}`)}
                       </Badge>
                     </div>
 
-                    <p className="muted small" style={{ margin: 0 }}>
+                    {/* The remembered person's name is user-generated. */}
+                    <p className="muted small ugc" style={{ margin: 0 }}>
                       {t('inMemoryOf', { name: c.deceased_name })}
                     </p>
 
-                    <Progress value={pct} />
+                    <Progress value={pct} label={tc('progressLabel')} />
                     <p className="small" style={{ margin: 0 }}>
-                      <strong>
+                      <strong className="num">
                         {formatMoney(c.amount_raised, c.currency, locale)}
                       </strong>{' '}
-                      {t('raisedOf', {
+                      {/* `<n>` carries `.num` so the goal reads €5,000 (not
+                          5,000€) inside Urdu copy. */}
+                      {t.rich('raisedOf', {
                         amount: formatMoney(c.goal_amount, c.currency, locale),
+                        n: (chunks) => <bdi className="num">{chunks}</bdi>,
                       })}
                     </p>
 

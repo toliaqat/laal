@@ -3,13 +3,57 @@ import type { ReactNode } from 'react';
 /**
  * Pure-CSS recreations of the Laal mobile app screens, for marketing use.
  * No bundled image assets — these render crisp at any scale and stay on-brand.
- * Content mirrors the real app (campaign list + detail) in Laal's voice.
+ * Content mirrors the real app (fundraiser list + detail) in Laal's voice.
+ *
+ * Every visible string is passed in as {@link MockupCopy} rather than hard-coded:
+ * Urdu is the default web locale, so an English screenshot on the Urdu home page
+ * would be the first thing most visitors see. The caller (the home page) owns the
+ * translations and formats the money with the locale-aware `formatMoney`, so the
+ * mockup stays a dumb presentational component.
  */
+
+/** One fundraiser row on the list screen. */
+export type MockupCard = {
+  title: string;
+  /** Person remembered — user-generated in the real app, so it carries `.ugc`. */
+  name: string;
+  pct: number;
+  /** Pre-formatted money strings (the caller owns currency + locale). */
+  raised: string;
+  goal: string;
+};
+
+export type MockupCopy = {
+  /** List screen. */
+  listTitle: string;
+  verified: string;
+  lead: string;
+  cards: MockupCard[];
+  /** Shared labels. */
+  inMemoryOf: string;
+  /** Renders "of {goal}" — a callback because Urdu puts the number first. */
+  ofGoal: (goal: string) => ReactNode;
+  raisedLabel: string;
+  /** Detail screen. */
+  detailTitle: string;
+  detailName: string;
+  detailRaised: string;
+  detailGoal: string;
+  detailPct: number;
+  story: string;
+  /** May carry markup (the family member's name is emphasised). */
+  beneficiary: ReactNode;
+  cta: string;
+  ctaNote: string;
+  /** Accessible names for the decorative phones. */
+  heroAlt: string;
+  showcaseAlt: string;
+};
 
 function StatusBar() {
   return (
     <div className="app-status">
-      <span>9:41</span>
+      <span className="num">9:41</span>
       <span className="dots" aria-hidden>
         <SignalIcon />
         <WifiIcon />
@@ -21,77 +65,58 @@ function StatusBar() {
 
 function MiniCard({
   title,
-  memory,
+  name,
   pct,
   raised,
   goal,
-}: {
-  title: string;
-  memory: string;
-  pct: number;
-  raised: string;
-  goal: string;
-}) {
+  inMemoryOf,
+  ofGoal,
+}: MockupCard & { inMemoryOf: string; ofGoal: (goal: string) => ReactNode }) {
   return (
     <div className="app-card">
       <div className="app-card-title ugc">{title}</div>
       <div className="app-card-mem">
-        In memory of <span className="ugc">{memory}</span>
+        {inMemoryOf} <span className="ugc">{name}</span>
       </div>
       <div className="app-bar">
         <span style={{ width: `${pct}%` }} />
       </div>
       <div className="app-amounts">
         <span className="app-raised num">{raised}</span>
-        <span className="app-goal">
-          of <span className="num">{goal}</span>
-        </span>
+        <span className="app-goal">{ofGoal(goal)}</span>
       </div>
     </div>
   );
 }
 
-/** The home / stories list screen. */
-export function PhoneListScreen() {
+/** The home / fundraiser list screen. */
+export function PhoneListScreen({ copy }: { copy: MockupCopy }) {
   return (
     <div className="phone-screen">
       <div className="phone-notch" aria-hidden />
       <StatusBar />
       <div className="app-body">
         <div className="app-h">
-          <span className="app-title ugc">Fundraisers</span>
+          <span className="app-title ugc">{copy.listTitle}</span>
           {/* plaintext bidi keeps the check glyph attached to the word in RTL */}
-          <span className="app-pill ugc">✓ Verified</span>
+          <span className="app-pill ugc">✓ {copy.verified}</span>
         </div>
-        <p className="app-sub">People near you who could use a hand.</p>
-        <MiniCard
-          title="Bringing Amir home"
-          memory="Amir Hussain"
-          pct={78}
-          raised="$3,920"
-          goal="$5,000"
-        />
-        <MiniCard
-          title="Standing with the Khan family"
-          memory="Bilal Khan"
-          pct={54}
-          raised="$2,700"
-          goal="$5,000"
-        />
-        <MiniCard
-          title="A dignified farewell for Mariam"
-          memory="Mariam Sayed"
-          pct={92}
-          raised="$4,600"
-          goal="$5,000"
-        />
+        <p className="app-sub">{copy.lead}</p>
+        {copy.cards.map((card) => (
+          <MiniCard
+            key={card.title}
+            {...card}
+            inMemoryOf={copy.inMemoryOf}
+            ofGoal={copy.ofGoal}
+          />
+        ))}
       </div>
     </div>
   );
 }
 
-/** The campaign detail screen, with the sticky support action. */
-export function PhoneDetailScreen() {
+/** The fundraiser detail screen, with the sticky support action. */
+export function PhoneDetailScreen({ copy }: { copy: MockupCopy }) {
   return (
     <div className="phone-screen">
       <div className="phone-notch" aria-hidden />
@@ -99,36 +124,27 @@ export function PhoneDetailScreen() {
       <div className="app-body" style={{ paddingBottom: '5.5rem' }}>
         <div className="app-h" style={{ marginBottom: '0.1rem' }}>
           <span className="app-title ugc" style={{ fontSize: '1.15rem' }}>
-            Bringing Amir home
+            {copy.detailTitle}
           </span>
         </div>
         <p className="app-sub">
-          In memory of <span className="ugc">Amir Hussain</span>
+          {copy.inMemoryOf} <span className="ugc">{copy.detailName}</span>
         </p>
         <div className="app-bar">
-          <span style={{ width: '78%' }} />
+          <span style={{ width: `${copy.detailPct}%` }} />
         </div>
         <div className="app-amounts">
           <span className="app-raised">
-            <span className="num">$3,920</span> raised
+            <span className="num">{copy.detailRaised}</span> {copy.raisedLabel}
           </span>
-          <span className="app-goal">
-            of <span className="num">$5,000</span>
-          </span>
+          <span className="app-goal">{copy.ofGoal(copy.detailGoal)}</span>
         </div>
-        <p className="app-story ugc">
-          Amir worked far from home to give his children a future. His family now
-          hopes to bring him back to rest among the people who loved him. Every
-          contribution is verified and goes to his family with care.
-        </p>
-        <div className="app-bene ugc">
-          Support reaches <strong>Fatima Hussain</strong> (daughter), a confirmed
-          family member.
-        </div>
+        <p className="app-story ugc">{copy.story}</p>
+        <div className="app-bene ugc">{copy.beneficiary}</div>
       </div>
       <div className="app-cta">
-        <span className="app-cta-btn">Help Now</span>
-        <p className="app-cta-note">Secure · every fundraiser reviewed before support</p>
+        <span className="app-cta-btn">{copy.cta}</span>
+        <p className="app-cta-note">{copy.ctaNote}</p>
       </div>
     </div>
   );
@@ -138,32 +154,34 @@ export function PhoneDetailScreen() {
  * Two phones — a back-staggered list behind a front detail screen — that float
  * gently. Mirrors how the app actually looks.
  */
-export function PhoneShowcase() {
+export function PhoneShowcase({ copy }: { copy: MockupCopy }) {
   return (
     <div className="phone-stage">
       <div className="phone phone-back phone-floating" aria-hidden>
-        <PhoneListScreen />
+        <PhoneListScreen copy={copy} />
       </div>
       <div
         className="phone phone-front phone-floating"
         role="img"
-        aria-label="The Laal mobile app showing a verified campaign and a Help Now button"
+        aria-label={copy.showcaseAlt}
       >
-        <PhoneDetailScreen />
+        <PhoneDetailScreen copy={copy} />
       </div>
     </div>
   );
 }
 
 /** A single floating phone (used in the hero). */
-export function PhoneHero({ children }: { children?: ReactNode }) {
+export function PhoneHero({
+  copy,
+  children,
+}: {
+  copy: MockupCopy;
+  children?: ReactNode;
+}) {
   return (
-    <div
-      className="phone phone-floating"
-      role="img"
-      aria-label="The Laal mobile app showing verified fundraisers you can support"
-    >
-      {children ?? <PhoneListScreen />}
+    <div className="phone phone-floating" role="img" aria-label={copy.heroAlt}>
+      {children ?? <PhoneListScreen copy={copy} />}
     </div>
   );
 }

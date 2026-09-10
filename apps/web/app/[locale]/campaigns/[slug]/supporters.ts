@@ -12,7 +12,11 @@ import { createAdminSupabase } from '@/lib/supabase/server';
 const SUPPORTERS_PAGE_SIZE = 20;
 
 // A campaign's supporters are only public once the campaign itself is public.
-const PUBLIC_STATUSES = ['active', 'completed', 'closed'];
+// Keep in sync with campaigns_select_public (0013_public_trust_projection.sql)
+// and the row filter of public.campaign_trust_public. 'paused' belongs here:
+// pausing is a temporary hold, the page stays shareable and readable, and
+// omitting it used to blank the whole supporter wall of a paused fundraiser.
+const PUBLIC_STATUSES = ['active', 'paused', 'completed', 'closed'];
 
 export type SupporterMessage = {
   id: string;

@@ -176,6 +176,46 @@ export interface CampaignFollow {
   created_at: string;
 }
 
+/**
+ * One row of `public.campaign_trust_public`
+ * (supabase/migrations/0013_public_trust_projection.sql) — the *only* way a
+ * supporter's client can see beneficiary and verification facts, since both
+ * tables are organizer-or-admin under RLS.
+ *
+ * Everything here is deliberately non-identifying: no ids of private rows, no
+ * emails or phones, no Stripe/bank fields, no document references, no surnames,
+ * nothing about donations. Do not widen this type without widening the view's
+ * column allow-list first — and read that migration's header before you do.
+ */
+export interface CampaignTrust {
+  campaign_id: string;
+  slug: string;
+  /** An admin reviewed and published this fundraiser (`published_at` is set). */
+  reviewed: boolean;
+  /** Null when no active beneficiary has been recorded yet. */
+  beneficiary_type: BeneficiaryType | null;
+  beneficiary_display_name: string | null;
+  /** Individual beneficiaries only: "brother", "wife", … */
+  beneficiary_relationship: string | null;
+  /** Organization beneficiaries only. */
+  organization_name: string | null;
+  organization_type: OrgType | null;
+  /** An approved `death` verification exists. */
+  death_verified: boolean;
+  /** An approved `relationship` verification exists. */
+  relationship_verified: boolean;
+  /**
+   * Type of the organization that confirmed the death (e.g. `embassy`), or null
+   * when our own admins confirmed it from documents — in which case no
+   * institution may be claimed.
+   */
+  death_verifier_type: OrgType | null;
+  /** Given name only. */
+  organizer_first_name: string | null;
+  /** Set only when the organizer is also the individual beneficiary. */
+  organizer_relationship: string | null;
+}
+
 export interface Payout {
   id: string;
   campaign_id: string;
