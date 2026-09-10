@@ -1,16 +1,15 @@
+import { Suspense } from 'react';
 import Image from 'next/image';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Campaign } from '@laal/types';
-import { Link } from '@/i18n/navigation';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { Container, Card, Button } from '@/components/ui';
 import {
-  Container,
-  Card,
-  Button,
-  Progress,
-  formatMoney,
-} from '@/components/ui';
+  CampaignCard,
+  CampaignCardSkeletonGrid,
+  CampaignGrid,
+} from '@/components/campaign-card';
 import { PhoneHero, PhoneShowcase } from '@/components/phone-mockup';
 
 export async function generateMetadata({
@@ -23,19 +22,85 @@ export async function generateMetadata({
   return { title: t('title'), description: t('description') };
 }
 
-async function getFeaturedCampaigns(): Promise<Campaign[]> {
+const FEATURED_LIMIT = 6;
+
+type Featured = { ok: true; campaigns: Campaign[] } | { ok: false };
+
+/**
+ * Newest reviewed fundraisers for the featured strip. A fetch failure is
+ * surfaced as an error, not flattened into `[]` — an empty array renders "New
+ * fundraisers are being reviewed", which is untrue during a Supabase outage.
+ */
+async function getFeaturedCampaigns(): Promise<Featured> {
   try {
     const supabase = await createServerSupabase();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('campaigns')
       .select('*')
       .eq('status', 'active')
-      .order('published_at', { ascending: false })
-      .limit(6);
-    return (data as Campaign[] | null) ?? [];
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .limit(FEATURED_LIMIT);
+    if (error) return { ok: false };
+    return { ok: true, campaigns: (data as Campaign[] | null) ?? [] };
   } catch {
-    return [];
+    return { ok: false };
   }
+}
+
+/**
+ * The one dynamic region on an otherwise static marketing page. Kept in its own
+ * async component and streamed behind a Suspense boundary so the hero and the
+ * rest of the page paint immediately instead of waiting on Supabase.
+ */
+async function FeaturedStrip({ locale }: { locale: string }) {
+  const t = await getTranslations('home');
+  const tc = await getTranslations('campaigns');
+  const result = await getFeaturedCampaigns();
+
+  if (!result.ok) {
+    return (
+      <Card large>
+        <div className="stack center">
+          <h3 style={{ margin: 0, fontSize: '1.15rem' }}>{tc('error.title')}</h3>
+          <p className="muted" style={{ margin: 0 }}>
+            {tc('error.body')}
+          </p>
+          <div className="center">
+            {/* Full reload: a soft nav to the same URL can be served from the
+                router cache and would simply repeat the failure. */}
+            <a className="btn btn-primary btn-sm" href={`/${locale}`}>
+              {tc('error.retry')}
+            </a>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  if (result.campaigns.length === 0) {
+    return (
+      <Card large>
+        <div className="stack center">
+          <p className="muted" style={{ margin: 0 }}>
+            {t('featured.emptyBody')}
+          </p>
+          <div className="center">
+            <Button href="/start" variant="primary" size="sm">
+              {t('featured.emptyCta')}
+            </Button>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <CampaignGrid count={result.campaigns.length}>
+      {result.campaigns.map((c) => (
+        <CampaignCard key={c.id} campaign={c} />
+      ))}
+    </CampaignGrid>
+  );
 }
 
 export default async function HomePage({
@@ -47,7 +112,6 @@ export default async function HomePage({
   setRequestLocale(locale);
   const t = await getTranslations('home');
   const tc = await getTranslations('common');
-  const campaigns = await getFeaturedCampaigns();
 
   const steps = [
     { title: t('steps.startTitle'), body: t('steps.startBody') },
@@ -230,8 +294,29 @@ export default async function HomePage({
                 <Button href="/campaigns" variant="primary">
                   {t('showcase.cta')}
                 </Button>
-                <span className="trust-pill">
-                  <SparkIcon /> {t('showcase.comingSoon')}
+                {/* Informational, not actionable. Deliberately NOT `.trust-pill`
+                    — that class has a border, shadow and hover lift, so beside
+                    a real CTA it read as a broken button. */}
+                <span
+                  className="small muted"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                  }}
+                >
+                  <span
+                    aria-hidden
+                    style={{
+                      display: 'inline-flex',
+                      width: 15,
+                      height: 15,
+                      color: 'var(--accent)',
+                    }}
+                  >
+                    <SparkIcon />
+                  </span>
+                  {t('showcase.comingSoon')}
                 </span>
               </div>
             </div>
@@ -254,57 +339,9 @@ export default async function HomePage({
             </Button>
           </div>
 
-          {campaigns.length === 0 ? (
-            <Card large>
-              <div className="stack center">
-                <p className="muted" style={{ margin: 0 }}>
-                  {t('featured.emptyBody')}
-                </p>
-                <div className="center">
-                  <Button href="/start" variant="primary" size="sm">
-                    {t('featured.emptyCta')}
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ) : (
-            <div className="grid grid-cards">
-              {campaigns.map((c) => {
-                const pct = c.goal_amount
-                  ? (c.amount_raised / c.goal_amount) * 100
-                  : 0;
-                return (
-                  <Link
-                    key={c.id}
-                    href={`/campaigns/${c.slug}`}
-                    style={{ textDecoration: 'none', color: 'inherit' }}
-                  >
-                    <Card hover>
-                      <div className="story-card">
-                        <div className="stack" style={{ gap: '0.75rem' }}>
-                          <h3 style={{ margin: 0 }}>{c.title}</h3>
-                          <p className="small muted" style={{ margin: 0 }}>
-                            {t('featured.inMemoryOf', { name: c.deceased_name })}
-                          </p>
-                          <Progress value={pct} />
-                          <p className="small" style={{ margin: 0 }}>
-                            <strong>
-                              {formatMoney(c.amount_raised, c.currency, locale)}
-                            </strong>{' '}
-                            <span className="muted">
-                              {t('featured.raisedOf', {
-                                amount: formatMoney(c.goal_amount, c.currency, locale),
-                              })}
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
+          <Suspense fallback={<CampaignCardSkeletonGrid count={3} />}>
+            <FeaturedStrip locale={locale} />
+          </Suspense>
         </Container>
       </section>
 

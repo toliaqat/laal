@@ -1,6 +1,8 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   Pressable,
   StyleSheet,
   Text,
@@ -9,7 +11,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { accentShadow, colors, radius, serif } from '@/lib/theme';
+import { accentShadow, colors, radius, serif, spacing } from '@/lib/theme';
 import { signInWithGoogle } from '@/lib/google-auth';
 
 /** Circular avatar showing initials over a warm accent fill. */
@@ -32,13 +34,120 @@ export function Avatar({
   );
 }
 
-/** A small "✓ Verified" trust chip. */
-export function VerifiedChip({ label }: { label?: string }) {
+/**
+ * A small "✓ Fundraiser reviewed" trust chip.
+ *
+ * Wording matters here: admin approval does NOT require an approved death
+ * verification, so a bare "Verified" would be a false trust claim in a
+ * bereavement product. BRAND.md prescribes "Fundraiser reviewed" / "Need
+ * verified" — this chip only ever claims the former.
+ */
+export function ReviewedChip({ label }: { label?: string }) {
   const { t } = useTranslation();
   return (
     <View style={styles.verified}>
       <Text style={styles.verifiedMark}>✓</Text>
-      <Text style={styles.verifiedText}>{label ?? t('mobile.common.verified')}</Text>
+      <Text style={styles.verifiedText}>{label ?? t('mobile.common.reviewed')}</Text>
+    </View>
+  );
+}
+
+/** @deprecated Use {@link ReviewedChip}; kept so existing imports keep working. */
+export const VerifiedChip = ReviewedChip;
+
+/**
+ * Format a money amount with its ISO currency, localized to the active locale.
+ * Urdu keeps Western digits for amounts (clearer for currency) by pinning the
+ * numbering system. Mirrors `formatMoney` in apps/web/components/ui.tsx.
+ */
+export function formatMoney(
+  amount: number,
+  currency: string,
+  locale?: string,
+): string {
+  const resolved = locale === 'ur' ? 'ur-PK-u-nu-latn' : locale;
+  try {
+    return new Intl.NumberFormat(resolved, {
+      style: 'currency',
+      currency: currency || 'EUR',
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${currency} ${amount.toFixed(0)}`;
+  }
+}
+
+/** A softly pulsing placeholder block. */
+export function SkeletonBlock({
+  width,
+  height,
+  radius: r = radius.sm,
+  style,
+}: {
+  width?: number | `${number}%`;
+  height: number;
+  radius?: number;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const pulse = useRef(new Animated.Value(0.45)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 800,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 0.45,
+          duration: 800,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
+  return (
+    <Animated.View
+      style={[
+        { width, height, borderRadius: r, backgroundColor: colors.surface2, opacity: pulse },
+        style,
+      ]}
+    />
+  );
+}
+
+/**
+ * Placeholder in the shape of a CampaignCard, so the header paints immediately
+ * instead of the whole screen being replaced by a centred spinner.
+ */
+export function CampaignCardSkeleton() {
+  return (
+    <View style={styles.skeletonCard} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <SkeletonBlock height={168} width="100%" radius={0} />
+      <View style={styles.skeletonBody}>
+        <SkeletonBlock height={18} width="80%" />
+        <SkeletonBlock height={13} width="52%" />
+        <SkeletonBlock height={13} width="38%" />
+        <SkeletonBlock height={8} width="100%" radius={radius.pill} />
+        <SkeletonBlock height={13} width="60%" />
+      </View>
+    </View>
+  );
+}
+
+/** `count` stacked {@link CampaignCardSkeleton}s. */
+export function CampaignCardSkeletonList({ count = 3 }: { count?: number }) {
+  return (
+    <View style={{ gap: spacing.md }}>
+      {Array.from({ length: count }, (_, i) => (
+        <CampaignCardSkeleton key={i} />
+      ))}
     </View>
   );
 }
@@ -265,4 +374,13 @@ const styles = StyleSheet.create({
   },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.line },
   dividerText: { fontSize: 13, color: colors.muted, fontWeight: '600' },
+
+  skeletonCard: {
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+    overflow: 'hidden',
+  },
+  skeletonBody: { padding: spacing.lg, gap: spacing.sm },
 });

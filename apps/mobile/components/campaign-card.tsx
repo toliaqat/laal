@@ -3,21 +3,8 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { Campaign } from '@laal/types';
 import { ProgressBar } from './progress-bar';
-import { VerifiedChip } from './ui';
+import { formatMoney, ReviewedChip } from './ui';
 import { cardShadow, colors, initials, radius, serif, spacing } from '@/lib/theme';
-
-function formatMoney(amount: number, currency: string, locale: string) {
-  try {
-    const fmtLocale = locale === 'ur' ? 'ur-PK-u-nu-latn' : locale;
-    return new Intl.NumberFormat(fmtLocale, {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  } catch {
-    return `${currency} ${amount}`;
-  }
-}
 
 /** A tappable card summarizing a campaign; links to its detail screen. */
 export function CampaignCard({ campaign }: { campaign: Campaign }) {
@@ -26,6 +13,15 @@ export function CampaignCard({ campaign }: { campaign: Campaign }) {
     campaign.goal_amount > 0
       ? Math.round((campaign.amount_raised / campaign.goal_amount) * 100)
       : 0;
+
+  // Death city/country are captured by the edit form but were never shown
+  // anywhere public; a place helps supporters recognise their own community.
+  const city = campaign.death_city?.trim() || null;
+  const country = campaign.death_country?.trim() || null;
+  const place =
+    city && country
+      ? t('mobile.card.location', { city, country })
+      : city ?? country;
 
   return (
     <Link href={`/campaigns/${campaign.slug}`} asChild>
@@ -60,7 +56,7 @@ export function CampaignCard({ campaign }: { campaign: Campaign }) {
             </View>
           )}
           <View style={styles.chipOverlay}>
-            <VerifiedChip />
+            <ReviewedChip />
           </View>
         </View>
 
@@ -71,9 +67,14 @@ export function CampaignCard({ campaign }: { campaign: Campaign }) {
           <Text style={styles.memory}>
             {t('mobile.common.inMemoryOf', { name: campaign.deceased_name })}
           </Text>
+          {place ? <Text style={styles.place}>{place}</Text> : null}
 
           <View style={styles.progressWrap}>
-            <ProgressBar value={campaign.amount_raised} total={campaign.goal_amount} />
+            <ProgressBar
+              value={campaign.amount_raised}
+              total={campaign.goal_amount}
+              label={t('mobile.common.progressLabel')}
+            />
           </View>
 
           <View style={styles.amounts}>
@@ -129,6 +130,7 @@ const styles = StyleSheet.create({
   body: { padding: spacing.lg, gap: spacing.sm },
   title: { fontSize: 18, fontWeight: '600', color: colors.ink, fontFamily: serif },
   memory: { fontSize: 13, color: colors.muted },
+  place: { fontSize: 13, color: colors.muted },
   progressWrap: { marginTop: spacing.xs },
   amounts: { flexDirection: 'row', alignItems: 'baseline', gap: 5 },
   raised: { fontSize: 14, fontWeight: '700', color: colors.ink },

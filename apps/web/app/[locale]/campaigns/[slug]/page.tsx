@@ -1,15 +1,23 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getTranslations, setRequestLocale } from 'next-intl/server';
+import {
+  getFormatter,
+  getTranslations,
+  setRequestLocale,
+} from 'next-intl/server';
 import type { Campaign, Beneficiary } from '@laal/types';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { APP_URL } from '@/lib/env';
 import { DonateForm } from '@/components/donate-form';
 import { SupporterWall } from '@/components/supporter-wall';
+import { CampaignUpdates } from '@/components/campaign-updates';
 import {
   countSupporterMessages,
   loadSupporterMessages,
 } from './supporters';
+import { loadCampaignUpdates } from './updates';
+import { ShareButtons } from './share-buttons';
+import styles from './campaign.module.css';
 import { Container, Card, Progress, Badge, formatMoney } from '@/components/ui';
 
 type Params = { slug: string; locale: string };
@@ -37,15 +45,44 @@ async function getActiveBeneficiary(
   return (data as Beneficiary | null) ?? null;
 }
 
-function formatDate(value: string | null): string | null {
+function toDate(value: string | null): Date | null {
   if (!value) return null;
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString('en-GB', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * Copy for a fundraiser that isn't taking support right now. Each state gets a
+ * calm, specific card instead of the donate form (and `closed` is deliberately
+ * neutral — it is not an error).
+ */
+function stateKeys(status: Campaign['status']): {
+  title: string;
+  body: string;
+} {
+  switch (status) {
+    case 'completed':
+      return {
+        title: 'detail.state.completedTitle',
+        body: 'detail.state.completedBody',
+      };
+    case 'closed':
+      return {
+        title: 'detail.state.closedTitle',
+        body: 'detail.state.closedBody',
+      };
+    case 'paused':
+      return {
+        title: 'detail.state.pausedTitle',
+        body: 'detail.state.pausedBody',
+      };
+    default:
+      // draft / pending_review / rejected — only the organizer can reach these.
+      return {
+        title: 'detail.state.notLiveTitle',
+        body: 'detail.state.notLiveBody',
+      };
+  }
 }
 
 export async function generateMetadata({
@@ -67,7 +104,7 @@ export async function generateMetadata({
   const description =
     campaign.story?.slice(0, 200) ??
     t('detail.metaDescription', { name: campaign.deceased_name });
-  const url = `${APP_URL()}/campaigns/${campaign.slug}`;
+  const url = `${APP_URL()}/${locale}/campaigns/${campaign.slug}`;
 
   return {
     title,
@@ -96,6 +133,7 @@ export default async function CampaignPage({
   const { slug, locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('campaigns');
+  const format = await getFormatter();
   const campaign = await getCampaign(slug);
 
   if (!campaign) {
@@ -104,11 +142,18 @@ export default async function CampaignPage({
 
   const beneficiary = await getActiveBeneficiary(campaign.id);
 
-  const [supporterCount, firstSupporters] = await Promise.all([
+  const [supporterCount, firstSupporters, updates] = await Promise.all([
     countSupporterMessages(campaign.id),
     loadSupporterMessages(campaign.id, 0),
+    loadCampaignUpdates(campaign.id),
   ]);
 
+  // Locale-aware: the deceased's dates used to be hard-coded to en-GB, which
+  // rendered Latin months on the Urdu page.
+  const formatDate = (value: string | null): string | null => {
+    const d = toDate(value);
+    return d ? format.dateTime(d, { dateStyle: 'medium' }) : null;
+  };
   const dob = formatDate(campaign.deceased_dob);
   const dod = formatDate(campaign.deceased_dod);
   const dates =
@@ -124,6 +169,13 @@ export default async function CampaignPage({
     ? (campaign.amount_raised / campaign.goal_amount) * 100
     : 0;
 
+  // Only an active fundraiser can take support. Everything else gets a calm
+  // status card — and the Help Now anchors, which point into the donate form,
+  // are hidden with it.
+  const accepting = campaign.status === 'active';
+  const shareUrl = `${APP_URL()}/${locale}/campaigns/${campaign.slug}`;
+  const state = stateKeys(campaign.status);
+
   return (
     <main className="section">
       <Container narrow>
@@ -133,10 +185,13 @@ export default async function CampaignPage({
             {campaign.status === 'completed' ? (
               <Badge tone="success">{t('detail.goalReached')}</Badge>
             ) : campaign.status === 'closed' ? (
-              <Badge tone="danger">{t('detail.closed')}</Badge>
+              // Neutral, not `danger`: a closed fundraiser is not a failure.
+              <Badge>{t('detail.closed')}</Badge>
+            ) : campaign.status === 'paused' ? (
+              <Badge tone="warning">{t('detail.paused')}</Badge>
             ) : null}
           </div>
-          <h1 style={{ margin: 0 }}>{campaign.title}</h1>
+          <h1 className={styles.title}>{campaign.title}</h1>
           <p className="muted" style={{ margin: 0 }}>
             {t.rich('detail.inMemoryOf', {
               name: () => <strong>{campaign.deceased_name}</strong>,
@@ -150,13 +205,7 @@ export default async function CampaignPage({
           <img
             src={campaign.cover_image_url}
             alt={campaign.deceased_name}
-            style={{
-              width: '100%',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--line)',
-              margin: '1.5rem 0',
-              objectFit: 'cover',
-            }}
+            className={styles.cover}
           />
         )}
 
@@ -173,22 +222,27 @@ export default async function CampaignPage({
                 })}
               </span>
             </p>
+            {accepting && (
+              // Plain anchor, not the locale-aware Link: this is an in-page jump
+              // to the donate form so the CTA is reachable from the first screen.
+              <div>
+                <a href="#help" className="btn btn-primary">
+                  {t('detail.helpNow')}
+                </a>
+              </div>
+            )}
+            <ShareButtons url={shareUrl} title={campaign.title} />
           </div>
         </Card>
 
         {campaign.story && (
-          <section style={{ margin: '2rem 0' }}>
-            <p
-              style={{
-                color: 'var(--ink)',
-                lineHeight: 1.7,
-                whiteSpace: 'pre-wrap',
-              }}
-            >
-              {campaign.story}
-            </p>
+          <section className={styles.storySection}>
+            <h2>{t('detail.storyHeading')}</h2>
+            <p className={styles.story}>{campaign.story}</p>
           </section>
         )}
+
+        <CampaignUpdates items={updates.items} hasMore={updates.hasMore} />
 
         {supporterCount > 0 && (
           <section style={{ margin: '2rem 0' }}>
@@ -227,13 +281,30 @@ export default async function CampaignPage({
         )}
 
         <Card large style={{ marginTop: '2rem' }}>
-          <DonateForm
-            campaignId={campaign.id}
-            slug={campaign.slug}
-            currency={campaign.currency}
-            campaignTitle={campaign.title}
-          />
+          {accepting ? (
+            <DonateForm
+              campaignId={campaign.id}
+              slug={campaign.slug}
+              currency={campaign.currency}
+              campaignTitle={campaign.title}
+            />
+          ) : (
+            <div className="stack" style={{ gap: '0.5rem' }}>
+              <h3 style={{ margin: 0 }}>{t(state.title)}</h3>
+              <p className="muted" style={{ margin: 0 }}>
+                {t(state.body)}
+              </p>
+            </div>
+          )}
         </Card>
+
+        {accepting && (
+          <div className={styles.stickyHelp}>
+            <a href="#help" className="btn btn-primary btn-block">
+              {t('detail.helpNow')}
+            </a>
+          </div>
+        )}
       </Container>
     </main>
   );

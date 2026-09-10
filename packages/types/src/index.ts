@@ -155,6 +155,20 @@ export interface Donation {
   created_at: string;
 }
 
+/**
+ * A short note the organizer posts to the people supporting a fundraiser.
+ * Mirrors campaign_updates. Body is plain text (never HTML) and bounded to
+ * 2000 characters by 0012_campaign_updates_hardening.sql.
+ */
+export interface CampaignUpdate {
+  id: string;
+  campaign_id: string;
+  /** The organizer (or admin) who posted it. Null only for legacy rows. */
+  author_id: string | null;
+  body: string;
+  created_at: string;
+}
+
 /** A supporter following (saving) a campaign. Mirrors campaign_follows. */
 export interface CampaignFollow {
   profile_id: string;

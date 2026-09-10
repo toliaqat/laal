@@ -34,14 +34,18 @@ function MiniCard({
 }) {
   return (
     <div className="app-card">
-      <div className="app-card-title">{title}</div>
-      <div className="app-card-mem">In memory of {memory}</div>
+      <div className="app-card-title ugc">{title}</div>
+      <div className="app-card-mem">
+        In memory of <span className="ugc">{memory}</span>
+      </div>
       <div className="app-bar">
         <span style={{ width: `${pct}%` }} />
       </div>
       <div className="app-amounts">
-        <span className="app-raised">{raised}</span>
-        <span className="app-goal">of {goal}</span>
+        <span className="app-raised num">{raised}</span>
+        <span className="app-goal">
+          of <span className="num">{goal}</span>
+        </span>
       </div>
     </div>
   );
@@ -55,8 +59,9 @@ export function PhoneListScreen() {
       <StatusBar />
       <div className="app-body">
         <div className="app-h">
-          <span className="app-title">Fundraisers</span>
-          <span className="app-pill">✓ Verified</span>
+          <span className="app-title ugc">Fundraisers</span>
+          {/* plaintext bidi keeps the check glyph attached to the word in RTL */}
+          <span className="app-pill ugc">✓ Verified</span>
         </div>
         <p className="app-sub">People near you who could use a hand.</p>
         <MiniCard
@@ -93,24 +98,30 @@ export function PhoneDetailScreen() {
       <StatusBar />
       <div className="app-body" style={{ paddingBottom: '5.5rem' }}>
         <div className="app-h" style={{ marginBottom: '0.1rem' }}>
-          <span className="app-title" style={{ fontSize: '1.2rem' }}>
+          <span className="app-title ugc" style={{ fontSize: '1.15rem' }}>
             Bringing Amir home
           </span>
         </div>
-        <p className="app-sub">In memory of Amir Hussain</p>
+        <p className="app-sub">
+          In memory of <span className="ugc">Amir Hussain</span>
+        </p>
         <div className="app-bar">
           <span style={{ width: '78%' }} />
         </div>
         <div className="app-amounts">
-          <span className="app-raised">$3,920 raised</span>
-          <span className="app-goal">of $5,000</span>
+          <span className="app-raised">
+            <span className="num">$3,920</span> raised
+          </span>
+          <span className="app-goal">
+            of <span className="num">$5,000</span>
+          </span>
         </div>
-        <p className="app-story">
+        <p className="app-story ugc">
           Amir worked far from home to give his children a future. His family now
           hopes to bring him back to rest among the people who loved him. Every
           contribution is verified and goes to his family with care.
         </p>
-        <div className="app-bene">
+        <div className="app-bene ugc">
           Support reaches <strong>Fatima Hussain</strong> (daughter), a confirmed
           family member.
         </div>

@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -12,11 +14,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import { useTranslation } from 'react-i18next';
-import type { Beneficiary, Campaign } from '@laal/types';
+import type { Beneficiary, Campaign, CampaignUpdate } from '@laal/types';
 import { supabase, WEB_APP_URL } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
+import { formatRelative } from '@/lib/format';
 import { ProgressBar } from '@/components/progress-bar';
-import { VerifiedChip } from '@/components/ui';
+import { PrimaryButton, VerifiedChip } from '@/components/ui';
 import { accentShadow, colors, radius, serif, spacing } from '@/lib/theme';
 
 function formatMoney(amount: number, currency: string, locale: string) {
@@ -32,6 +35,27 @@ function formatMoney(amount: number, currency: string, locale: string) {
   }
 }
 
+/** Newest-first, matching the web feed. One extra row reveals "there's more". */
+const UPDATES_PAGE_SIZE = 10;
+
+type UpdateRow = Pick<CampaignUpdate, 'id' | 'body' | 'created_at'>;
+
+/** Copy for a fundraiser that isn't collecting support right now. */
+function statusKey(status: Campaign['status']): string | null {
+  switch (status) {
+    case 'active':
+      return null;
+    case 'completed':
+      return 'mobile.detail.statusCompleted';
+    case 'closed':
+      return 'mobile.detail.statusClosed';
+    case 'paused':
+      return 'mobile.detail.statusPaused';
+    default:
+      return 'mobile.detail.statusNotLive';
+  }
+}
+
 export default function CampaignDetailScreen() {
   const { t, i18n } = useTranslation();
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -40,40 +64,66 @@ export default function CampaignDetailScreen() {
   const { session } = useAuth();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [beneficiary, setBeneficiary] = useState<Beneficiary | null>(null);
+  const [updates, setUpdates] = useState<UpdateRow[]>([]);
+  const [moreUpdates, setMoreUpdates] = useState(false);
   const [loading, setLoading] = useState(true);
+  // A dropped connection and a deleted fundraiser used to look identical
+  // ("could not be found"). Keep them apart so we can offer a retry.
+  const [loadError, setLoadError] = useState(false);
   const [followed, setFollowed] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
+  const [helpBusy, setHelpBusy] = useState(false);
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setLoading(true);
-      const { data: c } = await supabase
-        .from('campaigns')
-        .select('*')
-        .eq('slug', slug)
-        .maybeSingle();
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError(false);
+    const { data: c, error } = await supabase
+      .from('campaigns')
+      .select('*')
+      .eq('slug', slug)
+      .maybeSingle();
 
-      if (!mounted) return;
-      const found = (c as Campaign | null) ?? null;
-      setCampaign(found);
+    if (error) {
+      // Network/server problem — not a missing fundraiser.
+      setLoadError(true);
+      setCampaign(null);
+      setLoading(false);
+      return;
+    }
 
-      if (found) {
-        const { data: b } = await supabase
+    const found = (c as Campaign | null) ?? null;
+    setCampaign(found);
+
+    if (found) {
+      const [{ data: b }, { data: u }] = await Promise.all([
+        supabase
           .from('beneficiaries')
           .select('*')
           .eq('campaign_id', found.id)
           .eq('is_active', true)
-          .maybeSingle();
-        if (!mounted) return;
-        setBeneficiary((b as Beneficiary | null) ?? null);
-      }
-      setLoading(false);
-    })();
-    return () => {
-      mounted = false;
-    };
+          .maybeSingle(),
+        supabase
+          .from('campaign_updates')
+          .select('id, body, created_at')
+          .eq('campaign_id', found.id)
+          .order('created_at', { ascending: false })
+          .limit(UPDATES_PAGE_SIZE + 1),
+      ]);
+      setBeneficiary((b as Beneficiary | null) ?? null);
+      const rows = (u as UpdateRow[] | null) ?? [];
+      setUpdates(rows.slice(0, UPDATES_PAGE_SIZE));
+      setMoreUpdates(rows.length > UPDATES_PAGE_SIZE);
+    } else {
+      setBeneficiary(null);
+      setUpdates([]);
+      setMoreUpdates(false);
+    }
+    setLoading(false);
   }, [slug]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   // Reflect whether the signed-in user already follows this story.
   useEffect(() => {
@@ -129,14 +179,54 @@ export default function CampaignDetailScreen() {
     setFollowBusy(false);
   };
 
-  const help = () => {
-    WebBrowser.openBrowserAsync(`${WEB_APP_URL}/campaigns/${slug}`);
+  // Shared by the Help Now hand-off and the share sheet.
+  const webUrl = `${WEB_APP_URL}/${i18n.language}/campaigns/${slug}`;
+
+  const shareStory = async () => {
+    if (!campaign) return;
+    try {
+      await Share.share({
+        message: `${t('mobile.detail.shareMessage', { title: campaign.title })} ${webUrl}?from=app`,
+        url: `${webUrl}?from=app`,
+        title: campaign.title,
+      });
+    } catch {
+      // Dismissed or unavailable — nothing worth interrupting the screen for.
+    }
+  };
+
+  const help = async () => {
+    if (helpBusy) return; // a double-tap must not open two browser sheets
+    setHelpBusy(true);
+    try {
+      // Carry the app's language into the web URL: without the locale prefix an
+      // English app user landed on the Urdu site (the web default is /ur).
+      await WebBrowser.openBrowserAsync(`${webUrl}?from=app#help`);
+    } catch {
+      Alert.alert(t('mobile.detail.helpError'));
+    } finally {
+      setHelpBusy(false);
+    }
   };
 
   if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.stateTitle}>{t('mobile.detail.errorTitle')}</Text>
+        <Text style={styles.stateBody}>{t('mobile.detail.errorBody')}</Text>
+        <PrimaryButton
+          label={t('mobile.detail.retry')}
+          onPress={load}
+          style={{ marginTop: spacing.md }}
+        />
       </View>
     );
   }
@@ -153,6 +243,8 @@ export default function CampaignDetailScreen() {
     campaign.goal_amount > 0
       ? Math.round((campaign.amount_raised / campaign.goal_amount) * 100)
       : 0;
+
+  const inactiveKey = statusKey(campaign.status);
 
   return (
     <View style={styles.screen}>
@@ -175,11 +267,29 @@ export default function CampaignDetailScreen() {
               {followed ? t('mobile.detail.following') : t('mobile.detail.follow')}
             </Text>
           </Pressable>
+          <Pressable
+            onPress={shareStory}
+            hitSlop={6}
+            accessibilityRole="button"
+            style={styles.followBtn}
+          >
+            <Text style={styles.followText}>{t('mobile.detail.share')}</Text>
+          </Pressable>
         </View>
         <Text style={styles.title}>{campaign.title}</Text>
         <Text style={styles.memory}>
           {t('mobile.common.inMemoryOf', { name: campaign.deceased_name })}
         </Text>
+
+        {campaign.cover_image_url ? (
+          <Image
+            source={{ uri: campaign.cover_image_url }}
+            style={styles.cover}
+            resizeMode="cover"
+            accessible
+            accessibilityLabel={campaign.deceased_name}
+          />
+        ) : null}
 
         <View style={styles.progressWrap}>
           <ProgressBar value={campaign.amount_raised} total={campaign.goal_amount} />
@@ -199,6 +309,34 @@ export default function CampaignDetailScreen() {
 
         {campaign.story ? (
           <Text style={styles.story}>{campaign.story}</Text>
+        ) : null}
+
+        {updates.length > 0 ? (
+          <View style={styles.updatesSection}>
+            <Text style={styles.sectionLabel}>
+              {t('mobile.detail.updatesHeading')}
+            </Text>
+            {updates.map((u) => (
+              <View key={u.id} style={styles.updateCard}>
+                <View style={styles.updateMeta}>
+                  {/* No author name: profiles are readable only by their owner
+                      and admins, so attribution stays generic. */}
+                  <Text style={styles.updateFrom}>
+                    {t('mobile.detail.updateFrom')}
+                  </Text>
+                  <Text style={styles.updateTime}>
+                    {formatRelative(u.created_at, i18n.language)}
+                  </Text>
+                </View>
+                <Text style={styles.updateBody}>{u.body}</Text>
+              </View>
+            ))}
+            {moreUpdates ? (
+              <Text style={styles.updatesFooter}>
+                {t('mobile.detail.updatesMostRecent')}
+              </Text>
+            ) : null}
+          </View>
         ) : null}
 
         {beneficiary ? (
@@ -221,17 +359,32 @@ export default function CampaignDetailScreen() {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.helpButton,
-            accentShadow,
-            pressed && styles.pressed,
-          ]}
-          onPress={help}
-        >
-          <Text style={styles.helpText}>{t('mobile.detail.helpNow')}</Text>
-        </Pressable>
-        <Text style={styles.helpNote}>{t('mobile.detail.helpNote')}</Text>
+        {inactiveKey ? (
+          // Not collecting support — no CTA to hand off to the web.
+          <Text style={styles.footerStatus}>{t(inactiveKey)}</Text>
+        ) : (
+          <>
+            <Pressable
+              style={({ pressed }) => [
+                styles.helpButton,
+                accentShadow,
+                pressed && styles.pressed,
+                helpBusy && styles.helpButtonBusy,
+              ]}
+              onPress={help}
+              disabled={helpBusy}
+              accessibilityRole="button"
+              accessibilityState={{ busy: helpBusy, disabled: helpBusy }}
+            >
+              <Text style={styles.helpText}>
+                {helpBusy
+                  ? t('mobile.detail.opening')
+                  : t('mobile.detail.helpNow')}
+              </Text>
+            </Pressable>
+            <Text style={styles.helpNote}>{t('mobile.detail.helpNote')}</Text>
+          </>
+        )}
       </View>
     </View>
   );
@@ -243,14 +396,30 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    padding: spacing.xl,
     backgroundColor: colors.bg,
   },
-  notFound: { fontSize: 16, color: colors.muted },
+  notFound: { fontSize: 16, color: colors.muted, textAlign: 'center' },
+  stateTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.ink,
+    fontFamily: serif,
+    textAlign: 'center',
+  },
+  stateBody: {
+    fontSize: 14,
+    color: colors.muted,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
   content: { padding: spacing.xl, gap: spacing.md },
   headRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
   followBtn: {
     borderWidth: 1,
@@ -273,6 +442,14 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   memory: { fontSize: 15, color: colors.muted },
+  // 16:9, matching the web cover cap so a portrait photo can't eat the screen.
+  cover: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface2,
+    marginTop: spacing.xs,
+  },
   progressWrap: { marginTop: spacing.sm, gap: spacing.sm },
   amounts: { flexDirection: 'row', alignItems: 'baseline', gap: 5 },
   raised: { fontSize: 16, fontWeight: '700', color: colors.ink },
@@ -284,6 +461,37 @@ const styles = StyleSheet.create({
     color: colors.inkSoft,
     marginTop: spacing.sm,
   },
+  updatesSection: { marginTop: spacing.sm, gap: spacing.sm },
+  sectionLabel: {
+    fontSize: 11,
+    letterSpacing: 1.1,
+    fontWeight: '700',
+    color: colors.muted,
+  },
+  updateCard: {
+    padding: spacing.lg,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+    gap: spacing.xs,
+  },
+  updateMeta: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  updateFrom: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+    fontWeight: '700',
+    color: colors.accent,
+    textTransform: 'uppercase',
+  },
+  updateTime: { fontSize: 12, color: colors.muted },
+  updateBody: { fontSize: 15, lineHeight: 23, color: colors.inkSoft },
+  updatesFooter: { fontSize: 12, color: colors.muted },
   beneficiaryCard: {
     marginTop: spacing.sm,
     padding: spacing.lg,
@@ -307,12 +515,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     gap: spacing.sm,
   },
+  footerStatus: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: colors.inkSoft,
+    textAlign: 'center',
+  },
   helpButton: {
     backgroundColor: colors.accent,
     paddingVertical: 16,
     borderRadius: radius.pill,
     alignItems: 'center',
   },
+  helpButtonBusy: { opacity: 0.7 },
   pressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
   helpText: { color: colors.accentInk, fontSize: 17, fontWeight: '700' },
   helpNote: { fontSize: 12, color: colors.muted, textAlign: 'center' },

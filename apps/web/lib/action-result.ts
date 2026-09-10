@@ -34,6 +34,10 @@ export type ErrorCode =
   | 'file_too_large'
   | 'file_invalid_type'
   | 'doc_type_invalid'
+  // Campaign updates (organizer posts)
+  | 'update_body_required'
+  | 'update_body_too_long'
+  | 'update_not_found'
   // Donations
   | 'donation_amount_invalid'
   | 'campaign_not_found'

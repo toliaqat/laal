@@ -1,5 +1,6 @@
 import type Stripe from 'stripe';
-import { stripe } from '@/lib/stripe';
+import * as Sentry from '@sentry/nextjs';
+import { stripe, toMajorUnits } from '@/lib/stripe';
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { sendDonationReceipt } from '@/lib/email';
 import { logAudit } from '@/lib/audit';
@@ -7,15 +8,17 @@ import { STRIPE_WEBHOOK_SECRET } from '@/lib/env';
 
 export const runtime = 'nodejs';
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  eur: '€',
-  usd: '$',
-  gbp: '£',
-};
-
-function formatAmount(amount: number, currency: string): string {
-  const sym = CURRENCY_SYMBOLS[currency.toLowerCase()] ?? '';
-  return `${sym}${amount.toFixed(2)}`;
+/**
+ * A genuine persistence failure (e.g. Supabase unavailable) while recording
+ * money that Stripe has already collected. These MUST answer 5xx so Stripe
+ * retries — swallowing them with a 200 silently loses the donation. Logical
+ * skips (unpaid session, missing metadata) are not this.
+ */
+class WebhookPersistenceError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'WebhookPersistenceError';
+  }
 }
 
 export async function POST(req: Request): Promise<Response> {
@@ -81,9 +84,14 @@ export async function POST(req: Request): Promise<Response> {
         break;
     }
   } catch (err) {
-    // Handlers are best-effort. Log and still return 200 to avoid Stripe
-    // hammering us with retries for application-level errors.
     console.error(`[stripe webhook] handler error for ${event.type}:`, err);
+    Sentry.captureException(err, { tags: { webhook: event.type } });
+    if (err instanceof WebhookPersistenceError) {
+      // Ask Stripe to retry — the money exists but we failed to record it.
+      return new Response('Failed to record donation', { status: 500 });
+    }
+    // Everything else stays best-effort: a 200 stops Stripe hammering us with
+    // retries for application-level errors it cannot help with.
   }
 
   return new Response(null, { status: 200 });
@@ -120,36 +128,59 @@ async function handleCheckoutCompleted(
   }
 
   const donorEmail = session.customer_details?.email ?? null;
-  const donorName = session.customer_details?.name ?? null;
-  const amount = (session.amount_total ?? 0) / 100;
+  // The supporter's CHOSEN display name, captured in our own form and carried
+  // through metadata. Never customer_details.name: that is the cardholder's
+  // legal name, and donor_name is published on the public supporter wall — so
+  // someone who left the field blank or typed a nickname would otherwise have
+  // their card name published.
+  const chosenName = session.metadata?.donor_name?.trim() || null;
+  // Only a greeting fallback for the private receipt email.
+  const cardholderName = session.customer_details?.name?.trim() || null;
+  const donorProfileId = session.metadata?.donor_profile_id?.trim() || null;
+  const amount = toMajorUnits(session.amount_total ?? 0);
   const currency = (session.currency ?? 'eur').toUpperCase();
   const isAnonymous = session.metadata?.is_anonymous === 'true';
   const message = session.metadata?.message?.trim() || null;
+  const locale = session.metadata?.locale?.trim() || undefined;
 
   const admin = createAdminSupabase();
 
-  // Idempotent: stripe_payment_intent_id is UNIQUE, so re-delivery of the same
-  // event upserts the same row rather than duplicating the donation.
-  const { error: upsertError } = await admin.from('donations').upsert(
-    {
-      campaign_id: campaignId,
-      donor_profile_id: null,
-      donor_name: isAnonymous ? null : donorName,
-      donor_email: donorEmail,
-      amount,
-      currency,
-      platform_fee: 0,
-      net_amount: amount,
-      is_anonymous: isAnonymous,
-      message,
-      stripe_payment_intent_id: paymentIntentId,
-      status: 'succeeded',
-    },
-    { onConflict: 'stripe_payment_intent_id' },
-  );
+  // Idempotent: stripe_payment_intent_id is UNIQUE and ignoreDuplicates makes a
+  // re-delivery a no-op, so `inserted` is non-empty ONLY for a genuinely new
+  // row. That is what gates the receipt below — Stripe retries on timeouts, and
+  // without this the supporter gets the same receipt several times.
+  const { data: inserted, error: upsertError } = await admin
+    .from('donations')
+    .upsert(
+      {
+        campaign_id: campaignId,
+        // Carried from the session so `donations_select_own` lets a signed-in
+        // supporter see their own contributions.
+        donor_profile_id: donorProfileId,
+        donor_name: isAnonymous ? null : chosenName,
+        donor_email: donorEmail,
+        amount,
+        currency,
+        platform_fee: 0,
+        net_amount: amount,
+        is_anonymous: isAnonymous,
+        message,
+        stripe_payment_intent_id: paymentIntentId,
+        status: 'succeeded',
+      },
+      { onConflict: 'stripe_payment_intent_id', ignoreDuplicates: true },
+    )
+    .select('id');
 
   if (upsertError) {
     console.error('[stripe webhook] failed to upsert donation:', upsertError);
+    throw new WebhookPersistenceError(
+      `donation upsert failed for ${paymentIntentId}: ${upsertError.message}`,
+    );
+  }
+
+  if (!inserted || inserted.length === 0) {
+    // Already recorded by an earlier delivery — do not re-send the receipt.
     return;
   }
 
@@ -163,13 +194,20 @@ async function handleCheckoutCompleted(
   if (donorEmail && campaign) {
     const result = await sendDonationReceipt({
       to: donorEmail,
-      donorName: donorName ?? undefined,
-      amount: formatAmount(amount, currency),
+      // Greeting only: chosen name first, cardholder name as a fallback.
+      donorName: chosenName ?? cardholderName ?? undefined,
+      amount,
+      currency,
+      locale,
       campaignTitle: campaign.title,
       campaignSlug: campaign.slug,
+      paymentReference: paymentIntentId,
     });
     if (!result.ok) {
+      // Receipt delivery is not worth a Stripe retry (the donation is safely
+      // recorded), but it should be visible.
       console.error('[stripe webhook] failed to send receipt:', result.error);
+      Sentry.captureMessage(`donation receipt failed: ${result.error}`, 'warning');
     }
   }
 }

@@ -8,12 +8,16 @@
   --surface-2: #f7f1e7;
   --ink: #2a2620;
   --ink-soft: #4a443b;
-  --muted: #837a6b;
+  --muted: #6b6255;       /* AA on --bg (5.18:1) and --surface (5.65:1) */
   --line: #e6ddcd;
   --line-strong: #d8ccb6;
 
-  --accent: #9c6b4a;      /* warm terracotta-brown */
-  --accent-hover: #855a3d;
+  /* Terracotta family, darkened so link/eyebrow text and the primary button
+     both clear WCAG AA 4.5:1 (accent: 5.03:1 on --bg; accent-ink on accent:
+     5.72:1; accent-ink on --accent-2: 4.88:1). */
+  --accent: #8a5a3c;      /* warm terracotta-brown */
+  --accent-hover: #754b31;
+  --accent-2: #96653f;    /* lighter gradient partner — still AA under --accent-ink */
   --accent-ink: #fffdf8;
   --accent-soft: #efe1d3;
 
@@ -26,6 +30,14 @@
   --shadow: 0 1px 2px rgba(42, 38, 32, 0.04), 0 8px 24px rgba(42, 38, 32, 0.06);
   --shadow-sm: 0 1px 2px rgba(42, 38, 32, 0.06);
   --maxw: 1080px;
+
+  /* Minimum comfortable touch target (WCAG 2.5.5 / Apple HIG 44pt). Every
+     interactive control derives its height from this. */
+  --control-h: 44px;
+  --control-h-sm: 40px;   /* desktop-only compact size; bumped to 44 on touch */
+  /* +1 in LTR, -1 in RTL — lets a single sheen/shimmer rule sweep the reading
+     direction instead of always left-to-right. */
+  --sheen-dir: 1;
 
   --serif: ui-serif, Georgia, "Times New Roman", serif;
   --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
@@ -52,6 +64,8 @@ h1, h2, h3 {
   line-height: 1.15;
   color: var(--ink);
   margin: 0 0 0.5rem;
+  /* long unbroken words (URLs, single-word names) must not overflow the box */
+  overflow-wrap: break-word;
 }
 h1 { font-size: clamp(2rem, 4vw, 3rem); }
 h2 { font-size: clamp(1.5rem, 3vw, 2rem); }
@@ -76,6 +90,52 @@ p { margin: 0 0 1rem; }
 .eyebrow { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); font-weight: 600; }
 .center { text-align: center; }
 
+/* ---- content utilities (shared vocabulary — see the RTL section below) ----
+   .ugc   wrap ANY user-supplied text (names, titles, stories, messages). Sets
+          bidi to plaintext so a Latin sentence inside an Urdu page keeps its
+          punctuation on the correct side, and breaks long unbroken words.
+   .num   wrap a money / number / date run so it is isolated and always reads
+          left-to-right (€25, not 25€) even inside Urdu copy.
+   .prose long-form body copy: comfortable measure (62ch) and a slightly larger
+          size and leading than UI text. */
+.ugc {
+  unicode-bidi: plaintext;
+  overflow-wrap: break-word;
+}
+.num {
+  unicode-bidi: isolate;
+  direction: ltr;
+  white-space: nowrap;
+}
+.prose {
+  max-width: 62ch;
+  font-size: 1.05rem;
+  line-height: 1.75;
+  unicode-bidi: plaintext;
+  overflow-wrap: break-word;
+}
+.prose p { margin-bottom: 1.15rem; }
+.prose p:last-child { margin-bottom: 0; }
+
+/* ---- loading skeletons ---- */
+.skeleton {
+  position: relative; overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  /* hide any placeholder text/children that exist purely to size the block */
+  color: transparent;
+}
+.skeleton::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 253, 248, 0.65), transparent);
+  transform: translateX(-100%);
+  animation: laal-shimmer 1.8s ease-in-out infinite;
+}
+/* a single line of fake text; set a width inline to vary the ragged edge */
+.skeleton-text { height: 0.85em; border-radius: 999px; border: none; }
+.skeleton-title { height: 1.4em; border-radius: 8px; border: none; }
+
 /* ---- cards ---- */
 .card {
   background: var(--surface);
@@ -98,11 +158,13 @@ p { margin: 0 0 1rem; }
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease,
     transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
   text-decoration: none; line-height: 1;
+  /* every control is a comfortable touch target, not just a padded label */
+  min-height: var(--control-h);
 }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn:active { transform: translateY(1px) scale(0.99); }
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent) 0%, #ad7a55 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
   color: var(--accent-ink);
   box-shadow: 0 2px 8px rgba(156, 107, 74, 0.22);
 }
@@ -116,15 +178,37 @@ p { margin: 0 0 1rem; }
 .btn-primary::after {
   content: ''; position: absolute; inset: 0;
   background: linear-gradient(110deg, transparent 30%, rgba(255, 253, 248, 0.35) 50%, transparent 70%);
-  transform: translateX(-130%); transition: transform 0.7s ease;
+  /* sweeps with the reading direction (see --sheen-dir) */
+  transform: translateX(calc(-130% * var(--sheen-dir)));
+  transition: transform 0.7s ease;
 }
-.btn-primary:hover::after { transform: translateX(130%); }
+.btn-primary:hover::after { transform: translateX(calc(130% * var(--sheen-dir))); }
 .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line-strong); }
 .btn-ghost:hover { background: var(--surface-2); color: var(--ink); transform: translateY(-2px); }
 .btn-danger { background: var(--danger); color: #fff; }
 .btn-danger:hover { background: #8c4234; color: #fff; }
-.btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+.btn-sm { padding: 0.4rem 0.9rem; font-size: 0.85rem; min-height: var(--control-h-sm); }
 .btn-block { width: 100%; }
+
+/* ---- focus-visible: one warm, unmistakable ring for every control ----
+   The UA default outline is nearly invisible on the beige palette. */
+.btn:focus-visible,
+.nav-link:focus-visible,
+.nav-burger:focus-visible,
+.lang-option:focus-visible,
+.brand:focus-visible,
+.admin-link:focus-visible,
+.stat-link:focus-visible,
+.skip-link:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+[type='checkbox']:focus-visible,
+[type='radio']:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+.btn:focus-visible { border-radius: 999px; }
 
 /* ---- forms ---- */
 .field { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
@@ -132,12 +216,31 @@ p { margin: 0 0 1rem; }
 .input, .textarea, .select {
   font-family: var(--sans); font-size: 0.95rem; color: var(--ink);
   background: var(--surface); border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm); padding: 0.6rem 0.75rem; width: 100%;
+  border-radius: var(--radius-sm); padding: 0.7rem 0.8rem; width: 100%;
+  min-height: var(--control-h);
 }
 .input:focus, .textarea:focus, .select:focus {
   outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
 }
-.textarea { min-height: 120px; resize: vertical; }
+.textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
+
+/* ---- checkboxes / radios ----
+   A 13px UA checkbox fails WCAG 2.5.8. Size the control up and give the
+   wrapping label a full-height, pointer-friendly row (the label is part of the
+   hit target because the input sits inside it). */
+input[type='checkbox'],
+input[type='radio'] {
+  inline-size: 1.15rem; block-size: 1.15rem;
+  flex: none; margin: 0; cursor: pointer;
+  accent-color: var(--accent);
+}
+.check-row,
+label:has(> input[type='checkbox']),
+label:has(> input[type='radio']) {
+  display: flex; align-items: center; gap: 0.6rem;
+  min-height: var(--control-h); padding-block: 0.35rem;
+  cursor: pointer;
+}
 .hint { font-size: 0.8rem; color: var(--muted); }
 .error-text { color: var(--danger); font-size: 0.85rem; }
 
@@ -166,6 +269,9 @@ p { margin: 0 0 1rem; }
 .progress { height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
 .progress > span {
   display: block; height: 100%; border-radius: 999px;
+  /* a tiny raised amount against a large goal is still real support: keep a
+     hairline of fill visible so the bar never reads as broken (0 stays empty —
+     the width is set to 0 by the component in that case). */
   background: linear-gradient(90deg, var(--accent) 0%, #c08a5f 100%);
   position: relative;
   animation: laal-fill 1.4s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -177,6 +283,12 @@ p { margin: 0 0 1rem; }
   animation: laal-shimmer 2.8s ease-in-out 1.4s infinite;
 }
 @keyframes laal-fill { from { width: 0 !important; } }
+/* the bar must never be the only signal — pair it with a readable figure */
+.progress-value {
+  display: block; margin-block-start: 0.3rem;
+  font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.progress-value strong { color: var(--ink); }
 @keyframes laal-shimmer { 0% { transform: translateX(-100%); } 60%, 100% { transform: translateX(220%); } }
 
 /* ---- nav + footer ---- */
@@ -202,6 +314,13 @@ p { margin: 0 0 1rem; }
 @media (max-width: 768px) {
   /* keep the top bar clean: collapse the links behind the burger */
   .nav-burger { display: inline-flex; }
+  /* dim and seal the page behind the open drawer */
+  .nav-scrim {
+    display: block; position: fixed; inset: 0; z-index: 40;
+    background: rgba(42, 38, 32, 0.38);
+    animation: laal-fade-in 0.2s ease both;
+  }
+  body.nav-locked { overflow: hidden; }
   .nav-links {
     display: none; position: absolute; top: 100%; left: 0; right: 0;
     flex-direction: column; align-items: stretch; gap: 0;
@@ -212,10 +331,37 @@ p { margin: 0 0 1rem; }
   .nav-links .nav-link {
     padding: 0.85rem 1.25rem; font-size: 1rem; border-bottom: 1px solid var(--line);
   }
+  .nav-links { z-index: 45; }
   .nav-links .btn { margin: 0.85rem 1.25rem; justify-content: center; }
 }
-.nav-link { color: var(--ink-soft); font-weight: 500; font-size: 0.95rem; }
+.nav-link {
+  display: inline-flex; align-items: center;
+  color: var(--ink-soft); font-weight: 500; font-size: 0.95rem;
+  /* a 24px text link is not a touch target; pad it to the control height */
+  min-height: var(--control-h); padding-block: 0.5rem;
+}
 .nav-link:hover { color: var(--ink); }
+
+/* ---- page shell: footer pins to the bottom on short pages ---- */
+.site-shell { display: flex; flex-direction: column; min-height: 100vh; }
+@supports (min-height: 100dvh) { .site-shell { min-height: 100dvh; } }
+.site-content { flex: 1 0 auto; }
+.site-content:focus { outline: none; }
+
+/* ---- skip link: invisible until focused, then a real, warm control ---- */
+.skip-link {
+  /* fixed, not absolute: it must reach the viewport even mid-scroll */
+  position: fixed; z-index: 100; inset-inline-start: 0.75rem; top: -100px;
+  display: inline-flex; align-items: center; min-height: var(--control-h);
+  padding: 0.5rem 1rem; border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  background: var(--surface); color: var(--accent-hover);
+  border: 1px solid var(--line-strong); box-shadow: var(--shadow);
+  font-weight: 600; transition: top 0.15s ease;
+}
+.skip-link:focus, .skip-link:focus-visible { top: 0.5rem; }
+
+/* ---- mobile drawer scrim (desktop never shows it: see the media query) ---- */
+.nav-scrim { display: none; }
 
 /* ---- language switcher ---- */
 .lang-switch {
@@ -225,8 +371,10 @@ p { margin: 0 0 1rem; }
 }
 .lang-option {
   appearance: none; cursor: pointer; border: none; background: transparent;
-  color: var(--ink-soft); font-weight: 600; font-size: 0.82rem;
-  padding: 0.3rem 0.7rem; border-radius: 999px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--ink-soft); font-weight: 600; font-size: 0.85rem;
+  min-height: var(--control-h-sm);
+  padding: 0.35rem 0.85rem; border-radius: 999px; line-height: 1.2;
   transition: background 0.15s ease, color 0.15s ease;
 }
 .lang-option:hover { color: var(--ink); }
@@ -236,7 +384,20 @@ p { margin: 0 0 1rem; }
   .nav-links .lang-switch { margin: 0.85rem 1.25rem; align-self: flex-start; }
 }
 
-.footer { border-top: 1px solid var(--line); margin-top: 4rem; padding: 2rem 0; color: var(--muted); font-size: 0.9rem; }
+.footer {
+  border-top: 1px solid var(--line); margin-top: auto; padding: 2rem 0 1.5rem;
+  color: var(--muted); font-size: 0.9rem;
+}
+/* margin-top:auto pins the footer on short pages, so it no longer creates the
+   old 4rem gap on long ones — the shell adds that air instead */
+.site-content { padding-bottom: 2.5rem; }
+.footer-nav { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
+
+/* ---- coarse pointers: nothing tappable smaller than the control height ---- */
+@media (pointer: coarse) {
+  .btn-sm, .lang-option, .nav-burger, .admin-burger { min-height: var(--control-h); }
+  .nav-burger, .admin-burger { min-width: var(--control-h); width: var(--control-h); height: var(--control-h); }
+}
 
 /* ---- tables (admin) ---- */
 .table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
@@ -406,7 +567,9 @@ p { margin: 0 0 1rem; }
 
 /* gradient-inked word for warm emphasis (decorative; keep contrast in body) */
 .ink-gradient {
-  background: linear-gradient(120deg, var(--accent) 0%, #b87a4e 45%, var(--accent-hover) 100%);
+  /* mid stop kept dark enough that the inked word still clears 3:1 as large
+     text on --surface-2 (measured 3.75:1) */
+  background: linear-gradient(120deg, var(--accent) 0%, #a86e44 45%, var(--accent-hover) 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 
@@ -529,12 +692,18 @@ p { margin: 0 0 1rem; }
 .app-status .dots { display: inline-flex; gap: 4px; align-items: center; }
 .app-body { padding: 0.4rem 0.9rem 1rem; }
 .app-h {
-  display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+  /* the pill must never be clipped by a long title: let it wrap onto its own
+     line at narrow phone widths instead of overflowing the screen */
+  display: flex; flex-wrap: wrap; justify-content: space-between;
+  align-items: center; gap: 0.35rem 0.5rem;
   margin: 0.5rem 0 0.15rem;
 }
-.app-title { font-family: var(--serif); font-size: 1.5rem; font-weight: 600; color: var(--ink); }
+.app-title {
+  font-family: var(--serif); font-size: 1.4rem; font-weight: 600; color: var(--ink);
+  min-width: 0; overflow-wrap: break-word;
+}
 .app-pill {
-  flex-shrink: 0; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.2rem;
+  flex: none; white-space: nowrap; max-width: 100%; display: inline-flex; align-items: center; gap: 0.2rem;
   font-size: 0.62rem; font-weight: 700; color: var(--accent-hover);
   background: var(--accent-soft); border: 1px solid #e6cfbb;
   padding: 0.18rem 0.5rem; border-radius: 999px;
@@ -568,8 +737,8 @@ p { margin: 0 0 1rem; }
 .app-cta-btn {
   display: block; text-align: center; font-weight: 700; font-size: 0.85rem;
   color: var(--accent-ink); border-radius: 999px; padding: 0.7rem;
-  background: linear-gradient(135deg, var(--accent), #ad7a55);
-  box-shadow: 0 6px 16px rgba(156, 107, 74, 0.3);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 6px 16px rgba(117, 75, 49, 0.3);
 }
 .app-cta-note { text-align: center; font-size: 0.62rem; color: var(--muted); margin-top: 0.4rem; }
 
@@ -650,7 +819,7 @@ p { margin: 0 0 1rem; }
   .reveal, .reveal-soft { opacity: 1; animation: none; }
   .hero-lux::before, .phone-floating, .phone-back,
   .progress > span, .progress > span::after, .app-bar > span,
-  .btn-primary::after { animation: none; }
+  .skeleton::after, .btn-primary::after { animation: none; }
   .btn-primary:hover, .btn-ghost:hover, .step-card:hover,
   .story-card:hover, .trust-pill:hover { transform: none; }
 }
@@ -668,11 +837,79 @@ p { margin: 0 0 1rem; }
   --sans: var(--font-urdu-sans), "Noto Naskh Arabic", ui-sans-serif, system-ui,
     sans-serif;
 }
-/* Nastaliq sits tall and needs more vertical breathing room than Latin type. */
-[dir='rtl'] body { line-height: 1.9; }
+/* Nastaliq sits tall and needs more vertical breathing room than Latin type:
+   its descenders sweep low and its ascenders climb high, so a Latin-tuned
+   line-height makes the second line collide with the first. */
+[dir='rtl'] body { line-height: 1.95; }
 [dir='rtl'] h1,
 [dir='rtl'] h2,
-[dir='rtl'] h3 { line-height: 1.6; }
+[dir='rtl'] h3 {
+  line-height: 2.05;
+  /* room for the tallest ascenders/lowest descenders so nothing is clipped */
+  padding-block: 0.12em;
+  letter-spacing: normal;
+}
+[dir='rtl'] h3 { line-height: 1.95; }
+/* the hero pins a tight Latin line-height inline — undo it for Nastaliq */
+[dir='rtl'] .hero-copy h1 { line-height: 2; }
+[dir='rtl'] .app-title,
+[dir='rtl'] .stat-value,
+[dir='rtl'] .admin-topbar-title,
+[dir='rtl'] .app-card-title { line-height: 1.9; }
+/* buttons and badges set line-height:1 for Latin; Nastaliq would be clipped */
+[dir='rtl'] .btn { line-height: 1.7; }
+[dir='rtl'] .badge,
+[dir='rtl'] .trust-pill,
+[dir='rtl'] .app-pill { line-height: 1.6; }
+/* nothing that carries Urdu type may clip its own glyphs */
+[dir='rtl'] h1,
+[dir='rtl'] h2,
+[dir='rtl'] h3,
+[dir='rtl'] .hero-copy,
+[dir='rtl'] .card,
+[dir='rtl'] .stat { overflow: visible; }
+/* the gradient-inked word is background-clipped text: extra breathing room
+   keeps the clip box from cutting Nastaliq ascenders */
+[dir='rtl'] .ink-gradient { padding-block: 0.1em; }
+
+/* ---- bidi: mixed Latin / Urdu content ------------------------------------
+   Urdu pages routinely contain Latin runs (names, stories written in English,
+   currency). With a fixed RTL paragraph direction, a Latin sentence ends up
+   with its full stop on the wrong side (".Hamid ullah was a great man").
+   `unicode-bidi: plaintext` resolves each block's direction from its own first
+   strong character — the same rule as `dir="auto"` — so Latin prose reads as
+   Latin prose and Urdu prose reads as Urdu.
+
+   Applied here to every block that can hold user-generated text, plus the
+   reusable `.ugc` class for anything the markup adds later. Money/number runs
+   use `.num` instead (isolated + forced LTR) so "€25" never becomes "25€". */
+[dir='rtl'] h1,
+[dir='rtl'] h2,
+[dir='rtl'] h3,
+[dir='rtl'] p,
+[dir='rtl'] li,
+[dir='rtl'] blockquote,
+[dir='rtl'] figcaption,
+[dir='rtl'] dd,
+[dir='rtl'] .table td,
+[dir='rtl'] .ugc,
+[dir='rtl'] .prose,
+[dir='rtl'] .muted,
+[dir='rtl'] .hint,
+[dir='rtl'] .app-story,
+[dir='rtl'] .app-card-title,
+[dir='rtl'] .app-card-mem,
+[dir='rtl'] .app-bene,
+[dir='rtl'] .app-sub { unicode-bidi: plaintext; }
+
+/* Sheen/shimmer sweeps follow the reading direction. */
+[dir='rtl'] { --sheen-dir: -1; }
+@keyframes laal-shimmer-rtl {
+  0% { transform: translateX(100%); }
+  60%, 100% { transform: translateX(-220%); }
+}
+[dir='rtl'] .progress > span::after,
+[dir='rtl'] .skeleton::after { animation-name: laal-shimmer-rtl; }
 
 /* Directional inline glyphs (e.g. the "Review →" / "View all →" arrows that are
    plain text in the markup) point the wrong way in RTL — mirror them. */

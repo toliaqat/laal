@@ -4,6 +4,7 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -17,7 +18,11 @@ import { supabase, WEB_APP_URL } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { hasSeenOnboarding } from '@/lib/onboarding';
 import { CampaignCard } from '@/components/campaign-card';
-import { Avatar, PrimaryButton } from '@/components/ui';
+import {
+  Avatar,
+  CampaignCardSkeletonList,
+  PrimaryButton,
+} from '@/components/ui';
 import { LanguageToggle } from '@/components/language-toggle';
 import { colors, firstName, initials, radius, serif, spacing } from '@/lib/theme';
 
@@ -50,7 +55,9 @@ export default function HomeScreen() {
       .from('campaigns')
       .select('*')
       .eq('status', 'active')
-      .order('created_at', { ascending: false });
+      // Publication time, matching the web list. Ordering by created_at made a
+      // fundraiser approved today "newest" here and buried on the web.
+      .order('published_at', { ascending: false, nullsFirst: false });
     // Distinguish a real fetch failure from a genuinely empty list, so a
     // transient network error doesn't masquerade as "no fundraisers yet".
     if (error) {
@@ -161,9 +168,10 @@ export default function HomeScreen() {
       )}
 
       <View style={styles.sectionRow}>
-        <Text style={styles.sectionTitle}>
-          {signedIn ? t('mobile.home.sectionNearYou') : t('mobile.home.sectionVerified')}
-        </Text>
+        {/* One heading for both auth states: there is no location filter, so
+            "Fundraisers near you" was untrue for signed-in users, and every
+            listed fundraiser has been reviewed (not verification-approved). */}
+        <Text style={styles.sectionTitle}>{t('mobile.home.sectionTitle')}</Text>
         {campaigns.length > 0 ? (
           <Text style={styles.sectionCount}>{campaigns.length}</Text>
         ) : null}
@@ -171,10 +179,29 @@ export default function HomeScreen() {
     </View>
   );
 
-  if (!gateReady || loading) {
+  // The onboarding gate genuinely has nothing to show yet, so it stays a
+  // spinner. Once past it, render the real header plus placeholder cards so the
+  // hero paints immediately instead of the screen sitting blank.
+  if (!gateReady) {
     return (
       <View style={[styles.screen, styles.center]}>
         <ActivityIndicator color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (loading) {
+    return (
+      <View style={styles.screen}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.list,
+            { paddingTop: insets.top + spacing.sm },
+          ]}
+        >
+          {header}
+          <CampaignCardSkeletonList count={3} />
+        </ScrollView>
       </View>
     );
   }

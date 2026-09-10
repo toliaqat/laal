@@ -134,7 +134,20 @@ export default async function DashboardPage({
                       >
                         {t('documents')}
                       </Button>
+                      {/* Offered at every status — organizers can write before
+                          the fundraiser is live; the hint explains when it
+                          becomes visible. */}
+                      <Button
+                        href={`/dashboard/campaigns/${c.id}/updates`}
+                        variant="ghost"
+                        size="sm"
+                      >
+                        {t('updates')}
+                      </Button>
                     </div>
+                    <p className="hint" style={{ margin: 0 }}>
+                      {t('updatesHint')}
+                    </p>
                   </div>
                 </Card>
               );

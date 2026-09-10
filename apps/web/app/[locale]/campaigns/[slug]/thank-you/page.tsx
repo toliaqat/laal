@@ -1,9 +1,20 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Container, Card, Button } from '@/components/ui';
+import { createServerSupabase } from '@/lib/supabase/server';
+import { APP_URL } from '@/lib/env';
+import { stripe, toMajorUnits } from '@/lib/stripe';
+import { ShareSupport } from '@/components/share-support';
+import { Container, Card, Button, formatMoney } from '@/components/ui';
 
 type Params = { slug: string; locale: string };
-type Search = { session_id?: string };
+type Search = { session_id?: string; from?: string };
+
+/** What we can honestly say about the money, based on the Checkout Session. */
+type Outcome =
+  | { kind: 'paid'; amount: string; email: string | null }
+  | { kind: 'pending'; email: string | null }
+  | { kind: 'unknown' };
 
 export async function generateMetadata({
   params,
@@ -18,6 +29,48 @@ export async function generateMetadata({
   };
 }
 
+/**
+ * Resolve the Checkout Session into a claim we can stand behind.
+ *
+ * Without this the page asserted "your support has been received" on any visit
+ * — including a bookmarked URL, and including delayed payment methods (SEPA,
+ * iDEAL) that redirect here while still 'unpaid' and which the webhook
+ * deliberately skips until the funds clear.
+ */
+async function resolveOutcome(
+  sessionId: string | undefined,
+  campaignId: string,
+  currency: string,
+  locale: string,
+): Promise<Outcome> {
+  if (!sessionId) return { kind: 'unknown' };
+
+  let session;
+  try {
+    session = await stripe().checkout.sessions.retrieve(sessionId);
+  } catch (err) {
+    console.error('[thank-you] could not retrieve session', err);
+    return { kind: 'unknown' };
+  }
+
+  // A session from a different fundraiser must not confirm support for this one.
+  if (session.metadata?.campaign_id !== campaignId) return { kind: 'unknown' };
+
+  const email = session.customer_details?.email ?? null;
+  if (session.payment_status !== 'paid') return { kind: 'pending', email };
+
+  const amount = toMajorUnits(session.amount_total ?? 0);
+  return {
+    kind: 'paid',
+    amount: formatMoney(
+      amount,
+      (session.currency ?? currency).toUpperCase(),
+      locale,
+    ),
+    email,
+  };
+}
+
 export default async function ThankYouPage({
   params,
   searchParams,
@@ -28,9 +81,31 @@ export default async function ThankYouPage({
   const { slug, locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('campaigns');
-  // session_id is present when arriving from Stripe Checkout; we don't need it
-  // to render, but await it so Next 15's async searchParams contract is met.
-  await searchParams;
+  const { session_id: sessionId, from } = await searchParams;
+
+  const supabase = await createServerSupabase();
+  const { data: campaign } = await supabase
+    .from('campaigns')
+    .select('id, title, currency')
+    .eq('slug', slug)
+    .maybeSingle();
+
+  if (!campaign) notFound();
+
+  const outcome = await resolveOutcome(
+    sessionId,
+    campaign.id,
+    campaign.currency,
+    locale,
+  );
+
+  const shareUrl = `${APP_URL()}/${locale}/campaigns/${slug}`;
+  const title =
+    outcome.kind === 'pending'
+      ? t('thankYou.pendingTitle')
+      : outcome.kind === 'paid'
+        ? t('thankYou.title')
+        : t('thankYou.neutralTitle');
 
   return (
     <main className="section">
@@ -53,18 +128,98 @@ export default async function ThankYouPage({
             >
               ♥
             </div>
-            <h1 style={{ margin: 0 }}>{t('thankYou.title')}</h1>
-            <p className="muted" style={{ fontSize: '1.05rem', lineHeight: 1.7 }}>
-              {t('thankYou.body1')}
+            <h1 style={{ margin: 0 }}>{title}</h1>
+
+            {outcome.kind === 'paid' ? (
+              <>
+                <p
+                  className="muted"
+                  style={{ fontSize: '1.05rem', lineHeight: 1.7 }}
+                >
+                  {t('thankYou.paidBody', {
+                    amount: outcome.amount,
+                    title: campaign.title,
+                  })}
+                </p>
+                <p
+                  className="muted"
+                  style={{ fontSize: '1.05rem', lineHeight: 1.7 }}
+                >
+                  {t('thankYou.body1')}{' '}
+                  {outcome.email
+                    ? t('thankYou.receiptSent', { email: outcome.email })
+                    : t('thankYou.receiptNone')}
+                </p>
+                <p
+                  className="muted"
+                  style={{ fontSize: '1.05rem', lineHeight: 1.7 }}
+                >
+                  {t('thankYou.body2')}
+                </p>
+              </>
+            ) : outcome.kind === 'pending' ? (
+              <p
+                className="muted"
+                style={{ fontSize: '1.05rem', lineHeight: 1.7 }}
+              >
+                {t('thankYou.pendingBody')}
+              </p>
+            ) : (
+              <p
+                className="muted"
+                style={{ fontSize: '1.05rem', lineHeight: 1.7 }}
+              >
+                {t('thankYou.neutralBody')}
+              </p>
+            )}
+          </div>
+
+          {/* Sharing sits highest on the page after the confirmation: this is
+              the moment a supporter is most willing to bring someone else in. */}
+          <div className="stack" style={{ gap: '0.5rem', marginTop: '2rem' }}>
+            <h2 style={{ margin: 0, fontSize: '1.1rem' }}>
+              {t('thankYou.shareHeading')}
+            </h2>
+            <p className="muted small" style={{ margin: 0 }}>
+              {t('thankYou.shareBody')}
             </p>
-            <p className="muted" style={{ fontSize: '1.05rem', lineHeight: 1.7 }}>
-              {t('thankYou.body2')}
-            </p>
-            <div className="center" style={{ marginTop: '0.5rem' }}>
-              <Button href={`/campaigns/${slug}`} variant="primary">
-                {t('thankYou.returnCta')}
-              </Button>
-            </div>
+            <ShareSupport
+              shareUrl={shareUrl}
+              whatsappText={t('thankYou.shareMessage', {
+                title: campaign.title,
+                url: shareUrl,
+              })}
+              whatsappLabel={t('thankYou.shareWhatsapp')}
+              copyLabel={t('thankYou.copyLink')}
+              copiedLabel={t('thankYou.copied')}
+            />
+          </div>
+
+          <div className="stack" style={{ gap: '0.5rem', marginTop: '2rem' }}>
+            <h2 style={{ margin: 0, fontSize: '1.1rem' }}>
+              {t('thankYou.nextHeading')}
+            </h2>
+            <ul className="stack muted small" style={{ gap: '0.35rem' }}>
+              <li>{t('thankYou.next1')}</li>
+              <li>{t('thankYou.next2')}</li>
+              <li>{t('thankYou.next3')}</li>
+            </ul>
+          </div>
+
+          <div
+            className="row wrap center"
+            style={{ marginTop: '2rem', gap: '0.5rem' }}
+          >
+            <Button href={`/campaigns/${slug}`} variant="primary">
+              {t('thankYou.returnCta')}
+            </Button>
+            {/* Checkout runs in the device browser when started from the app,
+                so offer the way back into it. */}
+            {from === 'app' ? (
+              <a className="btn btn-ghost" href={`laal://campaigns/${slug}`}>
+                {t('thankYou.backToApp')}
+              </a>
+            ) : null}
           </div>
         </Card>
       </Container>

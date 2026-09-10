@@ -1,0 +1,76 @@
+/* Fundraiser detail page — page-specific styles only.
+   Deliberately NOT in globals.css: the global sheet is being reworked
+   separately for contrast, tap targets and RTL line-height. */
+
+/* Isolate the bidi context so a Latin name inside an Urdu page keeps its own
+   punctuation order (otherwise a trailing "." jumps to the front). */
+.title {
+  margin: 0;
+  unicode-bidi: plaintext;
+}
+
+/* Cap the cover: a portrait photo used to be rendered at full height and
+   pushed the progress card and CTA below the fold. A fixed ratio also gives
+   `object-fit: cover` something to crop against. */
+.cover {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 420px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  margin: 1.5rem 0;
+  display: block;
+}
+
+.storySection {
+  margin: 2rem 0;
+}
+
+/* No line-height here on purpose: Nastaliq needs the taller RTL body
+   line-height from globals.css, and an inline 1.7 used to override it. */
+.story {
+  color: var(--ink);
+  white-space: pre-wrap;
+  unicode-bidi: plaintext;
+  margin: 0;
+}
+
+/* ---- share affordance ---- */
+.share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+}
+
+.shareLabel {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-inline-end: 0.25rem;
+}
+
+.shareStatus {
+  font-size: 0.85rem;
+  color: var(--success);
+}
+
+/* ---- mobile-only sticky Help Now bar ---- */
+.stickyHelp {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .stickyHelp {
+    display: block;
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    margin: 1.5rem -1.25rem 0;
+    padding: 0.75rem 1.25rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+  }
+}

@@ -1,0 +1,53 @@
+/* Organizer updates feed on the public fundraiser page. */
+
+.section {
+  margin: 2rem 0;
+}
+
+.heading {
+  margin-bottom: 1rem;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* "From the organizer" — we can't show author names (profiles SELECT is
+   self-or-admin), so the attribution stays deliberately generic. */
+.author {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.time {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* Plain text, author-authored: keep their line breaks, and isolate the
+   paragraph's bidi context so a Latin sentence inside an Urdu page keeps its
+   own punctuation order. No line-height here on purpose — the RTL Nastaliq
+   body line-height in globals.css must win. */
+.body {
+  margin: 0.5rem 0 0;
+  color: var(--ink);
+  white-space: pre-wrap;
+  unicode-bidi: plaintext;
+}
+
+.footer {
+  margin: 0.75rem 0 0;
+}

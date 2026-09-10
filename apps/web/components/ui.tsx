@@ -131,12 +131,50 @@ export function Field({
   );
 }
 
-export function Progress({ value }: { value: number }) {
+/**
+ * A labelled progress bar.
+ *
+ * Two deliberate behaviours:
+ * - A raised amount above zero always keeps a hairline of visible fill
+ *   (`max(pct%, 3px)`), so €2 against a €10,000 goal reads as "barely started"
+ *   rather than as a broken empty pill. Exactly zero stays genuinely empty.
+ * - The bar is never the only signal: the rounded percentage is also rendered
+ *   as text. Pass `showPercent={false}` where the surrounding copy already
+ *   states it.
+ *
+ * `label` should be a translated string (`common.progressLabel`); it becomes the
+ * accessible name of the progressbar.
+ */
+export function Progress({
+  value,
+  label,
+  showPercent = true,
+}: {
+  value: number;
+  label?: string;
+  showPercent?: boolean;
+}) {
   const pct = Math.max(0, Math.min(100, value));
+  const rounded = Math.round(pct);
   return (
-    <div className="progress" role="progressbar" aria-valuenow={Math.round(pct)}>
-      <span style={{ width: `${pct}%` }} />
-    </div>
+    <>
+      <div
+        className="progress"
+        role="progressbar"
+        aria-label={label ?? 'Support progress'}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={rounded}
+        aria-valuetext={`${rounded}%`}
+      >
+        <span style={{ width: pct > 0 ? `max(${pct}%, 3px)` : 0 }} />
+      </div>
+      {showPercent && (
+        <span className="progress-value num" style={{ display: 'block' }}>
+          {rounded}%
+        </span>
+      )}
+    </>
   );
 }
 

@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { Resend } from 'resend';
+import { formatMoney } from '@/components/ui';
 import { APP_URL, EMAIL_FROM, RESEND_API_KEY } from '@/lib/env';
 
 let _resend: Resend | null = null;
@@ -120,23 +121,77 @@ export function sendCampaignRejected(params: {
   );
 }
 
-/** Receipt sent to a donor after a successful donation. */
+/**
+ * Receipt copy, kept here rather than in the shared message catalogue: this
+ * runs from the Stripe webhook, which has no request locale — the supporter's
+ * locale rides along in the Checkout Session metadata instead.
+ */
+const RECEIPT_COPY = {
+  en: {
+    subject: (title: string) => `Thank you for supporting ${title}`,
+    greeting: (name: string) => `Dear ${name}`,
+    friend: 'friend',
+    thanks: (amount: string, title: string) =>
+      `Thank you for protecting someone precious. Your support of <strong>${amount}</strong> for <strong>${title}</strong> helps remind a family they are not alone.`,
+    held: "Your contribution is held securely and delivered transparently to the people you're standing with.",
+    dateLabel: 'Date',
+    refLabel: 'Payment reference',
+    link: 'See the fundraiser you supported',
+  },
+  ur: {
+    subject: (title: string) => `${title} کی مدد کرنے کا شکریہ`,
+    greeting: (name: string) => `محترم ${name}`,
+    friend: 'دوست',
+    thanks: (amount: string, title: string) =>
+      `کسی عزیز کی حفاظت کرنے کا شکریہ۔ <strong>${title}</strong> کے لیے آپ کا <strong>${amount}</strong> کا تعاون ایک خاندان کو یاد دلاتا ہے کہ وہ تنہا نہیں۔`,
+    held: 'آپ کا تعاون محفوظ طریقے سے رکھا جاتا ہے اور شفاف طریقے سے ان لوگوں تک پہنچایا جاتا ہے جن کے ساتھ آپ کھڑے ہیں۔',
+    dateLabel: 'تاریخ',
+    refLabel: 'ادائیگی کا حوالہ',
+    link: 'جس مہم کی آپ نے مدد کی، اسے دیکھیں',
+  },
+} as const;
+
+function receiptCopy(locale?: string) {
+  return locale === 'ur' ? RECEIPT_COPY.ur : RECEIPT_COPY.en;
+}
+
+/** Receipt sent to a supporter after a successful contribution. */
 export function sendDonationReceipt(params: {
   to: string;
   donorName?: string;
-  amount: string; // formatted e.g. "€25.00"
+  /** Major units (e.g. 25) — formatted here with the shared money formatter. */
+  amount: number;
+  currency: string;
+  /** Site locale carried through Stripe metadata; defaults to English. */
+  locale?: string;
   campaignTitle: string;
   campaignSlug: string;
+  /** Stripe PaymentIntent id, so support can trace the payment. */
+  paymentReference?: string;
+  /** Defaults to now; injectable for tests. */
+  date?: Date;
 }): Promise<SendResult> {
+  const copy = receiptCopy(params.locale);
+  const amount = formatMoney(params.amount, params.currency, params.locale);
+  const when = new Intl.DateTimeFormat(
+    params.locale === 'ur' ? 'ur-PK-u-nu-latn' : (params.locale ?? 'en'),
+    { dateStyle: 'long' },
+  ).format(params.date ?? new Date());
+  const dir = params.locale === 'ur' ? 'rtl' : 'ltr';
+
   const body = `
-    <p>Dear ${esc(params.donorName ?? 'friend')},</p>
-    <p>Thank you for protecting someone precious. Your support of
-    <strong>${esc(params.amount)}</strong> for <strong>${esc(params.campaignTitle)}</strong>
-    helps remind a family they are not alone.</p>
-    <p>Your contribution is held securely and delivered transparently to the
-    people you're standing with.</p>
-    <p><a href="${APP_URL()}/campaigns/${encodeURIComponent(params.campaignSlug)}">See the fundraiser you supported</a></p>`;
-  return send(params.to, `Thank you for supporting ${params.campaignTitle}`, layout(body));
+    <div dir="${dir}">
+    <p>${esc(copy.greeting(params.donorName ?? copy.friend))},</p>
+    <p>${copy.thanks(esc(amount), esc(params.campaignTitle))}</p>
+    <p>${copy.held}</p>
+    <p style="font-size:13px;color:#888">${copy.dateLabel}: ${esc(when)}${
+      params.paymentReference
+        ? `<br />${copy.refLabel}: ${esc(params.paymentReference)}`
+        : ''
+    }</p>
+    <p><a href="${APP_URL()}/${params.locale === 'ur' ? 'ur' : 'en'}/campaigns/${encodeURIComponent(params.campaignSlug)}">${copy.link}</a></p>
+    </div>`;
+  return send(params.to, copy.subject(params.campaignTitle), layout(body));
 }
 
 /** Confirmation sent to a donor when their donation is refunded (pre-release). */

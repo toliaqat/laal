@@ -15,7 +15,10 @@
     "closeMenu": "Close menu",
     "language": "Language",
     "browse": "Browse fundraisers",
-    "copyright": "© {year} Laal. Every life is precious."
+    "copyright": "© {year} Laal. Every life is precious.",
+    "skipToContent": "Skip to content",
+    "primaryLabel": "Main navigation",
+    "footerLabel": "Footer links"
   },
   "common": {
     "viewAll": "View all",
@@ -25,7 +28,8 @@
     "cancel": "Cancel",
     "save": "Save",
     "back": "Back",
-    "submitting": "Please wait…"
+    "submitting": "Please wait…",
+    "progressLabel": "Support progress"
   },
   "home": {
     "meta": {
@@ -85,7 +89,7 @@
       "eyebrow": "Featured fundraisers",
       "title": "Fundraisers you can support",
       "emptyBody": "New fundraisers are being reviewed. Check back soon to support someone precious.",
-      "emptyCta": "Start the first fundraiser",
+      "emptyCta": "Start a fundraiser",
       "inMemoryOf": "In memory of {name}",
       "raisedOf": "of {amount}"
     },
@@ -130,17 +134,28 @@
   "campaigns": {
     "list": {
       "metaTitle": "Fundraisers — Laal",
-      "metaDescription": "Verified fundraisers you can support with an act of kindness.",
+      "metaDescription": "Reviewed fundraisers you can support with an act of kindness.",
       "eyebrow": "Fundraisers",
       "title": "Fundraisers you can support",
-      "subtitle": "Every fundraiser is gently verified before your support reaches the family.",
+      "subtitle": "Every fundraiser is reviewed before your support reaches the family.",
       "emptyBody": "New fundraisers are being reviewed. Check back soon to support someone precious.",
       "emptyCta": "Start a fundraiser",
       "inMemoryOf": "In memory of {name}",
-      "ofGoal": "of {amount}"
+      "ofGoal": "of {amount}",
+      "sortLabel": "Sort",
+      "sortNewest": "Newest",
+      "sortClosestToGoal": "Closest to goal",
+      "prev": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} of {total}",
+      "loadingLabel": "Loading fundraisers…"
     },
     "card": {
-      "inMemoryOf": "In memory of {name}"
+      "inMemoryOf": "In memory of {name}",
+      "ofGoal": "of {amount}",
+      "reviewed": "Fundraiser reviewed",
+      "location": "{city}, {country}",
+      "coverAlt": "A photo shared for {title}"
     },
     "progress": {
       "raisedOfGoal": "raised of {amount} goal"
@@ -157,7 +172,31 @@
       "born": "Born {date}",
       "raisedOfGoal": "raised of {amount} goal",
       "wordsOfSupport": "Words of support",
-      "supportReaches": "Your support reaches <name></name>"
+      "supportReaches": "Your support reaches <name></name>",
+      "storyHeading": "Their story",
+      "paused": "Paused",
+      "helpNow": "Help Now",
+      "updatesHeading": "Updates from the family",
+      "updatesFromOrganizer": "From the organizer",
+      "updatesMostRecent": "Showing the most recent updates.",
+      "state": {
+        "completedTitle": "Together, supporters changed this story.",
+        "completedBody": "This fundraiser has reached its goal, so it is no longer collecting support. Thank you to everyone who stood with this family.",
+        "closedTitle": "This fundraiser has come to a close.",
+        "closedBody": "Support is no longer being collected here. Thank you for caring about this family.",
+        "pausedTitle": "Support is paused for a moment while we complete checks.",
+        "pausedBody": "We will reopen support as soon as everything is confirmed. Thank you for your patience.",
+        "notLiveTitle": "This fundraiser is not live yet.",
+        "notLiveBody": "Every fundraiser is gently reviewed before it can receive support. Please check back soon."
+      },
+      "share": {
+        "label": "Share their story",
+        "native": "Share",
+        "whatsapp": "WhatsApp",
+        "copy": "Copy link",
+        "copied": "Link copied",
+        "message": "{title} — stand with this family on Laal."
+      }
     },
     "donate": {
       "chooseHelp": "Choose how you’ll help",
@@ -166,16 +205,27 @@
       "tier25": "Create meaningful support",
       "tier50": "Make a lasting difference",
       "customLabel": "Or enter a custom amount",
-      "overCap": "The maximum donation is {cap} for now.",
+      "overCap": "You can contribute up to {cap} for now.",
       "nameLabel": "Your name (optional)",
-      "namePlaceholder": "Jane Doe",
+      "namePlaceholder": "e.g. Ayesha Khan",
       "emailLabel": "Email (optional, for your receipt)",
       "anonymous": "Support anonymously",
       "messageLabel": "Leave a message of condolence (optional)",
       "messagePlaceholder": "A few words for the family…",
       "submit": "Help Now",
       "submitWithAmount": "Help Now · {amount}",
-      "submitting": "Preparing checkout…"
+      "submitting": "Preparing checkout…",
+      "heading": "Stand with this family",
+      "headingHint": "Choose an amount — Laal keeps nothing.",
+      "nameHint": "Shown on the supporter wall. Leave it blank to stay private.",
+      "customHint": "Whole amounts only, up to {cap}.",
+      "messagePublic": "Your message is shown publicly on the fundraiser page.",
+      "messageCounter": "{count} of {max} characters",
+      "submitDisabledReason": "Choose or enter an amount between {min} and {max} to continue.",
+      "trustSecure": "Secure payment through Stripe",
+      "trustFee": "Laal keeps 0% — your full contribution goes to the family",
+      "trustReviewed": "Every fundraiser on Laal is reviewed before receiving support",
+      "cancelled": "You didn’t finish the payment, so nothing was charged. Help whenever you’re ready."
     },
     "supporters": {
       "anonymous": "Anonymous",
@@ -185,9 +235,32 @@
     "thankYou": {
       "metaTitle": "Thank you for your kindness — Laal",
       "title": "Thank you for protecting someone precious.",
-      "body1": "Your support has been received. Your contribution is held securely and reaches the family we support. If you provided an email address, a receipt is on its way to your inbox.",
+      "body1": "Your contribution is held securely and reaches the family we support.",
       "body2": "You helped remind someone they are not alone. On behalf of the family, thank you.",
-      "returnCta": "Return to the fundraiser"
+      "returnCta": "Return to the fundraiser",
+      "paidBody": "Your support of {amount} for {title} has been received.",
+      "pendingTitle": "Your bank is completing the transfer",
+      "pendingBody": "Thank you for standing with this family. Your bank is still completing the transfer, so it isn’t final yet — we’ll email you the moment it clears.",
+      "neutralTitle": "Thank you for your kindness",
+      "neutralBody": "If you just completed a contribution, it will appear on the fundraiser shortly. Nothing is charged until your payment is confirmed.",
+      "receiptSent": "A receipt is on its way to {email}.",
+      "receiptNone": "You didn’t add an email address, so there’s no receipt to send — your support still counts.",
+      "nextHeading": "What happens next",
+      "next1": "Your contribution is held securely by Laal — never in anyone’s personal account.",
+      "next2": "The fundraiser is reviewed and the need verified before anything is released.",
+      "next3": "Funds are then released to the family, and the total on the fundraiser updates.",
+      "shareHeading": "Reach one more person",
+      "shareBody": "Sharing takes seconds and brings the family closer to what they need.",
+      "shareWhatsapp": "Share on WhatsApp",
+      "copyLink": "Copy link",
+      "copied": "Link copied",
+      "shareMessage": "I just supported {title} on Laal. Everyone is someone’s Laal — will you stand with them too? {url}",
+      "backToApp": "Back to the Laal app"
+    },
+    "error": {
+      "title": "We couldn’t load fundraisers",
+      "body": "Something went wrong on our side. Please try again in a moment.",
+      "retry": "Try again"
     }
   },
   "start": {
@@ -331,6 +404,29 @@
       "save": "Save changes",
       "cancel": "Cancel",
       "submitting": "Saving…"
+    },
+    "updates": "Updates",
+    "updatesHint": "Updates become visible on the fundraiser page once it is live.",
+    "updatesPage": {
+      "meta": {
+        "title": "Updates — Laal"
+      },
+      "eyebrow": "Updates for supporters",
+      "intro": "Share a short note with the people supporting this fundraiser — news, thanks, or how the family is doing. Updates appear on the public fundraiser page once it is live.",
+      "notLive": "This fundraiser is not live yet, so nothing is public. Your updates will appear as soon as it goes live.",
+      "postTitle": "Post an update",
+      "bodyLabel": "Your update",
+      "bodyPlaceholder": "A few words for your supporters…",
+      "bodyHint": "Plain text, up to {max} characters.",
+      "remaining": "{remaining} characters left",
+      "postButton": "Post update",
+      "posting": "Posting…",
+      "postSuccess": "Your update is posted.",
+      "postedHeading": "Posted updates",
+      "empty": "No updates posted yet.",
+      "remove": "Remove",
+      "viewPublic": "View the public page",
+      "backToDashboard": "← Back to dashboard"
     }
   },
   "org": {
@@ -391,7 +487,9 @@
       "verified": "Verified",
       "inMemoryOf": "In memory of {{name}}",
       "raisedOf": "raised of {{amount}}",
-      "pct": "{{pct}}%"
+      "pct": "{{pct}}%",
+      "reviewed": "Fundraiser reviewed",
+      "progressLabel": "Support progress"
     },
     "home": {
       "eyebrow": "EVERY LIFE IS PRECIOUS",
@@ -410,14 +508,16 @@
       "sectionVerified": "Verified fundraisers",
       "emptyTitle": "New fundraisers are being reviewed",
       "emptyBody": "Every fundraiser is gently verified before it appears here. Check back soon to support someone precious.",
-      "emptyCta": "Start the first fundraiser",
+      "emptyCta": "Start a fundraiser",
       "errorTitle": "We couldn’t load fundraisers",
       "errorBody": "Please check your connection and try again.",
-      "retry": "Try again"
+      "retry": "Try again",
+      "sectionTitle": "Reviewed fundraisers"
     },
     "card": {
       "pctThere": "{{pct}}% there",
-      "a11yLabel": "{{title}}, in memory of {{name}}. {{pct}}% of goal raised."
+      "a11yLabel": "{{title}}, in memory of {{name}}. {{pct}}% of goal raised.",
+      "location": "{{city}}, {{country}}"
     },
     "auth": {
       "divider": "or",
@@ -500,7 +600,21 @@
       "fundsReach": "Funds reach {{name}}, a confirmed family member.",
       "fundsReachWithRelation": "Funds reach {{name}} ({{relation}}), a confirmed family member.",
       "helpNow": "Help Now",
-      "helpNote": "Secure · you’ll continue on the web to help safely."
+      "helpNote": "Secure · you’ll continue on the web to help safely.",
+      "updatesHeading": "UPDATES FROM THE FAMILY",
+      "updateFrom": "From the organizer",
+      "updatesMostRecent": "Showing the most recent updates.",
+      "errorTitle": "We couldn’t load this fundraiser",
+      "errorBody": "Please check your connection and try again.",
+      "retry": "Try again",
+      "helpError": "We couldn’t open the page. Please try again.",
+      "opening": "Opening…",
+      "statusCompleted": "Together, supporters changed this story.",
+      "statusClosed": "This fundraiser has come to a close.",
+      "statusPaused": "Support is paused for a moment while we complete checks.",
+      "statusNotLive": "This fundraiser is not live yet.",
+      "share": "Share",
+      "shareMessage": "{{title}} — stand with this family on Laal."
     },
     "language": {
       "restartTitle": "Restart needed",
@@ -526,10 +640,10 @@
     "file_too_large": "The file is too large (max {maxMb}MB).",
     "file_invalid_type": "Only PDF or image files (PDF, JPG, PNG, WebP) are allowed.",
     "doc_type_invalid": "Please choose a valid document type.",
-    "donation_amount_invalid": "Please enter a donation amount between {min} and {max}.",
+    "donation_amount_invalid": "Please enter a whole support amount between {min} and {max}.",
     "campaign_not_found": "This fundraiser could not be found.",
-    "campaign_not_accepting": "This fundraiser is not currently accepting donations.",
-    "checkout_failed": "We couldn't start the donation checkout. Please try again.",
+    "campaign_not_accepting": "This fundraiser isn’t accepting support right now.",
+    "checkout_failed": "We couldn’t start your secure payment. Please try again.",
     "org_name_required": "Please enter the organisation's name.",
     "org_type_invalid": "Please choose an organisation type.",
     "org_status_invalid": "That status isn't valid.",
@@ -571,6 +685,9 @@
       "retry": "Try again",
       "home": "Back to home",
       "reference": "Reference: {digest}"
-    }
+    },
+    "update_body_required": "Please write a few words before posting.",
+    "update_body_too_long": "That update is too long (max {max} characters). Please shorten it.",
+    "update_not_found": "That update could not be found. It may already have been removed."
   }
 }
