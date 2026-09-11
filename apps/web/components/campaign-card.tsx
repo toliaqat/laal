@@ -10,7 +10,10 @@ import { Badge, Card, Progress, formatMoney } from '@/components/ui';
  *
  * `.grid-cards` is `auto-fill, minmax(280px, 1fr)`, which stretches a lone card
  * across the full container and leaves a wide dead gutter beside it on desktop.
- * Below three cards we switch to a centred, width-capped track instead.
+ * Below three cards we switch to a centred track whose cards are deliberately
+ * wider than a three-up card — one fundraiser then reads as a featured card
+ * rather than as a mostly-empty page (a 380px cap left ~410px of background on
+ * each side at 1280).
  */
 export function CampaignGrid({
   count,
@@ -20,13 +23,14 @@ export function CampaignGrid({
   children: ReactNode;
 }) {
   const sparse = count > 0 && count < 3;
+  const cap = count === 1 ? '640px' : '480px';
   return (
     <div
       className="grid grid-cards"
       style={
         sparse
           ? {
-              gridTemplateColumns: `repeat(${count}, minmax(280px, 380px))`,
+              gridTemplateColumns: `repeat(${count}, minmax(280px, ${cap}))`,
               justifyContent: 'center',
             }
           : undefined
@@ -210,20 +214,35 @@ export async function CampaignCard({ campaign }: { campaign: Campaign }) {
           ) : null}
 
           <div style={{ marginBlockStart: 'auto', paddingBlockStart: '0.5rem' }}>
-            <Progress value={pct} label={tc('progressLabel')} />
-            <p className="small" style={{ margin: '0.5rem 0 0' }}>
-              <strong>
-                {formatMoney(campaign.amount_raised, campaign.currency, locale)}
-              </strong>{' '}
-              <span className="muted">
-                {t('card.ofGoal', {
-                  amount: formatMoney(
-                    campaign.goal_amount,
-                    campaign.currency,
-                    locale,
-                  ),
-                })}
-              </span>
+            <Progress
+              value={pct}
+              label={tc('progressLabel')}
+              underOneLabel={tc('progressUnderOnePercent')}
+            />
+            {/* One message, two placeholders: hard-coding the raised amount
+                before the translated string assumed English word order and put
+                the goal first for an Urdu reader — on the page's headline
+                number. Each amount is a `<bdi className="num">` so it stays an
+                isolated LTR run inside Urdu copy. */}
+            <p className="small muted ar-flip" style={{ margin: '0.5rem 0 0' }}>
+              {t.rich('card.ofGoal', {
+                raised: formatMoney(
+                  campaign.amount_raised,
+                  campaign.currency,
+                  locale,
+                ),
+                goal: formatMoney(
+                  campaign.goal_amount,
+                  campaign.currency,
+                  locale,
+                ),
+                r: (chunks) => (
+                  <strong style={{ color: 'var(--ink)' }}>
+                    <bdi className="num">{chunks}</bdi>
+                  </strong>
+                ),
+                g: (chunks) => <bdi className="num">{chunks}</bdi>,
+              })}
             </p>
           </div>
         </div>

@@ -122,7 +122,13 @@ export default async function ThankYouPage({
     <main className="section">
       <Container narrow>
         <Card large>
-          <div className="stack center">
+          {/* One alignment for the whole card. The badge was start-aligned
+              (hard left in English, hard right in Urdu) above a centred heading
+              and lead, while every section below it was start-aligned — three
+              alignments in one card. Start wins: it is what the rest of the
+              card, and the rest of the app, already does, and it mirrors
+              cleanly under RTL. */}
+          <div className="stack">
             <div
               aria-hidden
               style={{
@@ -217,10 +223,7 @@ export default async function ThankYouPage({
             </ul>
           </div>
 
-          <div
-            className="row wrap center"
-            style={{ marginTop: '2rem', gap: '0.5rem' }}
-          >
+          <div className="row wrap" style={{ marginTop: '2rem', gap: '0.5rem' }}>
             <Button href={`/campaigns/${slug}`} variant="primary">
               {t('thankYou.returnCta')}
             </Button>

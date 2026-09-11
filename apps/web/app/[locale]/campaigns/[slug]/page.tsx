@@ -24,6 +24,7 @@ import {
 import { loadCampaignUpdates } from './updates';
 import { loadCampaignTrustForViewer } from './trust';
 import { ShareButtons } from './share-buttons';
+import { StickyHelp } from './sticky-help';
 import styles from './campaign.module.css';
 import { Container, Card, Progress, Badge, formatMoney } from '@/components/ui';
 
@@ -104,8 +105,13 @@ export async function generateMetadata({
   const campaign = await getCampaign(slug);
 
   if (!campaign) {
+    // A missing fundraiser still answers 200 (the framework drops the status
+    // that `notFound()` sets on a dynamically rendered route — see the note in
+    // the page component), so the only thing standing between a dead
+    // fundraiser URL and a search result is this directive. Keep it.
     return {
       title: t('detail.metaNotFound'),
+      robots: { index: false, follow: true },
     };
   }
 
@@ -147,6 +153,15 @@ export default async function CampaignPage({
   const campaign = await getCampaign(slug);
 
   if (!campaign) {
+    // NOTE: this renders the 404 body, but the response still carries HTTP 200.
+    // Verified on a production build (`next build` + `next start`), and it is
+    // not ours: a page that does nothing but call `notFound()` synchronously
+    // answers 200 too, with the route's loading boundary, the locale
+    // `not-found.tsx`, the middleware and the Sentry wrapper each removed in
+    // turn. Next 15.5.19 loses the status for a dynamically rendered route
+    // under the `[locale]` root layout. Until that is fixed upstream, the
+    // `robots: noindex` in generateMetadata above is what keeps dead fundraiser
+    // URLs out of search results.
     notFound();
   }
 
@@ -300,16 +315,36 @@ export default async function CampaignPage({
             {/* The label is the progressbar's accessible name — without it the
                 component falls back to a hard-coded English string, which is
                 wrong on the Urdu default locale. */}
-            <Progress value={pct} label={tc('progressLabel')} />
-            <p style={{ margin: 0 }}>
-              <strong style={{ fontSize: '1.15rem' }}>
-                {formatMoney(campaign.amount_raised, campaign.currency, locale)}
-              </strong>{' '}
-              <span className="muted">
-                {t('detail.raisedOfGoal', {
-                  amount: formatMoney(campaign.goal_amount, campaign.currency, locale),
-                })}
-              </span>
+            <Progress
+              value={pct}
+              label={tc('progressLabel')}
+              underOneLabel={tc('progressUnderOnePercent')}
+            />
+            {/* The headline number on the page, so its reading order matters:
+                the raised amount used to be hard-coded BEFORE the translated
+                string, an English word-order assumption that put the goal first
+                and the raised figure last for an Urdu (RTL) reader. Both
+                amounts are placeholders in one message now, each wrapped in a
+                `<bdi className="num">` so it stays an isolated LTR run. */}
+            <p className="muted" style={{ margin: 0 }}>
+              {t.rich('detail.raisedOfGoal', {
+                raised: formatMoney(
+                  campaign.amount_raised,
+                  campaign.currency,
+                  locale,
+                ),
+                goal: formatMoney(
+                  campaign.goal_amount,
+                  campaign.currency,
+                  locale,
+                ),
+                r: (chunks) => (
+                  <strong style={{ fontSize: '1.15rem', color: 'var(--ink)' }}>
+                    <bdi className="num">{chunks}</bdi>
+                  </strong>
+                ),
+                g: (chunks) => <bdi className="num">{chunks}</bdi>,
+              })}
             </p>
             {accepting && (
               // Plain anchor, not the locale-aware Link: this is an in-page jump
@@ -369,13 +404,7 @@ export default async function CampaignPage({
           )}
         </Card>
 
-        {accepting && (
-          <div className={styles.stickyHelp}>
-            <a href="#help" className="btn btn-primary btn-block">
-              {t('detail.helpNow')}
-            </a>
-          </div>
-        )}
+        {accepting && <StickyHelp label={t('detail.helpNow')} />}
       </Container>
     </main>
   );

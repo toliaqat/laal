@@ -29,7 +29,8 @@
     "save": "محفوظ کریں",
     "back": "واپس",
     "submitting": "براہِ کرم انتظار کریں…",
-    "progressLabel": "مدد کی پیش رفت"
+    "progressLabel": "مدد کی پیش رفت",
+    "progressUnderOnePercent": "‎1٪ سے کم"
   },
   "home": {
     "meta": {
@@ -168,7 +169,7 @@
     },
     "card": {
       "inMemoryOf": "{name} کی یاد میں",
-      "ofGoal": "{amount} کے ہدف میں سے",
+      "ofGoal": "<r>{raised}</r> جمع، ہدف <g>{goal}</g>",
       "reviewed": "جانچ شدہ مہم",
       "location": "{city}، {country}",
       "coverAlt": "{title} کے لیے شیئر کی گئی تصویر"
@@ -183,7 +184,7 @@
       "inMemoryOf": "<name></name> کی یاد میں",
       "died": "وفات: {date}",
       "born": "ولادت: {date}",
-      "raisedOfGoal": "{amount} کے ہدف میں سے جمع ہوئے",
+      "raisedOfGoal": "<r>{raised}</r> جمع ہوئے، ہدف <g>{goal}</g>",
       "wordsOfSupport": "ہمدردی کے کلمات",
       "supportReaches": "آپ کی مدد <name></name> تک پہنچتی ہے",
       "storyHeading": "اُن کی کہانی",

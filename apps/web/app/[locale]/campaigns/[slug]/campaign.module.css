@@ -3,10 +3,19 @@
    separately for contrast, tap targets and RTL line-height. */
 
 /* Isolate the bidi context so a Latin name inside an Urdu page keeps its own
-   punctuation order (otherwise a trailing "." jumps to the front). */
+   punctuation order (otherwise a trailing "." jumps to the front). `plaintext`
+   resolves the paragraph direction — and therefore `text-align: start` — from
+   the first strong character, so an English title inside an Urdu page also
+   left-aligned itself; a physical `right` under RTL keeps the heading on the
+   container's inline start without disturbing the punctuation. */
 .title {
   margin: 0;
   unicode-bidi: plaintext;
+}
+
+:global([dir='rtl']) .title,
+:global([dir='rtl']) .story {
+  text-align: right;
 }
 
 /* Cap the cover: a portrait photo used to be rendered at full height and
@@ -56,7 +65,13 @@
   color: var(--success);
 }
 
-/* ---- mobile-only sticky Help Now bar ---- */
+/* ---- mobile-only floating Help Now bar ----
+   `position: fixed`, not `sticky`: a sticky element can only stick inside its
+   own containing block, so at the foot of the page this bar un-stuck ~230px
+   above the viewport and left an empty band above the footer.
+   It hides itself once the real donate form is on screen (see sticky-help.tsx)
+   — a second "Help Now" directly above the actual submit button is noise —
+   and `visibility` also takes the duplicate link out of the tab order. */
 .stickyHelp {
   display: none;
 }
@@ -64,14 +79,26 @@
 @media (max-width: 768px) {
   .stickyHelp {
     display: block;
-    position: sticky;
+    position: fixed;
+    inset-inline: 0;
     bottom: 0;
     z-index: 20;
-    margin: 1.5rem -1.25rem 0;
     padding: 0.75rem 1.25rem;
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
     background: var(--surface);
     border-top: 1px solid var(--line);
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+  }
+
+  .stickyHelp[data-hidden] {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+  .stickyHelp {
+    transition: none;
   }
 }
 

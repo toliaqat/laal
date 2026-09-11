@@ -29,7 +29,8 @@
     "save": "Save",
     "back": "Back",
     "submitting": "Please wait…",
-    "progressLabel": "Support progress"
+    "progressLabel": "Support progress",
+    "progressUnderOnePercent": "Under 1%"
   },
   "home": {
     "meta": {
@@ -168,7 +169,7 @@
     },
     "card": {
       "inMemoryOf": "In memory of {name}",
-      "ofGoal": "of {amount}",
+      "ofGoal": "<r>{raised}</r> of <g>{goal}</g>",
       "reviewed": "Fundraiser reviewed",
       "location": "{city}, {country}",
       "coverAlt": "A photo shared for {title}"
@@ -183,7 +184,7 @@
       "inMemoryOf": "In memory of <name></name>",
       "died": "Died {date}",
       "born": "Born {date}",
-      "raisedOfGoal": "raised of {amount} goal",
+      "raisedOfGoal": "<r>{raised}</r> raised of <g>{goal}</g> goal",
       "wordsOfSupport": "Words of support",
       "supportReaches": "Your support reaches <name></name>",
       "storyHeading": "Their story",

@@ -315,7 +315,10 @@ export default async function HomePage({
               style={{ objectFit: 'cover', objectPosition: 'center 35%' }}
             />
           </div>
-          <div className="grid grid-cards">
+          {/* `.grid-steps`, not `.grid-cards`: auto-fill gave three columns and
+              left step 4 alone on a second row beside two empty cells. The
+              steps grid only ever uses a column count that divides four. */}
+          <div className="grid grid-steps">
             {steps.map((step, i) => (
               <Card key={step.title} hover>
                 <div className="step-card">

@@ -34,7 +34,10 @@
   /* Minimum comfortable touch target (WCAG 2.5.5 / Apple HIG 44pt). Every
      interactive control derives its height from this. */
   --control-h: 44px;
-  --control-h-sm: 40px;   /* desktop-only compact size; bumped to 44 on touch */
+  /* Compact controls (btn-sm, the language toggle) keep the smaller type and
+     padding but NOT a smaller box: a 40px target failed WCAG 2.5.5 on every
+     pointer, not just touch, so there is one height for every control. */
+  --control-h-sm: var(--control-h);
   /* +1 in LTR, -1 in RTL — lets a single sheen/shimmer rule sweep the reading
      direction instead of always left-to-right. */
   --sheen-dir: 1;
@@ -85,6 +88,11 @@ p { margin: 0 0 1rem; }
 .wrap { flex-wrap: wrap; }
 .grid { display: grid; gap: 1.25rem; }
 .grid-cards { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+/* Four items, so only 1, 2 or 4 columns divide evenly — `auto-fill` gave three
+   and left step 4 alone on a second row beside two empty cells. */
+.grid-steps { grid-template-columns: 1fr; }
+@media (min-width: 560px) { .grid-steps { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1040px) { .grid-steps { grid-template-columns: repeat(4, 1fr); } }
 .muted { color: var(--muted); }
 .small { font-size: 0.85rem; }
 .eyebrow { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); font-weight: 600; }
@@ -187,7 +195,7 @@ p { margin: 0 0 1rem; }
 .btn-ghost:hover { background: var(--surface-2); color: var(--ink); transform: translateY(-2px); }
 .btn-danger { background: var(--danger); color: #fff; }
 .btn-danger:hover { background: #8c4234; color: #fff; }
-.btn-sm { padding: 0.4rem 0.9rem; font-size: 0.85rem; min-height: var(--control-h-sm); }
+.btn-sm { padding: 0.4rem 0.9rem; font-size: 0.85rem; min-height: var(--control-h); }
 .btn-block { width: 100%; }
 
 /* ---- focus-visible: one warm, unmistakable ring for every control ----
@@ -230,7 +238,9 @@ summary:focus-visible,
    hit target because the input sits inside it). */
 input[type='checkbox'],
 input[type='radio'] {
-  inline-size: 1.15rem; block-size: 1.15rem;
+  /* 24px: the control itself now meets WCAG 2.5.8 even when the label is not
+     part of the target. The label row below carries it the rest of the way. */
+  inline-size: 1.5rem; block-size: 1.5rem;
   flex: none; margin: 0; cursor: pointer;
   accent-color: var(--accent);
 }
@@ -270,8 +280,9 @@ label:has(> input[type='radio']) {
 .progress > span {
   display: block; height: 100%; border-radius: 999px;
   /* a tiny raised amount against a large goal is still real support: keep a
-     hairline of fill visible so the bar never reads as broken (0 stays empty —
-     the width is set to 0 by the component in that case). */
+     visible nub of fill (see Progress in components/ui.tsx — 0.5rem, roughly a
+     bar's-height dot, not the 3px hairline that read as a rendering glitch) so
+     the bar never looks broken. Exactly 0 stays genuinely empty. */
   background: linear-gradient(90deg, var(--accent) 0%, #c08a5f 100%);
   position: relative;
   animation: laal-fill 1.4s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -298,18 +309,30 @@ label:has(> input[type='radio']) {
   border-bottom: 1px solid var(--line);
 }
 .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
-.brand { font-family: var(--serif); font-weight: 700; font-size: 1.35rem; color: var(--ink); letter-spacing: -0.01em; }
+/* The wordmark is a link home. Its glyphs are ~34px tall, so the box is padded
+   to the control height instead of being enlarged visually. */
+.brand {
+  display: inline-flex; align-items: center; min-height: var(--control-h);
+  font-family: var(--serif); font-weight: 700; font-size: 1.35rem;
+  color: var(--ink); letter-spacing: -0.01em;
+}
 .brand:hover { color: var(--ink); }
 .nav-links { display: flex; align-items: center; gap: 1.25rem; }
 
 /* burger toggle — hidden on desktop, revealed at the mobile breakpoint */
 .nav-burger {
   display: none; align-items: center; justify-content: center;
-  width: 40px; height: 40px; padding: 0; border-radius: 10px;
+  width: var(--control-h); height: var(--control-h); padding: 0; border-radius: 10px;
   background: transparent; border: 1px solid var(--line); color: var(--ink); cursor: pointer;
 }
 .nav-burger:hover { background: var(--surface-2); }
 .nav-burger svg { width: 22px; height: 22px; }
+
+/* ---- mobile drawer scrim ----
+   Declared hidden HERE, above the media query that reveals it: the same rule
+   sitting *after* the query won the cascade on equal specificity and the scrim
+   never painted (it measured 0x0 at every width). Order is the whole fix. */
+.nav-scrim { display: none; }
 
 @media (max-width: 768px) {
   /* keep the top bar clean: collapse the links behind the burger */
@@ -360,9 +383,6 @@ label:has(> input[type='radio']) {
 }
 .skip-link:focus, .skip-link:focus-visible { top: 0.5rem; }
 
-/* ---- mobile drawer scrim (desktop never shows it: see the media query) ---- */
-.nav-scrim { display: none; }
-
 /* ---- language switcher ---- */
 .lang-switch {
   display: inline-flex; align-items: center; gap: 0.15rem;
@@ -373,7 +393,7 @@ label:has(> input[type='radio']) {
   appearance: none; cursor: pointer; border: none; background: transparent;
   display: inline-flex; align-items: center; justify-content: center;
   color: var(--ink-soft); font-weight: 600; font-size: 0.85rem;
-  min-height: var(--control-h-sm);
+  min-height: var(--control-h);
   padding: 0.35rem 0.85rem; border-radius: 999px; line-height: 1.2;
   transition: background 0.15s ease, color 0.15s ease;
 }
@@ -392,12 +412,6 @@ label:has(> input[type='radio']) {
    old 4rem gap on long ones — the shell adds that air instead */
 .site-content { padding-bottom: 2.5rem; }
 .footer-nav { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
-
-/* ---- coarse pointers: nothing tappable smaller than the control height ---- */
-@media (pointer: coarse) {
-  .btn-sm, .lang-option, .nav-burger, .admin-burger { min-height: var(--control-h); }
-  .nav-burger, .admin-burger { min-width: var(--control-h); width: var(--control-h); height: var(--control-h); }
-}
 
 /* ---- tables (admin) ---- */
 .table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
@@ -453,7 +467,7 @@ label:has(> input[type='radio']) {
 .admin-sidebar-body { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .admin-burger {
   display: none; align-items: center; justify-content: center;
-  width: 40px; height: 40px; padding: 0; border-radius: 10px;
+  width: var(--control-h); height: var(--control-h); padding: 0; border-radius: 10px;
   background: transparent; border: 1px solid var(--line); color: var(--ink); cursor: pointer;
 }
 .admin-burger:hover { background: var(--surface-2); }
@@ -594,6 +608,11 @@ label:has(> input[type='radio']) {
   background: var(--surface); border: 1px solid var(--line);
   padding: 0.4rem 0.8rem; border-radius: 999px; box-shadow: var(--shadow-sm);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+/* The pill is also the sort control on /campaigns. An interactive one is a
+   real touch target; the decorative variant keeps its compact box. */
+a.trust-pill, button.trust-pill {
+  min-height: var(--control-h); padding-block: 0.55rem;
 }
 .trust-pill:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: var(--line-strong); }
 .trust-pill svg { width: 15px; height: 15px; color: var(--accent); }
@@ -860,13 +879,23 @@ label:has(> input[type='radio']) {
 [dir='rtl'] h2,
 [dir='rtl'] h3 {
   line-height: 2.05;
-  /* room for the tallest ascenders/lowest descenders so nothing is clipped */
-  padding-block: 0.12em;
+  /* Room for the tallest ascenders and lowest descenders. 0.24em, not the old
+     0.12em, is measured rather than guessed: canvas TextMetrics for the Urdu
+     heading face reports an ink box ~10.9px taller than half the line box at
+     48px (and ~7.4px at 41px), i.e. real ink outside the border box — a pixel
+     diff of the heading rendered with `overflow: hidden` lost up to 140 pixels
+     of ascender. Nothing clips it today (headings are explicitly
+     `overflow: visible` below), but the ink was genuinely outside its box, and
+     this is also what made `scrollHeight > clientHeight` on every Urdu h1. */
+  padding-block: 0.24em;
   letter-spacing: normal;
 }
 [dir='rtl'] h3 { line-height: 1.95; }
-/* the hero pins a tight Latin line-height inline — undo it for Nastaliq */
-[dir='rtl'] .hero-copy h1 { line-height: 2; }
+/* the hero pins a tight Latin line-height inline — undo it for Nastaliq. The
+   hero heading also carries the background-clipped `.ink-gradient` word, whose
+   own inline box is taller than the line box, so it needs a little more room
+   than the other headings before its ascenders sit inside the border box. */
+[dir='rtl'] .hero-copy h1 { line-height: 2; padding-block: 0.32em; }
 [dir='rtl'] .app-title,
 [dir='rtl'] .stat-value,
 [dir='rtl'] .admin-topbar-title,
@@ -916,6 +945,19 @@ label:has(> input[type='radio']) {
 [dir='rtl'] .app-card-mem,
 [dir='rtl'] .app-bene,
 [dir='rtl'] .app-sub { unicode-bidi: plaintext; }
+
+/* ...but `plaintext` also decides the block's ALIGNMENT from that same first
+   strong character, and `text-align: start` is resolved against the paragraph
+   direction it derived — so an English fundraiser title inside an Urdu card
+   silently left-aligned itself and the whole card read as an LTR island.
+   A physical `right` is immune to that resolution: the punctuation still sits
+   where the Latin run wants it, while the block stays pinned to the container's
+   inline start. Blocks that are centred on purpose (`.center`) keep their
+   alignment — hence the :not(). */
+[dir='rtl']
+  :is(.ugc, .prose, .ar-flip, .app-card-title, .app-card-mem, .app-bene):not(.center, .center *, .hero-copy *, .chart-card *) {
+  text-align: right;
+}
 
 /* Sheen/shimmer sweeps follow the reading direction. */
 [dir='rtl'] { --sheen-dir: -1; }

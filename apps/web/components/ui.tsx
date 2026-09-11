@@ -135,12 +135,16 @@ export function Field({
  * A labelled progress bar.
  *
  * Two deliberate behaviours:
- * - A raised amount above zero always keeps a hairline of visible fill
- *   (`max(pct%, 3px)`), so €2 against a €10,000 goal reads as "barely started"
+ * - A raised amount above zero always keeps a visible nub of fill
+ *   (`max(pct%, 0.5rem)` — about one bar-height, where a 3px hairline read as a
+ *   rendering artifact), so €2 against a €10,000 goal reads as "barely started"
  *   rather than as a broken empty pill. Exactly zero stays genuinely empty.
  * - The bar is never the only signal: the rounded percentage is also rendered
  *   as text. Pass `showPercent={false}` where the surrounding copy already
- *   states it.
+ *   states it. A real amount that rounds to 0% is NEVER labelled "0%" — that
+ *   tells a supporter their gift did nothing — it gets `underOneLabel`
+ *   (`common.progressUnderOnePercent`) instead, in the text and in
+ *   `aria-valuetext`.
  *
  * `label` is a required translated string (`common.progressLabel`) and becomes the
  * accessible name of the progressbar. It is required on purpose: an English
@@ -151,13 +155,19 @@ export function Progress({
   value,
   label,
   showPercent = true,
+  underOneLabel = '<1%',
 }: {
   value: number;
   label: string;
   showPercent?: boolean;
+  /** Shown instead of "0%" when a real amount rounds down to zero. */
+  underOneLabel?: string;
 }) {
   const pct = Math.max(0, Math.min(100, value));
   const rounded = Math.round(pct);
+  // Above zero but rounding to zero: the gift is real, so say so.
+  const barelyStarted = pct > 0 && rounded === 0;
+  const text = barelyStarted ? underOneLabel : `${rounded}%`;
   return (
     <>
       <div
@@ -167,13 +177,18 @@ export function Progress({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={rounded}
-        aria-valuetext={`${rounded}%`}
+        aria-valuetext={text}
       >
-        <span style={{ width: pct > 0 ? `max(${pct}%, 3px)` : 0 }} />
+        <span style={{ width: pct > 0 ? `max(${pct}%, 0.5rem)` : 0 }} />
       </div>
       {showPercent && (
-        <span className="progress-value num" style={{ display: 'block' }}>
-          {rounded}%
+        // `.num` forces an isolated LTR run, which is right for "12%" and wrong
+        // for a translated phrase — so it is only applied to the figure.
+        <span
+          className={`progress-value${barelyStarted ? '' : ' num'}`}
+          style={{ display: 'block' }}
+        >
+          {text}
         </span>
       )}
     </>

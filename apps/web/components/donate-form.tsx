@@ -156,12 +156,14 @@ export function DonateForm({
         {fromApp ? <input type="hidden" name="from" value="app" /> : null}
 
         <div role="group" aria-labelledby={amountGroupId}>
-          <div id={amountGroupId} className="label" style={{ marginBottom: '0.5rem' }}>
-            {t('donate.chooseHelp')}{' '}
-            <span className="hint">
-              {/* `<n>` wraps the amount in the catalog so it can carry `.num`:
-                  isolated and LTR, so an Urdu page reads €50, not 50€, and the
-                  parenthesised hint never splits the amount across lines. */}
+          <div id={amountGroupId} style={{ marginBottom: '0.5rem' }}>
+            <span className="label">{t('donate.chooseHelp')}</span>{' '}
+            {/* Its own block, not a trailing run on the label line: sharing the
+                line left the Urdu phrase ~90px and it broke mid-parenthesis
+                ("(فی الحال" / "€50 تک)"), two lines against the English one.
+                `<n>` wraps the amount in the catalog so it can carry `.num`:
+                isolated and LTR, so an Urdu page reads €50, not 50€. */}
+            <span className="hint" style={{ display: 'block', marginTop: '0.15rem' }}>
               {t.rich('donate.upToCap', { cap, n: capRun })}
             </span>
           </div>
@@ -258,7 +260,10 @@ export function DonateForm({
           />
         </div>
 
-        <div className="row" style={{ gap: '0.5rem' }}>
+        {/* The label WRAPS the checkbox, so the whole 44px row is the tap
+            target (`.check-row` in globals.css) — a bare 18px box beside a
+            26px-tall label failed WCAG 2.5.5 by a wide margin. */}
+        <label className="check-row" htmlFor={anonymousId}>
           <input
             id={anonymousId}
             name="isAnonymous"
@@ -266,8 +271,8 @@ export function DonateForm({
             checked={anonymous}
             onChange={(e) => setAnonymous(e.target.checked)}
           />
-          <label htmlFor={anonymousId}>{t('donate.anonymous')}</label>
-        </div>
+          <span>{t('donate.anonymous')}</span>
+        </label>
 
         <div className="field">
           <label className="label" htmlFor={messageId}>
