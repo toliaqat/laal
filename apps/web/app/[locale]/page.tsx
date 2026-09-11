@@ -143,7 +143,7 @@ export default async function HomePage({
      so a hard-coded English app screen would be the first thing most visitors
      see. Amounts are formatted here (the mockup stays presentational). */
   const money = (amount: number) => formatMoney(amount, MOCKUP_CURRENCY, locale);
-  const video = demoVideo();
+  const video = demoVideo(locale);
   const mockup: MockupCopy = {
     listTitle: t('mockup.listTitle'),
     verified: t('mockup.verified'),

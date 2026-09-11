@@ -18,7 +18,7 @@ import { R2_PUBLIC_BASE_URL_IF_SET } from '@/lib/env';
  * with a one-year immutable cache, so the name must change for viewers to see
  * the new cut. Keep in sync with publish.sh.
  */
-const VERSION = 'v1';
+const VERSION = 'v2';
 
 export type DemoVideo = {
   /** Full walkthrough, 1080p, with sound. */
@@ -29,12 +29,19 @@ export type DemoVideo = {
   poster: string;
 };
 
-export function demoVideo(): DemoVideo | null {
+/** Locales that have their own narrated cut; others fall back to English. */
+const EDITIONS = new Set(['en', 'ur']);
+
+export function demoVideo(locale: string): DemoVideo | null {
   const base = R2_PUBLIC_BASE_URL_IF_SET();
   if (!base) return null;
+  // Each edition is a separate set of files, so a visitor downloads only the
+  // language they are looking at (the hero fetches the poster and the small
+  // teaser; the full film loads on play).
+  const sfx = EDITIONS.has(locale) && locale !== 'en' ? `-${locale}` : '';
   return {
-    src: `${base}/site/demo/laal-demo-1080p.${VERSION}.mp4`,
-    teaser: `${base}/site/demo/laal-demo-teaser.${VERSION}.mp4`,
-    poster: '/demo/laal-demo-poster.jpg',
+    src: `${base}/site/demo/laal-demo${sfx}-1080p.${VERSION}.mp4`,
+    teaser: `${base}/site/demo/laal-demo${sfx}-teaser.${VERSION}.mp4`,
+    poster: `/demo/laal-demo${sfx}-poster.jpg`,
   };
 }
