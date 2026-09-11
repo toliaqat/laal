@@ -14,9 +14,6 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
   const [state, formAction, pending] = useActionState(createCampaign, null);
   // Restore typed input after a failed submit (React resets the form).
   const fields = (state && !state.ok && state.fields) || {};
-  const [kind, setKind] = useState<'organization' | 'individual'>(
-    orgs.length > 0 ? 'organization' : 'individual',
-  );
   const [intendedUse, setIntendedUse] = useState<
     'local_burial' | 'repatriation'
   >('local_burial');
@@ -164,24 +161,15 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
             </p>
           </div>
 
-          {orgs.length > 0 && (
-            <label className="row" style={{ alignItems: 'flex-start' }}>
-              <input
-                type="radio"
-                name="beneficiary_kind"
-                value="organization"
-                checked={kind === 'organization'}
-                onChange={() => setKind('organization')}
-              />
-              <span>{t('beneficiary.organizationOption')}</span>
-            </label>
-          )}
+          {/* Funds only ever go to a verified partner organisation. */}
+          <input type="hidden" name="beneficiary_kind" value="organization" />
 
-          {kind === 'organization' && orgs.length > 0 && (
+          {orgs.length > 0 ? (
             <Field label={t('beneficiary.partnerOrgLabel')}>
               <select
                 name="organization_id"
                 className="select"
+                required
                 defaultValue=""
               >
                 <option value="" disabled>
@@ -194,48 +182,22 @@ export function StartForm({ orgs }: { orgs: OrgOption[] }) {
                 ))}
               </select>
             </Field>
-          )}
-
-          <label className="row" style={{ alignItems: 'flex-start' }}>
-            <input
-              type="radio"
-              name="beneficiary_kind"
-              value="individual"
-              checked={kind === 'individual'}
-              onChange={() => setKind('individual')}
-            />
-            <span>{t('beneficiary.individualOption')}</span>
-          </label>
-
-          {kind === 'individual' && (
-            <div className="stack">
-              <Field
-                label={t('beneficiary.displayNameLabel')}
-                hint={t('beneficiary.displayNameHint')}
-              >
-                <input
-                  id="display_name"
-                  name="display_name"
-                  className="input"
-                  defaultValue={fields.display_name}
-                />
-              </Field>
-              <Field label={t('beneficiary.relationshipLabel')}>
-                <input
-                  id="relationship_to_deceased"
-                  name="relationship_to_deceased"
-                  className="input"
-                  defaultValue={fields.relationship_to_deceased}
-                />
-              </Field>
-            </div>
+          ) : (
+            <p className="small" role="status" style={{ margin: 0 }}>
+              {t('beneficiary.noOrgs')}
+            </p>
           )}
         </div>
       </Card>
 
       <FormAlert state={state} />
 
-      <Button type="submit" variant="primary" block disabled={pending}>
+      <Button
+        type="submit"
+        variant="primary"
+        block
+        disabled={pending || orgs.length === 0}
+      >
         {pending ? t('form.submitting') : t('form.submit')}
       </Button>
     </form>

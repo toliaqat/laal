@@ -20,12 +20,9 @@ export function EditForm({
   orgs: OrgOption[];
 }) {
   const t = useTranslations('dashboard');
-  const initialKind: 'organization' | 'individual' =
-    beneficiary?.type === 'organization' ? 'organization' : 'individual';
   const [state, formAction, pending] = useActionState(updateCampaign, null);
   // Restore typed edits after a failed submit (React resets the form).
   const fields = (state && !state.ok && state.fields) || {};
-  const [kind, setKind] = useState<'organization' | 'individual'>(initialKind);
   const [intendedUse, setIntendedUse] = useState(campaign.intended_use);
 
   return (
@@ -166,24 +163,17 @@ export function EditForm({
             </p>
           </div>
 
-          {orgs.length > 0 && (
-            <label className="row" style={{ alignItems: 'flex-start' }}>
-              <input
-                type="radio"
-                name="beneficiary_kind"
-                value="organization"
-                checked={kind === 'organization'}
-                onChange={() => setKind('organization')}
-              />
-              <span>{t('editForm.orgOption')}</span>
-            </label>
-          )}
+          {/* Funds only ever go to a verified partner organisation. A
+              fundraiser that was created for an individual must pick one here
+              before it can be saved. */}
+          <input type="hidden" name="beneficiary_kind" value="organization" />
 
-          {kind === 'organization' && orgs.length > 0 && (
+          {orgs.length > 0 ? (
             <Field label={t('editForm.partnerOrgLabel')}>
               <select
                 name="organization_id"
                 className="select"
+                required
                 defaultValue={beneficiary?.organization_id ?? ''}
               >
                 <option value="" disabled>
@@ -196,46 +186,10 @@ export function EditForm({
                 ))}
               </select>
             </Field>
-          )}
-
-          <label className="row" style={{ alignItems: 'flex-start' }}>
-            <input
-              type="radio"
-              name="beneficiary_kind"
-              value="individual"
-              checked={kind === 'individual'}
-              onChange={() => setKind('individual')}
-            />
-            <span>{t('editForm.individualOption')}</span>
-          </label>
-
-          {kind === 'individual' && (
-            <div className="stack">
-              <Field
-                label={t('editForm.displayNameLabel')}
-                hint={t('editForm.displayNameHint')}
-              >
-                <input
-                  id="display_name"
-                  name="display_name"
-                  className="input"
-                  defaultValue={
-                    fields.display_name ??
-                    (beneficiary?.type === 'individual'
-                      ? beneficiary.display_name
-                      : '')
-                  }
-                />
-              </Field>
-              <Field label={t('editForm.relationshipLabel')}>
-                <input
-                  id="relationship_to_deceased"
-                  name="relationship_to_deceased"
-                  className="input"
-                  defaultValue={fields.relationship_to_deceased ?? beneficiary?.relationship_to_deceased ?? ''}
-                />
-              </Field>
-            </div>
+          ) : (
+            <p className="small" role="status" style={{ margin: 0 }}>
+              {t('editForm.noOrgs')}
+            </p>
           )}
         </div>
       </Card>
@@ -243,7 +197,11 @@ export function EditForm({
       <FormAlert state={state} />
 
       <div className="row wrap">
-        <Button type="submit" variant="primary" disabled={pending}>
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={pending || orgs.length === 0}
+        >
           {pending ? t('editForm.submitting') : t('editForm.save')}
         </Button>
         <Button href="/dashboard" variant="ghost">
