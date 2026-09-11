@@ -4,6 +4,8 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Campaign } from '@laal/types';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { demoVideo } from '@/lib/demo-video';
+import { DemoVideo } from '@/components/demo-video';
 import { Container, Card, Button, formatMoney } from '@/components/ui';
 import {
   CampaignCard,
@@ -141,6 +143,7 @@ export default async function HomePage({
      so a hard-coded English app screen would be the first thing most visitors
      see. Amounts are formatted here (the mockup stays presentational). */
   const money = (amount: number) => formatMoney(amount, MOCKUP_CURRENCY, locale);
+  const video = demoVideo();
   const mockup: MockupCopy = {
     listTitle: t('mockup.listTitle'),
     verified: t('mockup.verified'),
@@ -253,7 +256,11 @@ export default async function HomePage({
             </div>
 
             <div className="hero-art reveal-soft" style={{ animationDelay: '0.3s' }}>
-              <PhoneHero copy={mockup} />
+              {video ? (
+                <DemoVideo src={video.src} teaser={video.teaser} poster={video.poster} />
+              ) : (
+                <PhoneHero copy={mockup} />
+              )}
             </div>
           </div>
         </Container>

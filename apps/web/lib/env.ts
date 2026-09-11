@@ -50,6 +50,10 @@ export const R2_PUBLIC_BUCKET = () => required('R2_PUBLIC_BUCKET');
 // or the bucket's r2.dev URL), e.g. https://img.laal.app — no trailing slash.
 export const R2_PUBLIC_BASE_URL = () =>
   required('R2_PUBLIC_BASE_URL').replace(/\/+$/, '');
+// The same origin, or null when unset — for surfaces that can degrade
+// gracefully without it (the landing-page demo video) instead of throwing.
+export const R2_PUBLIC_BASE_URL_IF_SET = () =>
+  process.env.R2_PUBLIC_BASE_URL?.trim().replace(/\/+$/, '') || null;
 
 // Misc
 // Trailing slash stripped (like R2_PUBLIC_BASE_URL): APP_URL() is always joined

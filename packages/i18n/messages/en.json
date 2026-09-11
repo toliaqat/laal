@@ -120,6 +120,13 @@
       "ctaNote": "Secure · every fundraiser reviewed before support",
       "heroAlt": "The Laal app showing reviewed fundraisers you can support",
       "showcaseAlt": "The Laal app showing a reviewed fundraiser and a Help Now button"
+    },
+    "video": {
+      "watch": "Watch how Laal works",
+      "duration": "3 min",
+      "play": "Play the video: how Laal works (3 minutes)",
+      "title": "How Laal works",
+      "close": "Close video"
     }
   },
   "auth": {

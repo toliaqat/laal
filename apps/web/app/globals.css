@@ -644,6 +644,76 @@ label:has(> input[type='radio']) {
   .hero-art .app-card:last-child { display: none; }
 }
 
+/* Visually hidden, still read by assistive tech (dialog titles etc.). */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---- hero demo video ---- */
+/* A 16:9 card that plays a silent teaser loop; activating it opens the full
+   walkthrough in a <dialog>. Sized to the hero's art column; on the stacked
+   layout it spans the copy width. */
+.demo-card { width: 100%; max-width: 580px; }
+.demo-trigger {
+  position: relative; display: block; width: 100%; aspect-ratio: 16 / 9;
+  padding: 0; border: 1px solid var(--line-strong); border-radius: var(--radius);
+  overflow: hidden; background: var(--surface); cursor: pointer;
+  box-shadow: var(--shadow), 0 34px 70px -28px rgba(42, 38, 32, 0.45);
+  transform: rotate(-1.25deg);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease;
+}
+.demo-trigger:hover, .demo-trigger:focus-visible {
+  transform: rotate(0deg) scale(1.015);
+  box-shadow: var(--shadow), 0 40px 80px -28px rgba(42, 38, 32, 0.5);
+}
+.demo-trigger:focus-visible { outline: 3px solid var(--accent); outline-offset: 5px; }
+.demo-teaser { width: 100%; height: 100%; object-fit: cover; display: block; background: var(--bg); }
+.demo-play {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+}
+.demo-play svg {
+  box-sizing: content-box; padding: 21px 19px 21px 23px; border-radius: 50%;
+  color: var(--accent-ink); background: var(--accent);
+  box-shadow: 0 10px 30px rgba(42, 38, 32, 0.35), 0 0 0 10px rgba(251, 248, 242, 0.55);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.demo-trigger:hover .demo-play svg, .demo-trigger:focus-visible .demo-play svg { transform: scale(1.08); }
+.demo-caption {
+  position: absolute; inset-inline-start: 14px; bottom: 14px;
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.45rem 0.95rem; border-radius: 999px; font-size: 0.9rem; color: var(--ink);
+  background: rgba(251, 248, 242, 0.94); border: 1px solid var(--line);
+  box-shadow: 0 6px 18px rgba(42, 38, 32, 0.12); backdrop-filter: blur(6px);
+}
+.demo-caption-sep { color: var(--accent); }
+
+.demo-dialog {
+  width: min(1100px, 94vw); max-width: none; padding: 0; border: 0; background: transparent;
+  overflow: visible;
+}
+.demo-dialog::backdrop { background: rgba(42, 38, 32, 0.78); backdrop-filter: blur(6px); }
+.demo-dialog-inner {
+  position: relative; border-radius: var(--radius); overflow: hidden; background: #000;
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+}
+.demo-player { display: block; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+.demo-close {
+  position: absolute; top: 10px; inset-inline-end: 10px; z-index: 2;
+  width: 40px; height: 40px; border-radius: 50%; border: 0; cursor: pointer;
+  display: grid; place-items: center; color: var(--ink);
+  background: rgba(251, 248, 242, 0.92); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+.demo-close:hover { background: var(--surface); }
+.demo-close:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 880px) {
+  .demo-card { max-width: 560px; margin: 0 auto; }
+  .demo-trigger { transform: none; }
+  .demo-trigger:hover, .demo-trigger:focus-visible { transform: scale(1.01); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .demo-trigger, .demo-play svg { transition: none; }
+  .demo-trigger:hover, .demo-trigger:focus-visible { transform: none; }
+}
+
 /* gradient-inked word for warm emphasis (decorative; keep contrast in body) */
 .ink-gradient {
   /* mid stop kept dark enough that the inked word still clears 3:1 as large
