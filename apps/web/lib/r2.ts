@@ -28,9 +28,15 @@ import {
 let _client: S3Client | null = null;
 function client(): S3Client {
   if (!_client) {
+    // R2_ENDPOINT is an optional override for local development and demos:
+    // point it at any S3-compatible store (e.g. the local Supabase storage
+    // S3 gateway) so uploads never touch the real buckets. Such stores
+    // address buckets by path, not by subdomain, hence forcePathStyle.
+    const endpoint = process.env.R2_ENDPOINT?.trim();
     _client = new S3Client({
       region: 'auto',
-      endpoint: `https://${R2_ACCOUNT_ID()}.r2.cloudflarestorage.com`,
+      endpoint: endpoint || `https://${R2_ACCOUNT_ID()}.r2.cloudflarestorage.com`,
+      forcePathStyle: Boolean(endpoint),
       credentials: {
         accessKeyId: R2_ACCESS_KEY_ID(),
         secretAccessKey: R2_SECRET_ACCESS_KEY(),
