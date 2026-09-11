@@ -17,7 +17,7 @@
 # app uses to upload cover images). Requires the AWS CLI.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION="${DEMO_VERSION:-v1}"
+VERSION="${DEMO_VERSION:-v2}"
 
 # Read only the R2_* lines (the file is not shell-safe as a whole: values with
 # spaces and angle brackets).
@@ -33,5 +33,8 @@ put() { # local, remote key
     --content-type video/mp4 --cache-control "public, max-age=31536000, immutable" --only-show-errors
   echo "  ✓ ${R2_PUBLIC_BASE_URL}/$2"
 }
-put build/web/laal-demo-1080p.mp4  "site/demo/laal-demo-1080p.${VERSION}.mp4"
-put build/web/laal-demo-teaser.mp4 "site/demo/laal-demo-teaser.${VERSION}.mp4"
+for sfx in "" "-ur"; do   # every language edition that has been built
+  [ -f "build/web/laal-demo${sfx}-1080p.mp4" ] || continue
+  put "build/web/laal-demo${sfx}-1080p.mp4"  "site/demo/laal-demo${sfx}-1080p.${VERSION}.mp4"
+  put "build/web/laal-demo${sfx}-teaser.mp4" "site/demo/laal-demo${sfx}-teaser.${VERSION}.mp4"
+done

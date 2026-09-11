@@ -23,11 +23,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 STORY = json.loads((ROOT / "script" / "storyboard.json").read_text())
 BUILD = ROOT / "build"
-SCENES = BUILD / "scenes"
-VO = BUILD / "vo"
-CARDS = BUILD / "cards"
 
 W, H, FPS = STORY["format"]["width"], STORY["format"]["height"], STORY["format"]["fps"]
+LANG = "en"
+if "--lang" in sys.argv:
+    LANG = sys.argv[sys.argv.index("--lang") + 1]
+
+
+def suffix(base: str) -> str:
+    return base if LANG == "en" else f"{base}-{LANG}"
+
+
+SCENES = BUILD / suffix("scenes")
+VO = BUILD / suffix("vo")
+CARDS = BUILD / suffix("cards")
 XFADE = 0.6
 VO_LEAD = 0.6
 VO_TAIL = 1.0
@@ -43,7 +52,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--scenes", nargs="*", help="subset of scene ids (storyboard order is kept)")
     ap.add_argument("--no-music", action="store_true")
-    ap.add_argument("--out", default=str(BUILD / f"laal-demo-{W}x{H}.mp4"))
+    ap.add_argument("--lang", default="en", help="language edition (folders build/*-<lang>)")
+    ap.add_argument("--out", default=str(BUILD / (f"laal-demo-{W}x{H}.mp4" if LANG == "en" else f"laal-demo-{LANG}-{W}x{H}.mp4")))
     ap.add_argument("--fast", action="store_true", help="quick low-quality preview encode")
     args = ap.parse_args()
 
@@ -58,8 +68,9 @@ def main():
         rec_d = probe(mp4)
         dur = max(rec_d, VO_LEAD + vo_d + VO_TAIL, float(s.get("min_seconds", 0)))
         lt = CARDS / f"lt-{s['id']}.png"
+        has_lt = bool(s.get("lower_third") if LANG == "en" else s.get(LANG, {}).get("lower_third"))
         plan.append({"id": s["id"], "mp4": mp4, "rec": rec_d, "vo": vo if vo.exists() else None,
-                     "vo_d": vo_d, "dur": dur, "lt": lt if (lt.exists() and s.get("lower_third")) else None})
+                     "vo_d": vo_d, "dur": dur, "lt": lt if (lt.exists() and has_lt) else None})
 
     n = len(plan)
     starts, t = [], 0.0
@@ -112,7 +123,9 @@ def main():
         fc.append(f"{cur}[{vids[i]}]xfade=transition=fade:duration={XFADE}:offset={off:.3f}[x{i}]")
         cur = f"[x{i}]"
         acc = off + plan[i]["dur"]
-    fc.append(f"{cur}fade=t=in:st=0:d=0.8,fade=t=out:st={total - 1.2:.3f}:d=1.2[vout]")
+    # No fade-in: messaging apps use the very first frame as the thumbnail, so
+    # frame one must already be the finished title card (see unit_cards).
+    fc.append(f"{cur}fade=t=out:st={total - 1.2:.3f}:d=1.2[vout]")
 
     # audio: narration bed
     if aud_vo:

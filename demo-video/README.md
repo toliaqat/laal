@@ -122,6 +122,32 @@ All portraits are **AI-generated faces** (thispersondoesnotexist), cropped to
 the app's 7:9 frame — no real person is shown as deceased. Spare faces are in
 `assets/portraits/raw/spare-*.jpg`.
 
+## Urdu edition
+
+The same pipeline produces an Urdu cut: `build/laal-demo-ur-1920x1080.mp4`.
+
+```bash
+make seed LANG=ur        # Urdu titles, names, places, stories, updates and supporter messages on top of the base seed
+make record LANG=ur      # records against /ur (Urdu UI); on-camera text typed in Urdu
+make narrate LANG=ur     # Azure Speech, ur-PK-UzmaNeural (AZURE_SPEECH_KEY + AZURE_SPEECH_REGION in .env.demo)
+make assemble LANG=ur
+```
+
+- Urdu narration, lower thirds and card text live under each scene's `ur` key
+  in `storyboard.json`; the voice under `voices.ur`. The Urdu script is written
+  in the everyday mixed register (campaign, review, verified, partner, release,
+  funeral home… in Urdu script), which the voice reads far more naturally than
+  formal vocabulary. Delivery is flat by choice.
+- Cards and lower thirds render right-to-left in the site's Nastaliq/Naskh
+  faces (`cards.html?lang=ur`). Build folders get a `-ur` suffix
+  (`scenes-ur`, `frames-ur`, `cards-ur`, `vo-ur`).
+- UI labels the recorder looks for come from `packages/i18n/messages/<lang>.json`,
+  so a copy change in the app does not break the recording.
+- Still English on purpose: the admin review pages (staff tooling is not
+  translated), the Stripe Checkout page, and the partner organisations' names.
+- Voice samples used to choose the narrator are in `build/vo-samples/`
+  (`urdu-*`, `mix*-*`, `expr-*`).
+
 ## On the website
 
 The landing-page hero plays the same cut (`apps/web/components/demo-video.tsx`,
@@ -134,6 +160,10 @@ card, and the full video in a lightbox on click. The poster ships in
 make web-assets   # 1080p web encode + teaser + poster from the current cut
 make publish      # upload both mp4s to R2 (reads R2_* from ../.env; needs the AWS CLI)
 ```
+
+`make web-assets` builds every language that has a master (`laal-demo-…` and
+`laal-demo-ur-…`); the hero picks the edition matching the site language and
+falls back to English for any other locale.
 
 When the video changes, bump the version in BOTH `pipeline/publish.sh`
 (`DEMO_VERSION`) and `apps/web/lib/demo-video.ts` (`VERSION`) so the new files

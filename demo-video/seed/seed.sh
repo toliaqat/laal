@@ -28,4 +28,7 @@ for f in assets/portraits/*.jpg; do
 done
 
 psql -q "$DB" -f seed/demo-seed.sql
+# Optional language edition on top (e.g. `seed.sh ur` → Urdu titles, stories, messages).
+LANG_EDITION="${1:-en}"
+if [ "$LANG_EDITION" != "en" ]; then psql -q "$DB" -f "seed/demo-seed-${LANG_EDITION}.sql"; fi
 psql "$DB" -c "select slug, status, deceased_name, amount_raised, goal_amount, published_at::date from campaigns order by created_at desc"

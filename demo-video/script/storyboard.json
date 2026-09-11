@@ -37,19 +37,31 @@
       "card": {
         "eyebrow": "Every life is precious",
         "headline": "Everyone is someone's Laal.",
-        "sub": "A short walkthrough of how Laal works"
+        "sub": "How Laal brings loved ones home, with dignity"
       },
-      "narration": "When someone dies far from home, their family faces an impossible bill in the hardest week of their lives. Laal is how a community carries it together.",
-      "min_seconds": 8
+      "narration": "When someone dies far from home, what they deserve is simple: a dignified farewell, and the journey back to the family and the soil that raised them. Laal is how a community makes that happen together, and how every rupee reaches the people who actually carry them home.",
+      "min_seconds": 8,
+      "ur": {
+        "card": {
+          "eyebrow": "ہر زندگی قیمتی ہے",
+          "headline": "ہر کوئی کسی کا لال ہے۔",
+          "sub": "لال پیاروں کو عزت کے ساتھ گھر کیسے لاتا ہے"
+        },
+        "narration": "جب کوئی اپنے گھر سے دور دنیا سے رخصت ہو جاتے ہیں، تو اُن کا حق بس اتنا ہے: ایک باعزت رخصتی، اور اپنے خاندان اور اپنی مٹی تک واپسی کا سفر۔ لال وہ طریقہ ہے جس سے پوری کمیونٹی مل کر یہ ممکن بناتی ہے، اور جس سے ہر روپیہ اُن لوگوں تک پہنچتا ہے جو اُنہیں واقعی گھر پہنچاتے ہیں۔"
+      }
     },
     {
       "id": "01-home",
       "kind": "screen",
       "title": "Home — the promise",
       "onscreen": "Landing page. Hero settles, then a slow scroll through the three values and 'how it works'.",
-      "lower_third": "Reviewed. Reaches the family. Secure.",
-      "narration": "This is Laal. Every fundraiser is reviewed before it goes live. The money reaches a confirmed family member or a trusted partner. And giving takes seconds, with no account needed.",
-      "min_seconds": 12
+      "lower_third": "Reviewed · Paid only to verified partners · Secure",
+      "narration": "This is Laal. Every fundraiser is reviewed before it goes live. The money never goes to an individual. It is held by Laal and released only to a verified partner, such as a funeral home, that carries out the repatriation. And giving takes seconds, with no account needed.",
+      "min_seconds": 12,
+      "ur": {
+        "lower_third": "ریویو شدہ · صرف ویریفائیڈ پارٹنرز کو ادائیگی · محفوظ",
+        "narration": "یہ لال ہے۔ ہر کیمپین لائیو ہونے سے پہلے ریویو کی جاتی ہے۔ پیسے کبھی کسی فرد کو نہیں دیے جاتے۔ وہ لال کے پاس محفوظ رہتے ہیں اور صرف ایک ویریفائیڈ پارٹنر، جیسے فیونرل ہوم، کو ریلیز کیے جاتے ہیں، جہاں باڈی کو گھر واپس لانے کا انتظام کیا جاتا ہے۔ اور سپورٹ کرنے میں چند سیکنڈ لگتے ہیں، کسی اکاؤنٹ کے بغیر۔"
+      }
     },
     {
       "id": "02-browse",
@@ -57,26 +69,38 @@
       "title": "Browse fundraisers",
       "onscreen": "Click 'Fundraisers' in the nav. Grid of reviewed fundraisers with portraits. Hover a card, switch to 'Closest to goal', open Amir's fundraiser.",
       "lower_third": "Every fundraiser is reviewed before it is listed",
-      "narration": "Supporters browse reviewed fundraisers. Each card shows the person, where they passed away, and how close the family is to their goal. Sort by newest, or by who is closest to their goal, and open a fundraiser to read their story.",
-      "min_seconds": 11
+      "narration": "Supporters browse reviewed fundraisers. Each one is a person to bring home: the card shows who they were, where they passed away, and how close the community is to covering the cost. Open one to read their story.",
+      "min_seconds": 11,
+      "ur": {
+        "lower_third": "ہر کیمپین لسٹ ہونے سے پہلے ریویو ہوتی ہے",
+        "narration": "سپورٹرز ریویو شدہ کیمپینز دیکھتے ہیں۔ ہر کیمپین ایک ایسے شخص کی ہے جنہیں گھر واپس لانا ہے: کارڈ پر لکھا ہوتا ہے کہ وہ کون تھے، اُنہوں نے کہاں وفات پائی، اور کمیونٹی خرچ پورا کرنے کے کتنا قریب ہے۔ کسی ایک کو کھولیں اور اُن کی کہانی پڑھیں۔"
+      }
     },
     {
       "id": "03-fundraiser",
       "kind": "screen",
       "title": "A fundraiser page",
-      "onscreen": "Amir's page. Hold on the portrait and the three trust badges, highlight 'Your support reaches…', scroll through the story, the family's updates and the supporter wall.",
-      "lower_third": "Need verified with an embassy · Family verified · You see who receives the money",
-      "narration": "A fundraiser page puts the person first. Trust badges show that the need was confirmed with an embassy and that the family relationship was verified. It says exactly who receives the money. Below are their story, updates from the family, and words from supporters.",
-      "min_seconds": 18
+      "onscreen": "Amir's page. Hold on the portrait and the badges, highlight 'Your support reaches Al-Amanah Funeral Services', scroll through the story, the updates and the supporter wall.",
+      "lower_third": "Support reaches a verified funeral home · Need confirmed with an embassy",
+      "narration": "A fundraiser page puts the person first, and then it is honest about the money. It names the verified funeral home that receives the support and handles the repatriation. Badges show the fundraiser was reviewed and the death was confirmed with an embassy. Below are the story, updates from the partner and the family, and words from supporters.",
+      "min_seconds": 18,
+      "ur": {
+        "lower_third": "سپورٹ ویریفائیڈ فیونرل ہوم تک پہنچتی ہے · ضرورت ایمبیسی سے تصدیق شدہ",
+        "narration": "کیمپین کے پیج پر سب سے پہلے وہ شخص سامنے ہوتے ہیں، اور پھر پیسوں کے بارے میں صاف بات ہوتی ہے۔ اس پر اُس ویریفائیڈ فیونرل ہوم کا نام لکھا ہوتا ہے جسے سپورٹ ملتی ہے اور جہاں باڈی کو گھر لانے کا انتظام کیا جاتا ہے۔ بیجز دکھاتے ہیں کہ کیمپین ریویو ہو چکی ہے اور وفات کی ایمبیسی سے ویریفکیشن ہو چکی ہے۔ نیچے اُن کی کہانی، پارٹنر اور خاندان کی اپڈیٹس، اور سپورٹرز کے پیغامات ہیں۔"
+      }
     },
     {
       "id": "04-help",
       "kind": "screen",
       "title": "Help Now — supporting a family",
       "onscreen": "Click 'Help Now'. Choose €50, type a name and a message of condolence, submit. Stripe Checkout opens; card details are entered and paid.",
-      "lower_third": "Laal keeps 0% · Secure payment through Stripe",
-      "narration": "Helping takes under a minute. Choose an amount, add your name and a few words for the family, and pay securely through Stripe. There is no account to create. Cards, Apple Pay and local payment methods all work, and the money is held safely until the fundraiser is verified. Laal keeps nothing. The full contribution goes to the family.",
-      "min_seconds": 22
+      "lower_third": "Held until verified · Released only to the partner · Laal keeps 0%",
+      "narration": "Helping takes under a minute. Choose an amount, add your name and a few words for the family, and pay securely through Stripe. There is no account to create. The money does not go to anyone's pocket: it is held safely by Laal until the fundraiser is verified, then released to the partner organisation. Laal keeps nothing.",
+      "min_seconds": 22,
+      "ur": {
+        "lower_third": "ویریفائی ہونے تک محفوظ · صرف پارٹنر کو ریلیز · لال کچھ نہیں رکھتا",
+        "narration": "مدد کرنے میں ایک منٹ سے بھی کم لگتا ہے۔ رقم چنیں، اپنا نام اور خاندان کے لیے چند الفاظ لکھیں، اور اسٹرائپ کے ذریعے محفوظ طریقے سے ادائیگی کریں۔ کوئی اکاؤنٹ بنانے کی ضرورت نہیں۔ پیسے کسی کی جیب میں نہیں جاتے: وہ لال کے پاس محفوظ رہتے ہیں جب تک کیمپین ویریفائی نہ ہو جائے، اور پھر پارٹنر آرگنائزیشن کو ریلیز کیے جاتے ہیں۔ لال کا اپنا کوئی حصہ نہیں ہوتا۔"
+      }
     },
     {
       "id": "05-thankyou",
@@ -84,26 +108,38 @@
       "title": "Thank you",
       "onscreen": "Thank-you page with the confirmed amount and one-tap sharing to WhatsApp.",
       "lower_third": "Thank you for protecting someone precious",
-      "narration": "Every supporter gets a thank you and a receipt, and can share the fundraiser with one tap, so kindness spreads through the community.",
-      "min_seconds": 8
+      "narration": "Every supporter gets a thank you and a receipt, and can share the fundraiser with one tap, so the community can bring someone home together.",
+      "min_seconds": 8,
+      "ur": {
+        "lower_third": "کسی قیمتی کی حفاظت کرنے کا شکریہ",
+        "narration": "ہر سپورٹر کو شکریہ اور رسید ملتی ہے، اور وہ ایک ٹیپ سے کیمپین شیئر کر سکتے ہیں، تاکہ کمیونٹی مل کر کسی کو گھر واپس لا سکے۔"
+      }
     },
     {
       "id": "06-start",
       "kind": "screen",
       "title": "Starting a fundraiser",
       "onscreen": "Organizer signs in, opens 'Start a fundraiser', fills in the loved one's details, adds and frames a photo, sets the goal, chooses who receives the support, submits. Dashboard shows 'Pending review'.",
-      "lower_third": "Photo · Story · Goal · Who receives the support",
-      "narration": "Starting a fundraiser is just as simple. An organizer signs in and tells us about their loved one, in their own words. They add a photo and frame it, so the same face appears everywhere the fundraiser is shown. They set a goal, say where the person passed away and where they will be laid to rest, and choose who should receive the support: a verified partner such as a funeral home, or a family member. Nothing is public yet. It goes straight into review.",
-      "min_seconds": 28
+      "lower_third": "Photo · Story · Goal · Verified partner receives the funds",
+      "narration": "Starting a fundraiser is just as simple. An organizer signs in and tells us about their loved one, in their own words. They add a photo and frame it. They set a goal, say where the person passed away and where they will be laid to rest, and choose the verified partner organisation that will carry out the repatriation, so the funds go straight to the funeral home, never to a private account. Nothing is public yet. It goes straight into review.",
+      "min_seconds": 28,
+      "ur": {
+        "lower_third": "تصویر · کہانی · ہدف · ویریفائیڈ پارٹنر کو فنڈز",
+        "narration": "کیمپین شروع کرنا بھی اتنا ہی آسان ہے۔ آرگنائزر سائن اِن کرتے ہیں اور اپنے پیارے کے بارے میں اپنے الفاظ میں بتاتے ہیں۔ تصویر لگاتے ہیں اور اسے فریم کرتے ہیں۔ ہدف طے کرتے ہیں، بتاتے ہیں کہ وفات کہاں ہوئی اور تدفین کہاں ہوگی، اور وہ ویریفائیڈ پارٹنر آرگنائزیشن چنتے ہیں جو باڈی کو گھر لانے کا کام کرے گی، تاکہ پیسے سیدھے فیونرل ہوم کو جائیں، کبھی کسی پرائیویٹ اکاؤنٹ میں نہیں۔ ابھی کچھ بھی پبلک نہیں ہے۔ یہ سیدھا ریویو میں جاتا ہے۔"
+      }
     },
     {
       "id": "07-review",
       "kind": "screen",
       "title": "The review",
-      "onscreen": "Admin opens the review queue, opens the new fundraiser, approves the death and relationship verifications, then approves the fundraiser. It is now live.",
-      "lower_third": "Reviewed by people · Verified with partners · Funds released only after verification",
-      "narration": "Before anything goes live, the Laal team reviews it. The review queue shows every new fundraiser with its details and documents. The death is confirmed with an embassy or a partner, and the beneficiary is verified. Only then does the fundraiser go public, and only then can funds be released to the family.",
-      "min_seconds": 20
+      "onscreen": "Admin opens the review queue, opens the new fundraiser, sees the partner funeral home as beneficiary, marks the death verified, then approves the fundraiser. It is now live.",
+      "lower_third": "Reviewed by people · Verified partners only · Funds released after verification",
+      "narration": "Before anything goes live, the Laal team reviews it. The death is confirmed with an embassy or a partner, and the receiving organisation must already be onboarded and verified. Only then does the fundraiser go public. And only after verification are funds released, directly to the partner that brings the person home. No cash changes hands, so there is no room for leakage.",
+      "min_seconds": 20,
+      "ur": {
+        "lower_third": "لوگ ریویو کرتے ہیں · صرف ویریفائیڈ پارٹنرز · ویریفکیشن کے بعد فنڈز ریلیز",
+        "narration": "کوئی بھی چیز لائیو ہونے سے پہلے لال کی ٹیم اُس کا ریویو کرتی ہے۔ وفات کی تصدیق ایمبیسی یا پارٹنر سے کی جاتی ہے، اور رقم وصول کرنے والی آرگنائزیشن پہلے سے آن بورڈ اور ویریفائیڈ ہونی چاہیے۔ تب ہی کیمپین پبلک ہوتی ہے۔ اور ویریفکیشن کے بعد ہی فنڈز ریلیز ہوتے ہیں، سیدھے اُس پارٹنر کو جو اُنہیں گھر واپس لاتا ہے۔ کیش کسی کے ہاتھ میں نہیں جاتا، اس لیے پیسے ادھر اُدھر ہونے کی کوئی گنجائش نہیں۔"
+      }
     },
     {
       "id": "08-mobile",
@@ -111,8 +147,12 @@
       "title": "Mobile and Urdu",
       "onscreen": "Phone-framed views: the fundraiser list and Amir's page on a phone, then the language switch to Urdu.",
       "lower_third": "Mobile first · English and Urdu",
-      "narration": "Laal is mobile first and fully available in Urdu, so family and supporters back home can take part too.",
-      "min_seconds": 12
+      "narration": "Laal is mobile first and fully available in Urdu, so family back home can follow every step of the journey too.",
+      "min_seconds": 12,
+      "ur": {
+        "lower_third": "موبائل فرسٹ · اردو اور انگلش",
+        "narration": "لال موبائل فرسٹ ہے اور اردو اور انگلش دونوں میں دستیاب ہے، تاکہ گھر والے بھی ہر قدم پر ساتھ رہ سکیں۔"
+      }
     },
     {
       "id": "09-close",
@@ -121,10 +161,36 @@
       "card": {
         "eyebrow": "laal.app",
         "headline": "Everyone is someone's Laal.",
-        "sub": "Small kindness. Life-changing impact."
+        "sub": "Bringing loved ones home, with dignity."
       },
       "narration": "Laal. Everyone is someone's Laal.",
-      "min_seconds": 7
+      "min_seconds": 7,
+      "ur": {
+        "card": {
+          "eyebrow": "laal.app",
+          "headline": "ہر کوئی کسی کا لال ہے۔",
+          "sub": "پیاروں کو گھر واپس لانا، عزت کے ساتھ۔"
+        },
+        "narration": "لال۔ ہر کوئی کسی کا لال ہے۔"
+      }
     }
-  ]
+  ],
+  "voices": {
+    "en": {
+      "engine": "deepgram",
+      "name": "aura-2-helena-en",
+      "fallback": {
+        "engine": "macos-say",
+        "name": "Ava",
+        "rate": 172
+      }
+    },
+    "ur": {
+      "engine": "azure",
+      "name": "ur-PK-UzmaNeural",
+      "lang": "ur-PK",
+      "rate": "-3%",
+      "note": "Mixed-register Urdu: everyday English terms (campaign, review, verified, partner, release, support, account, funeral home) written in Urdu script, which this voice reads naturally. Flat delivery (no phrase-level prosody) — chosen by ear."
+    }
+  }
 }

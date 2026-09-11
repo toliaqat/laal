@@ -37,11 +37,34 @@ from playwright.sync_api import Locator, Page, sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
 STORY = json.loads((ROOT / "script" / "storyboard.json").read_text())
 BUILD = ROOT / "build"
-SCENES_DIR = BUILD / "scenes"
-FRAMES_DIR = BUILD / "frames"
 PORTRAITS = ROOT / "assets" / "portraits"
 
 BASE = os.environ.get("DEMO_BASE_URL", "http://localhost:3000").rstrip("/")
+
+# Language edition: `--lang ur` (or DEMO_LANG=ur). Drives the site locale, the
+# UI labels the scenes look for, the on-camera text, and the build folders
+# (build/scenes-ur, build/frames-ur, build/cards-ur).
+LANG = os.environ.get("DEMO_LANG", "en")
+if "--lang" in sys.argv:
+    LANG = sys.argv[sys.argv.index("--lang") + 1]
+MSG = json.loads((ROOT.parent / "packages" / "i18n" / "messages" / f"{LANG}.json").read_text())
+
+
+def msg(path: str) -> str:
+    """A UI string from the app's own message catalogue, e.g. msg('nav.start')."""
+    d = MSG
+    for k in path.split("."):
+        d = d[k]
+    return d
+
+
+def suffix(base: str) -> str:
+    return base if LANG == "en" else f"{base}-{LANG}"
+
+
+SCENES_DIR = BUILD / suffix("scenes")
+FRAMES_DIR = BUILD / suffix("frames")
+CARDS_DIR = BUILD / suffix("cards")
 PASSWORD = "LaalDemo2026"
 ADMIN = "organizer@laal.demo"      # Ayesha Rahman — reviews fundraisers
 ORGANIZER = "hamza@laal.demo"      # Hamza Hussain — starts one on camera
@@ -52,33 +75,79 @@ W, H, FPS = STORY["format"]["width"], STORY["format"]["height"], STORY["format"]
 ZOOM = 4 / 3
 JPEG_QUALITY = 95
 
-# The fundraiser the organizer creates on camera (scene 06) and approves (07).
-NEW_FUNDRAISER = {
-    "title": "Bring Ahmed home to Lahore",
-    "deceased": "Ahmed Raza",
-    "story": (
-        "Ahmed came to Lisbon in 2019 and worked in a bakery in Alfama, sending "
-        "most of what he earned to his parents and two younger sisters in Lahore. "
-        "He collapsed suddenly last week and did not recover.\n\n"
-        "His family's only wish is to bring him home, to be buried beside his "
-        "grandfather. This fundraiser covers the embassy paperwork, the funeral "
-        "home in Lisbon and the flight home."
-    ),
-    "photo": PORTRAITS / "raw" / "ahmed-raza.jpg",
-    "goal": "6000",
-    "country": "Portugal",
-    "city": "Lisbon",
-    "burial_city": "Lahore",
-    "org": "Servilusa Agências Funerárias",
+# The fundraiser the organizer creates on camera (scene 06) and approves (07),
+# and what the supporter types (scene 04) — per language edition.
+ON_CAMERA = {
+    "en": {
+        "fundraiser": {
+            "title": "Bring Ahmed home to Lahore",
+            "deceased": "Ahmed Raza",
+            "story": (
+                "Ahmed came to Lisbon in 2019 and worked in a bakery in Alfama, sending "
+                "most of what he earned to his parents and two younger sisters in Lahore. "
+                "He collapsed suddenly last week and did not recover.\n\n"
+                "His family's only wish is to bring him home, to be buried beside his "
+                "grandfather. This fundraiser covers the embassy paperwork, the funeral "
+                "home in Lisbon and the flight home, paid directly to Servilusa, the "
+                "verified partner handling the repatriation."
+            ),
+            "goal": "6000", "country": "Portugal", "city": "Lisbon", "burial_city": "Lahore",
+        },
+        "supporter": {
+            "name": "Sara Malik", "email": "sara@laal.demo",
+            "message": ("From our family to yours. May Amir reach home soon, and may his "
+                        "children always know how loved their father was."),
+        },
+        "amir_title": "Bringing Amir home",
+    },
+    "ur": {
+        "fundraiser": {
+            "title": "احمد کو لاہور واپس لانا",
+            "deceased": "احمد رضا",
+            "story": (
+                "احمد 2019 میں لزبن آئے اور الفاما کی ایک بیکری میں کام کرتے تھے۔ جو کماتے، اُس کا بڑا حصہ "
+                "لاہور میں اپنے والدین اور دو چھوٹی بہنوں کو بھیج دیتے۔ پچھلے ہفتے وہ اچانک گر پڑے اور جانبر نہ ہو سکے۔\n\n"
+                "خاندان کی ایک ہی خواہش ہے کہ اُنہیں گھر لا کر دادا کے پہلو میں دفن کیا جائے۔ یہ کیمپین ایمبیسی کے کاغذات، "
+                "لزبن کے فیونرل ہوم اور گھر تک کی فلائٹ کا خرچ پورا کرتی ہے، جو سیدھا Servilusa کو ادا ہوتا ہے، "
+                "جو ویریفائیڈ پارٹنر ہے اور واپسی کا انتظام کر رہا ہے۔"
+            ),
+            "goal": "6000", "country": "پرتگال", "city": "لزبن", "burial_city": "لاہور",
+        },
+        "supporter": {
+            "name": "سارہ ملک", "email": "sara@laal.demo",
+            "message": "ہمارے خاندان کی طرف سے آپ کے خاندان کے لیے۔ دعا ہے امیر جلد گھر پہنچے، اور اُس کے بچے ہمیشہ جانیں کہ اُن کے والد سے کتنی محبت کی جاتی تھی۔",
+        },
+        "amir_title": "امیر کو گھر واپس لانا",
+    },
 }
+NEW_FUNDRAISER = dict(ON_CAMERA[LANG]["fundraiser"], photo=PORTRAITS / "raw" / "ahmed-raza.jpg", org="Servilusa Agências Funerárias")
+SUPPORTER = ON_CAMERA[LANG]["supporter"]
+AMIR_TITLE = ON_CAMERA[LANG]["amir_title"]
 
-SUPPORTER = {
-    "name": "Sara Malik",
-    "email": "sara@laal.demo",
-    "message": (
-        "From our family to yours. May Amir reach home soon, and may his "
-        "children always know how loved their father was."
-    ),
+# UI labels the scenes look for, from the app's own catalogue (so the Urdu
+# edition finds Urdu buttons). `supportReaches` carries a <name/> placeholder;
+# only the text before it is matched.
+L = {
+    "nav_fundraisers": msg("nav.fundraisers"),
+    "nav_start": msg("nav.start"),
+    "sign_in": msg("auth.login.submit"),
+    "closest": msg("campaigns.list.sortClosestToGoal"),
+    "reviewed": msg("campaigns.detail.trust.reviewed"),
+    "need_verified": msg("campaigns.detail.trust.needVerified"),
+    "reaches": re.split(r"<", msg("campaigns.detail.supportReaches"))[0].strip(),
+    "story": msg("campaigns.detail.storyHeading"),
+    "updates": msg("campaigns.detail.updatesHeading"),
+    "supporters": msg("campaigns.detail.wordsOfSupport"),
+    "help_now": msg("campaigns.detail.helpNow"),
+    "donate_heading": msg("campaigns.donate.heading"),
+    "donate_submit": msg("campaigns.donate.submit"),
+    "choose_photo": msg("start.cover.choose"),
+    # The start form no longer offers an individual beneficiary (organisations
+    # only, since the repatriation-first change), so this label is optional.
+    "org_option": (MSG.get("start", {}).get("beneficiary", {}).get("organizationOption")),
+    "submit_review": msg("start.form.submit"),
+    "pending": msg("dashboard.status.pending_review"),
+    "other_lang": "English" if LANG == "ur" else "اردو",
 }
 
 # --------------------------------------------------------------------------
@@ -409,7 +478,7 @@ class Actor:
         """Type credentials on the login form that is currently on screen."""
         self.type(self.page.locator("#email"), email, cps=26)
         self.type(self.page.locator("#password"), PASSWORD, cps=30)
-        self.click(self.page.locator("form").get_by_role("button", name=re.compile("sign in", re.I)))
+        self.click(self.page.locator("form").get_by_role("button", name=re.compile(re.escape(L["sign_in"]), re.I)))
 
 
 # --------------------------------------------------------------------------
@@ -432,7 +501,7 @@ PRETTY_URL_JS = r"""
 (() => {
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const nodes = []; while (w.nextNode()) nodes.push(w.currentNode);
-  for (const n of nodes) if (n.nodeValue.includes('localhost:3000')) n.nodeValue = n.nodeValue.replace(/https?:\/\/localhost:3000/g, 'https://laal.app');
+  for (const n of nodes) if (/localhost:\d+/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace(/https?:\/\/localhost:\d+/g, 'https://laal.app');
 })();
 """
 
@@ -455,7 +524,7 @@ SMOOTH_SCROLL_JS = """([y, ms]) => new Promise(res => {
 
 
 def unit_home(a: Actor, page: Page):
-    a.goto("/en")
+    a.goto(f"/{LANG}")
     a.rec.scene("01-home")
     a.move_to(W * 0.62, H * 0.55, 0.01)
     a.hold(2.6)
@@ -471,11 +540,11 @@ def unit_home(a: Actor, page: Page):
 
 
 def unit_browse(a: Actor, page: Page):
-    a.goto("/en")
+    a.goto(f"/{LANG}")
     a.rec.scene("02-browse")
     a.move_to(W * 0.5, H * 0.5, 0.01)
     a.hold(0.6)
-    a.click(nav_link(page, "Fundraisers"), dur=0.8)
+    a.click(nav_link(page, L["nav_fundraisers"]), dur=0.8)
     a.wait_url("**/campaigns")
     a.hold(1.2)
     a.beat("grid")
@@ -484,56 +553,56 @@ def unit_browse(a: Actor, page: Page):
     a.hold(0.5)
     a.hover(cards.nth(2), dur=0.7, dy=-0.15)
     a.hold(0.5)
-    a.click(page.get_by_role("link", name="Closest to goal"), dur=0.7)
+    a.click(page.get_by_role("link", name=L["closest"]), dur=0.7)
     a.hold(1.2)
     a.beat("open")
-    a.click(card_link(page, "Bringing Amir home"), dur=0.8, dy=-0.1)
+    a.click(card_link(page, AMIR_TITLE), dur=0.8, dy=-0.1)
     a.wait_url("**/demo-bringing-amir-home")
     a.hold(1.0)
 
 
 def unit_fundraiser(a: Actor, page: Page):
-    a.goto("/en/campaigns/demo-bringing-amir-home")
+    a.goto(f"/{LANG}/campaigns/demo-bringing-amir-home")
     a.rec.scene("03-fundraiser")
     a.move_to(W * 0.72, H * 0.62, 0.01)
     a.hold(2.2)
     a.beat("badges")
-    a.hover(page.get_by_text("Need verified").first, dur=0.8)
-    a.hold(0.8)
-    a.hover(page.get_by_text("Family verified").first, dur=0.5)
-    a.hold(0.8)
-    a.hover(page.get_by_text("Your support reaches").first, dur=0.7, dx=0.1)
-    a.hold(1.4)
+    a.hover(page.get_by_text(L["reviewed"]).first, dur=0.8)
+    a.hold(0.7)
+    a.hover(page.get_by_text(L["need_verified"]).first, dur=0.5)
+    a.hold(0.7)
+    a.hover(page.get_by_text(L["reaches"]).first, dur=0.7, dx=0.15)
+    a.hold(2.2)
     a.beat("story")
-    a.scroll_into_view(page.get_by_role("heading", name="Their story"), offset=120, dur=1.4)
+    a.scroll_into_view(page.get_by_role("heading", name=L["story"]), offset=120, dur=1.4)
     a.hold(2.8)
     a.beat("updates")
-    a.scroll_into_view(page.get_by_role("heading", name=re.compile("Updates from the family")), offset=120, dur=1.4)
+    a.scroll_into_view(page.get_by_role("heading", name=re.compile(re.escape(L["updates"]))), offset=120, dur=1.4)
     a.hold(2.6)
     a.beat("supporters")
-    a.scroll_into_view(page.get_by_role("heading", name=re.compile("Words of support")), offset=120, dur=1.4)
+    a.scroll_into_view(page.get_by_role("heading", name=re.compile(re.escape(L["supporters"]))), offset=120, dur=1.4)
     a.hold(3.0)
 
 
 def unit_help(a: Actor, page: Page):
-    a.goto("/en/campaigns/demo-bringing-amir-home")
+    a.goto(f"/{LANG}/campaigns/demo-bringing-amir-home")
     a.rec.scene("04-help")
     a.move_to(W * 0.7, H * 0.7, 0.01)
     a.hold(0.7)
     a.beat("help-now")
-    a.hover(page.get_by_role("link", name="Help Now").first, dur=0.8)
+    a.hover(page.get_by_role("link", name=L["help_now"]).first, dur=0.8)
     a.hold(0.3)
-    a.scroll_into_view(page.get_by_role("heading", name="Stand with this family"), offset=90, dur=1.3)
+    a.scroll_into_view(page.get_by_role("heading", name=L["donate_heading"]), offset=90, dur=1.3)
     a.hold(0.5)
     a.beat("amount")
-    a.click(page.get_by_role("button", name="€50"), dur=0.7)
+    a.click(page.get_by_role("button", name=re.compile(r"50")), dur=0.7)
     a.hold(0.5)
     a.type(page.locator("input[name=donorName]"), SUPPORTER["name"], cps=26)
     a.type(page.locator("input[name=donorEmail]"), SUPPORTER["email"], cps=30)
     a.beat("message")
     a.type(page.locator("textarea[name=message]"), SUPPORTER["message"], cps=44)
     a.hold(0.5)
-    submit = page.get_by_role("button", name=re.compile(r"^Help Now"))
+    submit = page.get_by_role("button", name=re.compile("^" + re.escape(L["donate_submit"])))
     a.scroll_into_view(submit, offset=H / ZOOM * 0.55, dur=0.9)
     a.beat("pay")
     a.click(submit, dur=0.7)
@@ -577,7 +646,7 @@ def unit_help(a: Actor, page: Page):
     a.move_to(W * 0.62, H * 0.62, 0.01)
     a.hold(2.4)
     a.beat("share")
-    wa = page.get_by_role("link", name=re.compile("WhatsApp")).first
+    wa = page.get_by_role("link", name=re.compile("WhatsApp|واٹس")).first
     if wa.count():
         a.hover(wa, dur=0.9)
     a.hold(1.2)
@@ -587,13 +656,13 @@ def unit_help(a: Actor, page: Page):
 
 def unit_start(a: Actor, page: Page):
     # Re-seed so the fundraiser created on camera never exists twice.
-    subprocess.run([str(ROOT / "seed" / "seed.sh")], check=True, stdout=subprocess.DEVNULL)
-    a.goto("/en")
+    subprocess.run([str(ROOT / "seed" / "seed.sh"), LANG], check=True, stdout=subprocess.DEVNULL)
+    a.goto(f"/{LANG}")
     a.rec.scene("06-start")
     a.move_to(W * 0.5, H * 0.5, 0.01)
     a.hold(0.6)
     a.beat("sign-in")
-    a.click(nav_link(page, "Start a fundraiser"), dur=0.8)
+    a.click(nav_link(page, L["nav_start"]), dur=0.8)
     a.wait_url("**/login**")
     a.hold(0.5)
     a.sign_in(ORGANIZER)
@@ -612,7 +681,7 @@ def unit_start(a: Actor, page: Page):
     a.type_long(page.locator("textarea[name=story]"), n["story"], lead=52, cps=30)
     a.hold(0.3)
     a.beat("photo")
-    choose = page.get_by_role("button", name=re.compile("Choose", re.I)).first
+    choose = page.get_by_role("button", name=re.compile(re.escape(L["choose_photo"]))).first
     a.scroll_into_view(choose, offset=H / ZOOM * 0.55, dur=1.1)
     a.hover(choose, dur=0.7)
     a.hold(0.3)
@@ -647,32 +716,32 @@ def unit_start(a: Actor, page: Page):
     a.beat("beneficiary")
     org = page.locator("select[name=organization_id]")
     a.scroll_into_view(org, offset=260, dur=1.0)
-    radio = page.locator("input[name=beneficiary_kind][value=organization]")
-    if radio.count() and not radio.is_checked():
-        a.click(page.get_by_text("A verified partner organisation"), dur=0.6)
+    radio = page.locator("input[type=radio][name=beneficiary_kind][value=organization]")
+    if L["org_option"] and radio.count() and not radio.is_checked():
+        a.click(page.get_by_text(L["org_option"]), dur=0.6)
     a.hover(org, dur=0.5)
     org.select_option(label=n["org"])
     a.hold(0.6)
     a.beat("submit")
-    submit = page.get_by_role("button", name=re.compile("Submit for review"))
+    submit = page.get_by_role("button", name=re.compile(re.escape(L["submit_review"])))
     a.scroll_into_view(submit, offset=H / ZOOM * 0.6, dur=0.9)
     a.click(submit, dur=0.7)
     a.hold(1.0)                      # "Creating your fundraiser…"
     a.cut_from()                     # photo re-encode + upload
     a.wait_url(re.compile(r"/dashboard"), timeout=90)
-    page.wait_for_selector("text=Pending review", timeout=30000)
+    page.get_by_text(L["pending"]).first.wait_for(timeout=30000)
     a.hold(0.3)
     page.evaluate("window.scrollTo(0, 0)")   # the redirect can land mid-page
     a.cut_to()
     a.move_to(W * 0.5, H * 0.5, 0.01)
     a.hold(0.8)
     a.beat("dashboard")
-    a.hover(page.get_by_text("Pending review").first, dur=0.9)
+    a.hover(page.get_by_text(L["pending"]).first, dur=0.9)
     a.hold(2.6)
 
 
 def unit_review(a: Actor, page: Page):
-    a.goto("/en/login")
+    a.goto(f"/{LANG}/login")
     a.rec.scene("07-review")
     a.move_to(W * 0.5, H * 0.5, 0.01)
     a.hold(0.4)
@@ -680,7 +749,7 @@ def unit_review(a: Actor, page: Page):
     a.hold(0.6)
     a.cut_from()                     # skip the organizer dashboard on the way to admin
     a.wait_url(re.compile(r"/dashboard"))
-    a.goto("/en/admin/campaigns")
+    a.goto(f"/{LANG}/admin/campaigns")
     a.cut_to()
     a.move_to(W * 0.55, H * 0.5, 0.01)
     a.hold(1.4)
@@ -713,7 +782,7 @@ def unit_review(a: Actor, page: Page):
     a.cut_to()
     a.hold(1.6)
     a.beat("live")
-    a.goto("/en/campaigns")
+    a.goto(f"/{LANG}/campaigns")
     a.hover(card_link(page, NEW_FUNDRAISER["title"]), dur=1.0, dy=-0.15)
     a.hold(2.2)
 
@@ -721,7 +790,7 @@ def unit_review(a: Actor, page: Page):
 def unit_mobile(a: Actor, page: Page):
     """Two phone-framed views of the mobile web app, driven from a stage page."""
     stage = (ROOT / "pipeline" / "stage.html").resolve().as_uri()
-    page.goto(f"{stage}?base={BASE}")
+    page.goto(f"{stage}?base={BASE}&lang={LANG}")
     page.wait_for_timeout(2500)
     for f in page.frames[1:]:
         try:
@@ -748,7 +817,7 @@ def unit_mobile(a: Actor, page: Page):
         if menu.count():
             menu.evaluate(TAP_JS)
             a.hold(0.8)
-        link = detail.get_by_role("link", name=re.compile("اردو")).first
+        link = detail.get_by_role("link", name=re.compile(L["other_lang"])).first
         if link.count():
             try:
                 link.evaluate(TAP_JS)
@@ -756,7 +825,7 @@ def unit_mobile(a: Actor, page: Page):
             except Exception:
                 pass
         if not switched:
-            detail.evaluate("location.pathname = location.pathname.replace('/en/', '/ur/')")
+            detail.evaluate("([a, b]) => { location.pathname = location.pathname.replace('/' + a + '/', '/' + b + '/') }", [LANG, "en" if LANG == "ur" else "ur"])
         try:
             detail.wait_for_load_state("networkidle", timeout=15000)
         except Exception:
@@ -764,27 +833,44 @@ def unit_mobile(a: Actor, page: Page):
     a.hold(3.4)
 
 
+def scene_text(sc: dict, key: str):
+    """A storyboard field for the current language ('en' is the top level)."""
+    if LANG == "en":
+        return sc.get(key)
+    return sc.get(LANG, {}).get(key, sc.get(key))
+
+
 def unit_cards(a: Actor, page: Page):
     """Animated title cards (00-open, 09-close) rendered from cards.html, plus
     the transparent lower-third PNGs the assembler overlays on screen scenes."""
     cards = (ROOT / "pipeline" / "cards.html").resolve().as_uri()
-    out = BUILD / "cards"
+    out = CARDS_DIR
     out.mkdir(parents=True, exist_ok=True)
     for sc in STORY["scenes"]:
-        if sc.get("lower_third"):
-            page.goto(f"{cards}?lower={sc['lower_third']}")
+        lt = scene_text(sc, "lower_third")
+        if lt:
+            page.goto(f"{cards}?lang={LANG}&lower={lt}")
+            page.evaluate("document.fonts ? document.fonts.ready : 0")
             page.wait_for_timeout(600)
             page.screenshot(path=str(out / f"lt-{sc['id']}.png"), omit_background=True)
             log(f"  ✓ lower third {sc['id']}")
     for sc in STORY["scenes"]:
         if sc["kind"] != "card":
             continue
-        c = sc["card"]
+        c = scene_text(sc, "card")
         q = f"eyebrow={c['eyebrow']}&headline={c['headline']}&sub={c['sub']}"
-        page.goto(f"{cards}?card=1&{q}")
-        page.wait_for_timeout(300)
-        a.rec.scene(sc["id"])
-        page.evaluate("window.__play && window.__play()")
+        page.goto(f"{cards}?card=1&lang={LANG}&{q}")
+        page.evaluate("document.fonts ? document.fonts.ready : 0")
+        page.wait_for_timeout(400)
+        if sc is STORY["scenes"][0]:
+            # The opening card must be complete on frame one (it becomes the
+            # share thumbnail), so let its entrance play before recording.
+            page.evaluate("window.__play && window.__play()")
+            page.wait_for_timeout(2600)
+            a.rec.scene(sc["id"])
+        else:
+            a.rec.scene(sc["id"])
+            page.evaluate("window.__play && window.__play()")
         a.hold(sc.get("min_seconds", 6))
         a.cut_from()    # drop the blank frames while the next card loads
 
@@ -813,7 +899,7 @@ def run_unit(pw, name: str):
                               locale="en-US", timezone_id="Europe/Lisbon")
     # The site defaults to Urdu for locale-less redirects (e.g. after sign-in);
     # an English visitor who used the language switcher carries this cookie.
-    ctx.add_cookies([{"name": "NEXT_LOCALE", "value": "en", "url": BASE}])
+    ctx.add_cookies([{"name": "NEXT_LOCALE", "value": LANG, "url": BASE}])
     if name not in NO_ZOOM:
         ctx.add_init_script(OVERLAY_JS)
     else:
@@ -831,8 +917,8 @@ def run_unit(pw, name: str):
         log(f"  (page errors seen: {len(errors)}) " + errors[0][:160])
 
 
-WARM_PATHS = ["/en", "/en/campaigns", "/en/campaigns/demo-bringing-amir-home", "/en/login",
-              "/en/start", "/en/dashboard", "/en/admin/campaigns"]
+WARM_PATHS = [f"/{LANG}", f"/{LANG}/campaigns", f"/{LANG}/campaigns/demo-bringing-amir-home", f"/{LANG}/login",
+              f"/{LANG}/start", f"/{LANG}/dashboard", f"/{LANG}/admin/campaigns"]
 
 
 def warm(pw):
@@ -848,6 +934,9 @@ def warm(pw):
 
 
 def main(argv):
+    if "--lang" in argv:
+        i = argv.index("--lang")
+        argv = argv[:i] + argv[i + 2:]
     names = argv or list(UNITS)
     unknown = [n for n in names if n not in UNITS]
     if unknown:
