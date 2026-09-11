@@ -16,6 +16,7 @@ import {
 import { canReleaseFunds } from '@laal/types';
 import type { VerificationStatus } from '@laal/types';
 import { Card, Badge, formatMoney, statusTone } from '@/components/ui';
+import { MemorialPhoto } from '@/components/memorial-photo';
 import type { ReactNode } from 'react';
 
 export default async function AdminCampaignDetailPage({
@@ -150,18 +151,14 @@ export default async function AdminCampaignDetailPage({
       )}
 
       {campaign.cover_image_url && (
-        <Section title="Cover photo">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={campaign.cover_image_url}
-            alt={`Cover photo for ${campaign.deceased_name}`}
-            style={{
-              maxWidth: '100%',
-              maxHeight: 320,
-              objectFit: 'cover',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--line)',
-            }}
+        <Section title="Photo">
+          {/* The same passport-style portrait every other surface shows, so
+              the reviewer sees exactly what supporters will see. */}
+          <MemorialPhoto
+            name={campaign.deceased_name}
+            photoUrl={campaign.cover_image_url}
+            alt={`Photo of ${campaign.deceased_name}`}
+            size="lg"
           />
         </Section>
       )}
