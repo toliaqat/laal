@@ -33,3 +33,7 @@ ios/Pods/
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# demo video renders (regenerable, large)
+demo-video/build/
+demo-video/.env.demo

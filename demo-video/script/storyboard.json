@@ -1,0 +1,130 @@
+{
+  "title": "Laal — product demo",
+  "version": "1.0",
+  "format": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30
+  },
+  "voice": {
+    "engine": "deepgram",
+    "name": "aura-2-helena-en",
+    "fallback": {
+      "engine": "macos-say",
+      "name": "Ava",
+      "rate": 172
+    }
+  },
+  "music": {
+    "file": "assets/music/score.wav",
+    "gain_db": -23,
+    "duck_db": -10
+  },
+  "brand": {
+    "bg": "#f3eee4",
+    "surface": "#fbf8f2",
+    "ink": "#2a2620",
+    "muted": "#6b6255",
+    "accent": "#8a5a3c",
+    "accent_soft": "#efe1d3",
+    "line": "#e6ddcd"
+  },
+  "scenes": [
+    {
+      "id": "00-open",
+      "kind": "card",
+      "title": "Cold open",
+      "card": {
+        "eyebrow": "Every life is precious",
+        "headline": "Everyone is someone's Laal.",
+        "sub": "A short walkthrough of how Laal works"
+      },
+      "narration": "When someone dies far from home, their family faces an impossible bill in the hardest week of their lives. Laal is how a community carries it together.",
+      "min_seconds": 8
+    },
+    {
+      "id": "01-home",
+      "kind": "screen",
+      "title": "Home — the promise",
+      "onscreen": "Landing page. Hero settles, then a slow scroll through the three values and 'how it works'.",
+      "lower_third": "Reviewed. Reaches the family. Secure.",
+      "narration": "This is Laal. Every fundraiser is reviewed before it goes live. The money reaches a confirmed family member or a trusted partner. And giving takes seconds, with no account needed.",
+      "min_seconds": 12
+    },
+    {
+      "id": "02-browse",
+      "kind": "screen",
+      "title": "Browse fundraisers",
+      "onscreen": "Click 'Fundraisers' in the nav. Grid of reviewed fundraisers with portraits. Hover a card, switch to 'Closest to goal', open Amir's fundraiser.",
+      "lower_third": "Every fundraiser is reviewed before it is listed",
+      "narration": "Supporters browse reviewed fundraisers. Each card shows the person, where they passed away, and how close the family is to their goal. Sort by newest, or by who is closest to their goal, and open a fundraiser to read their story.",
+      "min_seconds": 11
+    },
+    {
+      "id": "03-fundraiser",
+      "kind": "screen",
+      "title": "A fundraiser page",
+      "onscreen": "Amir's page. Hold on the portrait and the three trust badges, highlight 'Your support reaches…', scroll through the story, the family's updates and the supporter wall.",
+      "lower_third": "Need verified with an embassy · Family verified · You see who receives the money",
+      "narration": "A fundraiser page puts the person first. Trust badges show that the need was confirmed with an embassy and that the family relationship was verified. It says exactly who receives the money. Below are their story, updates from the family, and words from supporters.",
+      "min_seconds": 18
+    },
+    {
+      "id": "04-help",
+      "kind": "screen",
+      "title": "Help Now — supporting a family",
+      "onscreen": "Click 'Help Now'. Choose €50, type a name and a message of condolence, submit. Stripe Checkout opens; card details are entered and paid.",
+      "lower_third": "Laal keeps 0% · Secure payment through Stripe",
+      "narration": "Helping takes under a minute. Choose an amount, add your name and a few words for the family, and pay securely through Stripe. There is no account to create. Cards, Apple Pay and local payment methods all work, and the money is held safely until the fundraiser is verified. Laal keeps nothing. The full contribution goes to the family.",
+      "min_seconds": 22
+    },
+    {
+      "id": "05-thankyou",
+      "kind": "screen",
+      "title": "Thank you",
+      "onscreen": "Thank-you page with the confirmed amount and one-tap sharing to WhatsApp.",
+      "lower_third": "Thank you for protecting someone precious",
+      "narration": "Every supporter gets a thank you and a receipt, and can share the fundraiser with one tap, so kindness spreads through the community.",
+      "min_seconds": 8
+    },
+    {
+      "id": "06-start",
+      "kind": "screen",
+      "title": "Starting a fundraiser",
+      "onscreen": "Organizer signs in, opens 'Start a fundraiser', fills in the loved one's details, adds and frames a photo, sets the goal, chooses who receives the support, submits. Dashboard shows 'Pending review'.",
+      "lower_third": "Photo · Story · Goal · Who receives the support",
+      "narration": "Starting a fundraiser is just as simple. An organizer signs in and tells us about their loved one, in their own words. They add a photo and frame it, so the same face appears everywhere the fundraiser is shown. They set a goal, say where the person passed away and where they will be laid to rest, and choose who should receive the support: a verified partner such as a funeral home, or a family member. Nothing is public yet. It goes straight into review.",
+      "min_seconds": 28
+    },
+    {
+      "id": "07-review",
+      "kind": "screen",
+      "title": "The review",
+      "onscreen": "Admin opens the review queue, opens the new fundraiser, approves the death and relationship verifications, then approves the fundraiser. It is now live.",
+      "lower_third": "Reviewed by people · Verified with partners · Funds released only after verification",
+      "narration": "Before anything goes live, the Laal team reviews it. The review queue shows every new fundraiser with its details and documents. The death is confirmed with an embassy or a partner, and the beneficiary is verified. Only then does the fundraiser go public, and only then can funds be released to the family.",
+      "min_seconds": 20
+    },
+    {
+      "id": "08-mobile",
+      "kind": "screen",
+      "title": "Mobile and Urdu",
+      "onscreen": "Phone-framed views: the fundraiser list and Amir's page on a phone, then the language switch to Urdu.",
+      "lower_third": "Mobile first · English and Urdu",
+      "narration": "Laal is mobile first and fully available in Urdu, so family and supporters back home can take part too.",
+      "min_seconds": 12
+    },
+    {
+      "id": "09-close",
+      "kind": "card",
+      "title": "Close",
+      "card": {
+        "eyebrow": "laal.app",
+        "headline": "Everyone is someone's Laal.",
+        "sub": "Small kindness. Life-changing impact."
+      },
+      "narration": "Laal. Everyone is someone's Laal.",
+      "min_seconds": 7
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Laal demo — phone stage</title>
+<style>
+  :root { --bg: #f3eee4; --ink: #2a2620; --muted: #6b6255; --accent: #8a5a3c; --line: #e6ddcd;
+    --serif: ui-serif, Georgia, serif; --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; font-family: var(--sans); color: var(--ink);
+    background: radial-gradient(1100px 700px at 50% 30%, #fbf8f2 0%, var(--bg) 55%, #ece5d6 100%); }
+  .stage { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; gap: 170px; }
+  .phone { position: relative; zoom: 1.14; width: 402px; height: 866px; border-radius: 54px; background: #1f1c18;
+    box-shadow: 0 30px 80px rgba(42,38,32,.28), inset 0 0 0 2px #3a352e; padding: 12px; box-sizing: border-box; }
+  .phone::before { content: ""; position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 118px; height: 30px;
+    background: #1f1c18; border-radius: 0 0 20px 20px; z-index: 3; }
+  .screen { width: 378px; height: 842px; border-radius: 44px; overflow: hidden; background: #fff; position: relative; }
+  .screen iframe { border: 0; width: 378px; height: 842px; display: block; }
+  .label { position: absolute; left: 0; right: 0; bottom: -58px; text-align: center; font-size: 22px; color: var(--muted); letter-spacing: .02em; }
+  .mark { position: absolute; left: 96px; top: 64px; display: flex; align-items: center; gap: 14px; font-family: var(--serif); font-size: 34px; font-weight: 700; }
+  .mark i { width: 40px; height: 40px; border-radius: 10px; background: var(--accent); color: #fffdf8; display: grid; place-items: center; font-style: normal; font-size: 22px; }
+</style>
+</head>
+<body>
+<div class="mark"><i>L</i>Laal</div>
+<div class="stage">
+  <div class="phone"><div class="screen"><iframe name="phone-list" id="phone-list"></iframe></div><div class="label">Browse fundraisers</div></div>
+  <div class="phone"><div class="screen"><iframe name="phone-detail" id="phone-detail"></iframe></div><div class="label">A fundraiser · English → اردو</div></div>
+</div>
+<script>
+  const base = new URLSearchParams(location.search).get('base') || 'http://localhost:3000';
+  document.getElementById('phone-list').src = base + '/en/campaigns';
+  document.getElementById('phone-detail').src = base + '/en/campaigns/demo-bringing-amir-home';
+</script>
+</body>
+</html>
