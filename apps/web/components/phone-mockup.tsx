@@ -12,11 +12,22 @@ import type { ReactNode } from 'react';
  * mockup stays a dumb presentational component.
  */
 
+/**
+ * Which illustrated portrait a mockup card shows. These are drawings, never
+ * photos: a stock photo of a real, identifiable person on a card captioned
+ * "In memory of …" would present a living stranger as someone who has died.
+ * If you have photos you are cleared to use that way, pass `photoUrl` instead.
+ */
+export type PortraitVariant = 'short-hair' | 'beard' | 'headscarf';
+
 /** One fundraiser row on the list screen. */
 export type MockupCard = {
   title: string;
   /** Person remembered — user-generated in the real app, so it carries `.ugc`. */
   name: string;
+  portrait: PortraitVariant;
+  /** Optional real photo; only use one you have explicit permission to show this way. */
+  photoUrl?: string;
   pct: number;
   /** Pre-formatted money strings (the caller owns currency + locale). */
   raised: string;
@@ -37,6 +48,8 @@ export type MockupCopy = {
   /** Detail screen. */
   detailTitle: string;
   detailName: string;
+  detailPortrait: PortraitVariant;
+  detailPhotoUrl?: string;
   detailRaised: string;
   detailGoal: string;
   detailPct: number;
@@ -66,6 +79,8 @@ function StatusBar() {
 function MiniCard({
   title,
   name,
+  portrait,
+  photoUrl,
   pct,
   raised,
   goal,
@@ -74,9 +89,16 @@ function MiniCard({
 }: MockupCard & { inMemoryOf: string; ofGoal: (goal: string) => ReactNode }) {
   return (
     <div className="app-card">
-      <div className="app-card-title ugc">{title}</div>
-      <div className="app-card-mem">
-        {inMemoryOf} <span className="ugc">{name}</span>
+      {/* Flex rows follow the document direction, so the portrait sits at the
+          inline start: left in English, right in Urdu. */}
+      <div style={portraitRow}>
+        <Portrait variant={portrait} photoUrl={photoUrl} width={34} />
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div className="app-card-title ugc">{title}</div>
+          <div className="app-card-mem">
+            {inMemoryOf} <span className="ugc">{name}</span>
+          </div>
+        </div>
       </div>
       <div className="app-bar">
         <span style={{ width: `${pct}%` }} />
@@ -122,14 +144,23 @@ export function PhoneDetailScreen({ copy }: { copy: MockupCopy }) {
       <div className="phone-notch" aria-hidden />
       <StatusBar />
       <div className="app-body" style={{ paddingBottom: '5.5rem' }}>
-        <div className="app-h" style={{ marginBottom: '0.1rem' }}>
-          <span className="app-title ugc" style={{ fontSize: '1.15rem' }}>
-            {copy.detailTitle}
-          </span>
+        <div style={{ ...portraitRow, marginBottom: '0.7rem' }}>
+          <Portrait
+            variant={copy.detailPortrait}
+            photoUrl={copy.detailPhotoUrl}
+            width={46}
+          />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div className="app-h" style={{ marginBottom: '0.1rem' }}>
+              <span className="app-title ugc" style={{ fontSize: '1.15rem' }}>
+                {copy.detailTitle}
+              </span>
+            </div>
+            <p className="app-sub" style={{ margin: 0 }}>
+              {copy.inMemoryOf} <span className="ugc">{copy.detailName}</span>
+            </p>
+          </div>
         </div>
-        <p className="app-sub">
-          {copy.inMemoryOf} <span className="ugc">{copy.detailName}</span>
-        </p>
         <div className="app-bar">
           <span style={{ width: `${copy.detailPct}%` }} />
         </div>
@@ -183,6 +214,73 @@ export function PhoneHero({
     <div className="phone phone-floating" role="img" aria-label={copy.heroAlt}>
       {children ?? <PhoneListScreen copy={copy} />}
     </div>
+  );
+}
+
+const portraitRow = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  gap: '0.6rem',
+  marginBottom: '0.55rem',
+} as const;
+
+/**
+ * A passport-style 7:9 portrait for a mockup card — the same shape the real app
+ * uses for the person's photo — drawn as a soft head-and-shoulders figure in the
+ * brand's warm tones. Decorative (`aria-hidden`): each phone has an accessible name.
+ */
+function Portrait({
+  variant,
+  photoUrl,
+  width,
+}: {
+  variant: PortraitVariant;
+  photoUrl?: string;
+  /** Height follows from the 7:9 passport ratio. */
+  width: number;
+}) {
+  const height = Math.round((width * 9) / 7);
+  const frame = {
+    width,
+    height,
+    flex: 'none',
+    borderRadius: Math.round(width * 0.18),
+    overflow: 'hidden',
+    border: '1.5px solid var(--surface)',
+    boxShadow: '0 0 0 1px var(--line)',
+    background: 'var(--accent-soft)',
+  } as const;
+
+  if (photoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- decorative marketing art
+      <img src={photoUrl} alt="" aria-hidden width={width} height={height} style={{ ...frame, objectFit: 'cover' }} />
+    );
+  }
+
+  const skin = 'var(--accent)';
+  const cloth = 'var(--accent-2)';
+  return (
+    <svg viewBox="0 0 35 45" width={width} height={height} aria-hidden style={frame}>
+      <rect width="35" height="45" fill="var(--accent-soft)" />
+      {variant === 'headscarf' ? (
+        <>
+          {/* scarf drapes from the crown over the shoulders */}
+          <path d="M2 46c0-9 4.5-14.5 9.5-16.5-2-3.3-3.2-6.5-3.2-9.8a9.2 9.2 0 0118.4 0c0 3.3-1.2 6.5-3.2 9.8 5 2 9.5 7.5 9.5 16.5z" fill={cloth} opacity="0.9" />
+          <ellipse cx="17.5" cy="20.5" rx="5.9" ry="7" fill={skin} opacity="0.55" />
+        </>
+      ) : (
+        <>
+          <path d="M3 46c0-9 6-14 14.5-14S32 37 32 46z" fill={cloth} opacity="0.85" />
+          <circle cx="17.5" cy="19" r="7.5" fill={skin} opacity="0.55" />
+          {/* hair */}
+          <path d="M10 18c0-5.5 3.3-8.8 7.5-8.8s7.5 3.3 7.5 8.8c-1.5-2.6-4-3.9-7.5-3.9S11.5 15.4 10 18z" fill={cloth} opacity="0.95" />
+          {variant === 'beard' && (
+            <path d="M10.4 20.2c.3 5.6 3.2 8.9 7.1 8.9s6.8-3.3 7.1-8.9c-.9 2.6-2.4 4.3-4.1 4.9-.9-.5-1.9-.8-3-.8s-2.1.3-3 .8c-1.7-.6-3.2-2.3-4.1-4.9z" fill={cloth} opacity="0.95" />
+          )}
+        </>
+      )}
+    </svg>
   );
 }
 

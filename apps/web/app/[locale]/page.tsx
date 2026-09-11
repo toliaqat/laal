@@ -158,6 +158,7 @@ export default async function HomePage({
       {
         title: t('mockup.card1Title'),
         name: t('mockup.card1Name'),
+        portrait: 'short-hair',
         pct: 78,
         raised: money(3920),
         goal: money(5000),
@@ -165,6 +166,7 @@ export default async function HomePage({
       {
         title: t('mockup.card2Title'),
         name: t('mockup.card2Name'),
+        portrait: 'beard',
         pct: 54,
         raised: money(2700),
         goal: money(5000),
@@ -172,6 +174,7 @@ export default async function HomePage({
       {
         title: t('mockup.card3Title'),
         name: t('mockup.card3Name'),
+        portrait: 'headscarf',
         pct: 92,
         raised: money(4600),
         goal: money(5000),
@@ -179,6 +182,8 @@ export default async function HomePage({
     ],
     detailTitle: t('mockup.card1Title'),
     detailName: t('mockup.card1Name'),
+    // Same person as the first card, so the same portrait.
+    detailPortrait: 'short-hair',
     detailPct: 78,
     detailRaised: money(3920),
     detailGoal: money(5000),

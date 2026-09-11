@@ -42,6 +42,15 @@ here was found and deliberately left undone, or must happen at deploy time.
 
 ## Engineering
 
+- **Stored photos cannot be reframed, only replaced.** The upload crop step runs in the
+  browser, and drawing an already-stored photo into a canvas needs the image host to send
+  CORS headers. `img.laal.app` sends none, so the edit form asks organizers to choose the
+  photo again to change its framing. Adding a CORS rule for the web origin on the
+  `laal-public` bucket would allow reframing in place.
+- **Photos uploaded before the portrait change are centre-cropped to 7:9 on display.**
+  New uploads are framed by the organizer. Older landscape photos may clip a face that
+  sat off-centre; re-uploading fixes it.
+
 - **`formatMoney` lives in two places,** one per app. It wants to be a shared package
   consumed by both, along with the locale policy that pins Western digits for Urdu.
 - **Two share components exist** (`share-buttons.tsx` and `share-support.tsx`) because

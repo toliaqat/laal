@@ -13,6 +13,7 @@ import {
   formatMoney,
   statusTone,
 } from '@/components/ui';
+import { MemorialPhoto } from '@/components/memorial-photo';
 
 export async function generateMetadata({
   params,
@@ -37,6 +38,7 @@ export default async function DashboardPage({
   setRequestLocale(locale);
   const t = await getTranslations('dashboard');
   const tc = await getTranslations('common');
+  const ts = await getTranslations('start');
 
   const user = await getCurrentUser();
   if (!user) {
@@ -89,19 +91,41 @@ export default async function DashboardPage({
               return (
                 <Card key={c.id}>
                   <div className="stack">
-                    <div className="row-between wrap" style={{ gap: '0.75rem' }}>
-                      <h3 className="ugc" style={{ margin: 0 }}>
-                        {c.title}
-                      </h3>
-                      <Badge tone={statusTone(c.status)}>
-                        {t(`status.${c.status}`)}
-                      </Badge>
-                    </div>
+                    {/* Their loved one's photo (or initials) at the inline
+                        start — the same face supporters see on the browse card,
+                        so the organizer recognises what the public sees. */}
+                    <div
+                      className="row"
+                      style={{ alignItems: 'flex-start', gap: '1rem' }}
+                    >
+                      <MemorialPhoto
+                        size="sm"
+                        name={c.deceased_name}
+                        photoUrl={c.cover_image_url}
+                        alt={ts('cover.photoOfAlt', { name: c.deceased_name })}
+                      />
+                      <div
+                        className="stack"
+                        style={{ gap: '0.35rem', flex: 1, minWidth: 0 }}
+                      >
+                        <div
+                          className="row-between wrap"
+                          style={{ gap: '0.75rem' }}
+                        >
+                          <h3 className="ugc" style={{ margin: 0 }}>
+                            {c.title}
+                          </h3>
+                          <Badge tone={statusTone(c.status)}>
+                            {t(`status.${c.status}`)}
+                          </Badge>
+                        </div>
 
-                    {/* The remembered person's name is user-generated. */}
-                    <p className="muted small ugc" style={{ margin: 0 }}>
-                      {t('inMemoryOf', { name: c.deceased_name })}
-                    </p>
+                        {/* The remembered person's name is user-generated. */}
+                        <p className="muted small ugc" style={{ margin: 0 }}>
+                          {t('inMemoryOf', { name: c.deceased_name })}
+                        </p>
+                      </div>
+                    </div>
 
                     <Progress value={pct} label={tc('progressLabel')} />
                     <p className="small" style={{ margin: 0 }}>

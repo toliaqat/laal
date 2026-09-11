@@ -5,6 +5,7 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { APP_URL } from '@/lib/env';
 import { stripe, toMajorUnits } from '@/lib/stripe';
 import { ShareSupport } from '@/components/share-support';
+import { MemorialPhoto } from '@/components/memorial-photo';
 import { Container, Card, Button, formatMoney } from '@/components/ui';
 
 type Params = { slug: string; locale: string };
@@ -92,12 +93,13 @@ export default async function ThankYouPage({
   const { slug, locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('campaigns');
+  const ts = await getTranslations('start');
   const { session_id: sessionId, from } = await searchParams;
 
   const supabase = await createServerSupabase();
   const { data: campaign } = await supabase
     .from('campaigns')
-    .select('id, title, currency')
+    .select('id, title, currency, deceased_name, cover_image_url')
     .eq('slug', slug)
     .maybeSingle();
 
@@ -149,15 +151,39 @@ export default async function ThankYouPage({
 
             {outcome.kind === 'paid' ? (
               <>
-                <p
-                  className="muted"
-                  style={{ fontSize: '1.05rem', lineHeight: 1.7 }}
+                {/* The person they just helped, quietly beside the line that
+                    names their fundraiser. The row starts at the same inline
+                    edge as everything else, so the card keeps its one
+                    alignment, and mirrors under RTL. The bottom margin stands
+                    in for the paragraph's own, keeping the rhythm unchanged. */}
+                <div
+                  className="row"
+                  style={{ gap: '0.9rem', marginBlockEnd: '1rem' }}
                 >
-                  {t('thankYou.paidBody', {
-                    amount: outcome.amount,
-                    title: campaign.title,
-                  })}
-                </p>
+                  <MemorialPhoto
+                    size="sm"
+                    name={campaign.deceased_name}
+                    photoUrl={campaign.cover_image_url}
+                    alt={ts('cover.photoOfAlt', {
+                      name: campaign.deceased_name,
+                    })}
+                  />
+                  <p
+                    className="muted"
+                    style={{
+                      fontSize: '1.05rem',
+                      lineHeight: 1.7,
+                      margin: 0,
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    {t('thankYou.paidBody', {
+                      amount: outcome.amount,
+                      title: campaign.title,
+                    })}
+                  </p>
+                </div>
                 <p
                   className="muted"
                   style={{ fontSize: '1.05rem', lineHeight: 1.7 }}

@@ -18,18 +18,22 @@
   text-align: right;
 }
 
-/* Cap the cover: a portrait photo used to be rendered at full height and
-   pushed the progress card and CTA below the fold. A fixed ratio also gives
-   `object-fit: cover` something to crop against. */
-.cover {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  max-height: 420px;
-  object-fit: cover;
-  border-radius: var(--radius);
-  border: 1px solid var(--line);
-  margin: 1.5rem 0;
-  display: block;
+/* Header with the loved one's portrait (only rendered when there is a photo).
+   Phones: the portrait sits just above the eyebrow and title. From 640px it
+   moves beside them. Grid columns follow the writing direction, so under RTL
+   the portrait is on the right with no extra rule. The portrait's own size
+   lives in `.memorial-photo-lg` (globals.css). */
+.header {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (min-width: 640px) {
+  .header {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 1.75rem;
+  }
 }
 
 .storySection {

@@ -17,6 +17,7 @@ import { supabase, WEB_APP_URL } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { Avatar, formatMoney, PrimaryButton } from '@/components/ui';
 import { LanguageToggle } from '@/components/language-toggle';
+import { PersonAvatar } from '@/components/person-avatar';
 import { cardShadow, colors, radius, serif, spacing } from '@/lib/theme';
 
 const ROLE_KEY: Record<string, string> = {
@@ -26,7 +27,12 @@ const ROLE_KEY: Record<string, string> = {
   admin: 'mobile.account.roleTeam',
 };
 
-type CampaignRef = { slug: string; title: string; deceased_name: string } | null;
+type CampaignRef = {
+  slug: string;
+  title: string;
+  deceased_name: string;
+  cover_image_url: string | null;
+} | null;
 type FollowItem = { campaign_id: string; campaign: CampaignRef };
 type DonationItem = {
   id: string;
@@ -72,7 +78,7 @@ export default function AccountScreen() {
       supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle(),
       supabase
         .from('campaign_follows')
-        .select('campaign_id, campaign:campaigns(slug, title, deceased_name)')
+        .select('campaign_id, campaign:campaigns(slug, title, deceased_name, cover_image_url)')
         // Scope to the signed-in user explicitly: the RLS policy also allows
         // admins to read ALL follows, so without this an admin would see every
         // user's saved stories in their own list.
@@ -81,7 +87,7 @@ export default function AccountScreen() {
       supabase
         .from('donations')
         .select(
-          'id, amount, currency, status, created_at, campaign:campaigns(slug, title, deceased_name)',
+          'id, amount, currency, status, created_at, campaign:campaigns(slug, title, deceased_name, cover_image_url)',
         )
         .eq('donor_profile_id', session.user.id)
         .order('created_at', { ascending: false }),
@@ -195,9 +201,13 @@ export default function AccountScreen() {
                   style={[styles.listRow, cardShadow]}
                   onPress={() => router.push(`/campaigns/${f.campaign!.slug}`)}
                 >
-                  <View style={styles.listIcon}>
-                    <Text style={styles.listIconText}>♥</Text>
-                  </View>
+                  <PersonAvatar
+                    name={f.campaign!.deceased_name}
+                    photoUrl={f.campaign!.cover_image_url}
+                    size={LIST_AVATAR_SIZE}
+                    // The row's "In memory of {name}" line already names them.
+                    decorative
+                  />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.listTitle} numberOfLines={1}>
                       {f.campaign!.title}
@@ -227,9 +237,19 @@ export default function AccountScreen() {
             donations.map((d) => {
               const row = (
                 <>
-                  <View style={styles.listIcon}>
-                    <Text style={styles.listIconText}>✦</Text>
-                  </View>
+                  {d.campaign ? (
+                    <PersonAvatar
+                      name={d.campaign.deceased_name}
+                      photoUrl={d.campaign.cover_image_url}
+                      size={LIST_AVATAR_SIZE}
+                    />
+                  ) : (
+                    // The fundraiser is no longer readable (e.g. removed), so
+                    // there is no person to show — keep the neutral mark.
+                    <View style={styles.listIcon}>
+                      <Text style={styles.listIconText}>✦</Text>
+                    </View>
+                  )}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.listTitle} numberOfLines={1}>
                       {d.campaign?.title ?? t('mobile.account.donationFallbackTitle')}
@@ -332,6 +352,9 @@ function initialsOf(name: string, email: string): string {
   const src = name.trim() || email.trim() || '·';
   return src.slice(0, 2).toUpperCase();
 }
+
+/** Portrait size in the follows / support lists (the old icon was 34). */
+const LIST_AVATAR_SIZE = 40;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
@@ -447,9 +470,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   listIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: LIST_AVATAR_SIZE,
+    height: LIST_AVATAR_SIZE,
+    borderRadius: LIST_AVATAR_SIZE / 2,
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',

@@ -17,6 +17,7 @@ import {
 import { DonateForm } from '@/components/donate-form';
 import { SupporterWall } from '@/components/supporter-wall';
 import { CampaignUpdates } from '@/components/campaign-updates';
+import { MemorialPhoto } from '@/components/memorial-photo';
 import {
   countSupporterMessages,
   loadSupporterMessages,
@@ -149,6 +150,7 @@ export default async function CampaignPage({
   setRequestLocale(locale);
   const t = await getTranslations('campaigns');
   const tc = await getTranslations('common');
+  const ts = await getTranslations('start');
   const format = await getFormatter();
   const campaign = await getCampaign(slug);
 
@@ -215,100 +217,107 @@ export default async function CampaignPage({
   return (
     <main className="section">
       <Container narrow>
-        <div className="stack" style={{ gap: '0.4rem' }}>
-          <div className="row wrap">
-            <span className="eyebrow">{t('detail.eyebrow')}</span>
-            {campaign.status === 'completed' ? (
-              <Badge tone="success">{t('detail.goalReached')}</Badge>
-            ) : campaign.status === 'closed' ? (
-              // Neutral, not `danger`: a closed fundraiser is not a failure.
-              <Badge>{t('detail.closed')}</Badge>
-            ) : campaign.status === 'paused' ? (
-              <Badge tone="warning">{t('detail.paused')}</Badge>
-            ) : null}
+        {/* A 7:9 portrait of their loved one beside the title and memorial
+            line (above them on phones) — a person, not a hero banner. Only
+            when the family shared a photo: this page already names them
+            prominently, so there is no monogram stand-in here. Without a photo
+            the wrapper is a plain block and the header is exactly as before. */}
+        <div className={campaign.cover_image_url ? styles.header : undefined}>
+          {campaign.cover_image_url ? (
+            <MemorialPhoto
+              size="lg"
+              name={campaign.deceased_name}
+              photoUrl={campaign.cover_image_url}
+              alt={ts('cover.photoOfAlt', { name: campaign.deceased_name })}
+              priority
+            />
+          ) : null}
+          <div className="stack" style={{ gap: '0.4rem' }}>
+            <div className="row wrap">
+              <span className="eyebrow">{t('detail.eyebrow')}</span>
+              {campaign.status === 'completed' ? (
+                <Badge tone="success">{t('detail.goalReached')}</Badge>
+              ) : campaign.status === 'closed' ? (
+                // Neutral, not `danger`: a closed fundraiser is not a failure.
+                <Badge>{t('detail.closed')}</Badge>
+              ) : campaign.status === 'paused' ? (
+                <Badge tone="warning">{t('detail.paused')}</Badge>
+              ) : null}
+            </div>
+            <h1 className={styles.title}>{campaign.title}</h1>
+
+            {/* The trust promise, directly under the title — it is the reason a
+                supporter can give to a stranger's fundraiser at all. Each badge
+                is one proven fact; nothing here is rendered on hope. */}
+            {badges.length > 0 && (
+              <div
+                className="row wrap"
+                style={{ gap: '0.4rem' }}
+                // role + label: without a role the label is not exposed, and a
+                // bare run of badges tells a screen-reader user nothing about
+                // what they are.
+                role="group"
+                aria-label={t('detail.trust.heading')}
+              >
+                {badges.map((badge) => (
+                  <Badge key={badge} tone={TRUST_TONES[badge]}>
+                    {t(`detail.trust.${badge}`)}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            <p className="muted" style={{ margin: 0 }}>
+              {t.rich('detail.inMemoryOf', {
+                name: () => <strong className="ugc">{campaign.deceased_name}</strong>,
+              })}
+              {dates ? ` · ${dates}` : ''}
+            </p>
+
+            {/* Who the money reaches, who confirmed the need, and who started the
+                fundraiser — kept together with the badges instead of floating as
+                muted small print at the bottom of the page, which is where the
+                "your support reaches X" line used to sit (and where it silently
+                rendered empty for everyone but the organizer). */}
+            {(reaches || verifier || starter) && (
+              <div className={styles.trust}>
+                {reaches && (
+                  <p style={{ margin: 0 }}>
+                    {t.rich('detail.supportReaches', {
+                      name: () => <strong className="ugc">{reaches}</strong>,
+                    })}
+                    {/* The relationship is no longer repeated here: it is the
+                        same column as `organizer_relationship`, rendered once
+                        below in "Started by Ahmed, brother" where it is
+                        grammatical — and 0013 no longer projects it twice. */}
+                    .
+                  </p>
+                )}
+                {verifier && (
+                  <p className="small muted" style={{ margin: 0 }}>
+                    {t('detail.trust.confirmedWith', {
+                      verifier: t(`detail.trust.verifier.${verifier}`),
+                    })}
+                  </p>
+                )}
+                {starter && (
+                  <p className="small muted" style={{ margin: 0 }}>
+                    {starter.relationship
+                      ? t.rich('detail.startedByWithRelationship', {
+                          name: () => <span className="ugc">{starter.name}</span>,
+                          relationship: () => (
+                            <span className="ugc">{starter.relationship}</span>
+                          ),
+                        })
+                      : t.rich('detail.startedBy', {
+                          name: () => <span className="ugc">{starter.name}</span>,
+                        })}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
-          <h1 className={styles.title}>{campaign.title}</h1>
-
-          {/* The trust promise, directly under the title — it is the reason a
-              supporter can give to a stranger's fundraiser at all. Each badge
-              is one proven fact; nothing here is rendered on hope. */}
-          {badges.length > 0 && (
-            <div
-              className="row wrap"
-              style={{ gap: '0.4rem' }}
-              // role + label: without a role the label is not exposed, and a
-              // bare run of badges tells a screen-reader user nothing about
-              // what they are.
-              role="group"
-              aria-label={t('detail.trust.heading')}
-            >
-              {badges.map((badge) => (
-                <Badge key={badge} tone={TRUST_TONES[badge]}>
-                  {t(`detail.trust.${badge}`)}
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          <p className="muted" style={{ margin: 0 }}>
-            {t.rich('detail.inMemoryOf', {
-              name: () => <strong className="ugc">{campaign.deceased_name}</strong>,
-            })}
-            {dates ? ` · ${dates}` : ''}
-          </p>
-
-          {/* Who the money reaches, who confirmed the need, and who started the
-              fundraiser — kept together with the badges instead of floating as
-              muted small print at the bottom of the page, which is where the
-              "your support reaches X" line used to sit (and where it silently
-              rendered empty for everyone but the organizer). */}
-          {(reaches || verifier || starter) && (
-            <div className={styles.trust}>
-              {reaches && (
-                <p style={{ margin: 0 }}>
-                  {t.rich('detail.supportReaches', {
-                    name: () => <strong className="ugc">{reaches}</strong>,
-                  })}
-                  {/* The relationship is no longer repeated here: it is the
-                      same column as `organizer_relationship`, rendered once
-                      below in "Started by Ahmed, brother" where it is
-                      grammatical — and 0013 no longer projects it twice. */}
-                  .
-                </p>
-              )}
-              {verifier && (
-                <p className="small muted" style={{ margin: 0 }}>
-                  {t('detail.trust.confirmedWith', {
-                    verifier: t(`detail.trust.verifier.${verifier}`),
-                  })}
-                </p>
-              )}
-              {starter && (
-                <p className="small muted" style={{ margin: 0 }}>
-                  {starter.relationship
-                    ? t.rich('detail.startedByWithRelationship', {
-                        name: () => <span className="ugc">{starter.name}</span>,
-                        relationship: () => (
-                          <span className="ugc">{starter.relationship}</span>
-                        ),
-                      })
-                    : t.rich('detail.startedBy', {
-                        name: () => <span className="ugc">{starter.name}</span>,
-                      })}
-                </p>
-              )}
-            </div>
-          )}
         </div>
-
-        {campaign.cover_image_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={campaign.cover_image_url}
-            alt={campaign.deceased_name}
-            className={styles.cover}
-          />
-        )}
 
         <Card style={{ margin: '1.5rem 0' }}>
           <div className="stack" style={{ gap: '0.75rem' }}>

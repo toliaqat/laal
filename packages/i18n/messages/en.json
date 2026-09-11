@@ -43,7 +43,7 @@
       "lead": "A mother. A father. A child. A dream. Behind every request is a person who matters — and a community ready to stand with them.",
       "ctaPrimary": "Support Someone Today",
       "ctaBrowse": "Browse fundraisers",
-      "trustVerified": "Every fundraiser verified",
+      "trustVerified": "Every fundraiser reviewed",
       "trustReaches": "Reaches the family",
       "trustSecure": "Secure giving"
     },
@@ -102,7 +102,7 @@
     },
     "mockup": {
       "listTitle": "Fundraisers",
-      "verified": "Verified",
+      "verified": "Reviewed",
       "lead": "People in your community you can stand with.",
       "inMemoryOf": "In memory of",
       "ofGoal": "of <n>{amount}</n>",
@@ -334,12 +334,21 @@
       "displayNameHint": "Shown publicly, so “Family of Ahmed K.” is enough — please leave out full legal names, phone numbers, emails and addresses."
     },
     "cover": {
-      "label": "Cover photo (optional)",
-      "hint": "A photo of your loved one helps people connect with their story. JPG, PNG or WebP, up to 20MB.",
+      "label": "A photo of your loved one (optional)",
+      "hint": "If you would like to, share a photo of your loved one. It will appear wherever their fundraiser is shown, and a clear photo of their face helps people recognise who they are supporting. This is entirely your choice. JPG, PNG or WebP, up to 20MB.",
       "photoOfAlt": "Photo of {name}",
       "photoAlt": "Cover photo",
       "remove": "Remove current photo",
-      "tooLarge": "This photo is too large (max {maxMb}MB). Please choose a smaller one."
+      "tooLarge": "This photo is too large (max {maxMb}MB). Please choose a smaller one.",
+      "cropInstructions": "Drag the photo to move it and use the slider to zoom, so their face sits in the middle of the oval.",
+      "cropFrameLabel": "Photo framing. Use the arrow keys to move the photo, and plus or minus to zoom.",
+      "zoom": "Zoom",
+      "cropReset": "Reset framing",
+      "choose": "Choose a photo",
+      "chooseDifferent": "Choose a different photo",
+      "discard": "Don't use this photo",
+      "reframeHint": "To change how it is framed, choose the photo again from your phone or computer, then move and zoom it.",
+      "cropUnavailable": "We couldn't open this photo to frame it here. You can choose a different one, or keep it and we will do our best to keep their face in the centre."
     }
   },
   "dashboard": {
@@ -664,6 +673,9 @@
       "restartTitle": "Restart needed",
       "restartBody": "Laal needs to restart to switch language direction.",
       "restartConfirm": "Restart now"
+    },
+    "avatar": {
+      "photoOf": "Photo of {{name}}"
     }
   },
   "errors": {

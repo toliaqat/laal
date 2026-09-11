@@ -156,6 +156,59 @@ p { margin: 0 0 1rem; }
 .card-hover { transition: box-shadow 0.15s ease, transform 0.15s ease; }
 .card-hover:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
 
+/* ---- memorial photo (components/memorial-photo.tsx) ----
+   The loved one's photo, or their monogram on the soft accent ground — the one
+   treatment for every surface that shows a fundraiser. A 7:9 passport-style
+   portrait (uploads are cropped to 7:9), plus a round avatar for dense admin
+   tables. Each size fixes its box here, and the widths must stay in step with
+   the component's `sizes` strings. Logical properties only, so nothing needs
+   an RTL override; the portrait sits at the inline start of its row. */
+.memorial-photo {
+  --mp-w: 5.25rem;
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  inline-size: var(--mp-w);
+  aspect-ratio: 7 / 9;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+}
+/* A hairline so a pale photo still reads as a shape on a pale card. An overlay,
+   because an inset box-shadow paints beneath the <img>. */
+.memorial-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(42, 38, 32, 0.08);
+  pointer-events: none;
+}
+.memorial-photo-avatar { --mp-w: 2rem; aspect-ratio: 1; border-radius: 50%; }   /* 32px */
+.memorial-photo-sm { --mp-w: 3.9375rem; }                                         /* 63×81 */
+.memorial-photo-md { --mp-w: 5.25rem; }                                           /* 84×108 */
+.memorial-photo-lg { --mp-w: 9.625rem; border-radius: var(--radius); }            /* 154×198 */
+@media (min-width: 640px) {
+  .memorial-photo-md { --mp-w: 6.125rem; }                                        /* 98×126 */
+  .memorial-photo-lg { --mp-w: 12.25rem; }                                        /* 196×252 */
+}
+/* Loading placeholder reuses the real box (no layout shift on swap) but keeps
+   the neutral skeleton ground. */
+.memorial-photo.skeleton { background: var(--surface-2); }
+.memorial-photo-monogram {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--serif);
+  font-size: calc(var(--mp-w) * 0.4); /* same ratio as the mobile PersonAvatar */
+  font-weight: 600;
+  color: var(--accent);
+  opacity: 0.55;
+  letter-spacing: 0.04em;
+}
+
 /* ---- buttons ---- */
 .btn {
   position: relative; overflow: hidden;

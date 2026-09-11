@@ -3,6 +3,37 @@ import { ActionForm, SubmitButton } from '@/components/form';
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { approveCampaign, rejectCampaign } from '@/app/[locale]/admin/actions';
 import { Badge, formatMoney, statusTone } from '@/components/ui';
+import { MemorialPhoto } from '@/components/memorial-photo';
+
+/**
+ * Title cell: the loved one's photo (or initials) beside the fundraiser title,
+ * so a reviewer sees the same face the public will. /admin is English-only.
+ */
+function TitleCell({
+  id,
+  title,
+  deceasedName,
+  photoUrl,
+}: {
+  id: string;
+  title: string;
+  deceasedName: string;
+  photoUrl: string | null;
+}) {
+  return (
+    <div className="row" style={{ gap: '0.6rem' }}>
+      <MemorialPhoto
+        size="avatar"
+        name={deceasedName}
+        photoUrl={photoUrl}
+        alt={deceasedName ? `Photo of ${deceasedName}` : ''}
+      />
+      <Link href={`/admin/campaigns/${id}`} className="ugc">
+        {title}
+      </Link>
+    </div>
+  );
+}
 
 export default async function ReviewQueuePage() {
   const supabase = createAdminSupabase();
@@ -10,12 +41,16 @@ export default async function ReviewQueuePage() {
   const [{ data: pending }, { data: active }] = await Promise.all([
     supabase
       .from('campaigns')
-      .select('id, title, slug, amount_raised, currency, created_at')
+      .select(
+        'id, title, slug, deceased_name, cover_image_url, amount_raised, currency, created_at',
+      )
       .eq('status', 'pending_review')
       .order('created_at', { ascending: true }),
     supabase
       .from('campaigns')
-      .select('id, title, slug, amount_raised, currency, published_at')
+      .select(
+        'id, title, slug, deceased_name, cover_image_url, amount_raised, currency, published_at',
+      )
       .eq('status', 'active')
       .order('published_at', { ascending: false }),
   ]);
@@ -48,7 +83,12 @@ export default async function ReviewQueuePage() {
               {pendingRows.map((c) => (
                 <tr key={c.id}>
                   <td>
-                    <Link href={`/admin/campaigns/${c.id}`}>{c.title}</Link>
+                    <TitleCell
+                      id={c.id}
+                      title={c.title}
+                      deceasedName={c.deceased_name}
+                      photoUrl={c.cover_image_url}
+                    />
                   </td>
                   <td style={{ textAlign: 'right' }}>
                     {formatMoney(
@@ -93,7 +133,12 @@ export default async function ReviewQueuePage() {
               {activeRows.map((c) => (
                 <tr key={c.id}>
                   <td>
-                    <Link href={`/admin/campaigns/${c.id}`}>{c.title}</Link>
+                    <TitleCell
+                      id={c.id}
+                      title={c.title}
+                      deceasedName={c.deceased_name}
+                      photoUrl={c.cover_image_url}
+                    />
                   </td>
                   <td>
                     <Badge tone={statusTone('active')}>active</Badge>

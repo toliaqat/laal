@@ -127,11 +127,18 @@ export function SkeletonBlock({
 export function CampaignCardSkeleton() {
   return (
     <View style={styles.skeletonCard} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <SkeletonBlock height={168} width="100%" radius={0} />
+      {/* Mirrors the card's header: an 80 x 103 (7:9) portrait at the
+          inline start, beside the chip, title and memorial lines. */}
+      <View style={styles.skeletonHeader}>
+        <SkeletonBlock height={103} width={80} />
+        <View style={styles.skeletonHeaderText}>
+          <SkeletonBlock height={20} width="55%" radius={radius.pill} />
+          <SkeletonBlock height={18} width="90%" />
+          <SkeletonBlock height={13} width="65%" />
+          <SkeletonBlock height={13} width="45%" />
+        </View>
+      </View>
       <View style={styles.skeletonBody}>
-        <SkeletonBlock height={18} width="80%" />
-        <SkeletonBlock height={13} width="52%" />
-        <SkeletonBlock height={13} width="38%" />
         <SkeletonBlock height={8} width="100%" radius={radius.pill} />
         <SkeletonBlock height={13} width="60%" />
       </View>
@@ -380,5 +387,13 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     overflow: 'hidden',
   },
-  skeletonBody: { padding: spacing.lg, gap: spacing.sm },
+  skeletonHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  skeletonHeaderText: { flex: 1, gap: spacing.sm },
+  skeletonBody: { padding: spacing.lg, paddingTop: spacing.md, gap: spacing.sm },
 });

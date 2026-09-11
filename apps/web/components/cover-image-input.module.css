@@ -1,0 +1,206 @@
+/* Portrait (7:9) cropper for the cover photo. All layout uses logical
+   properties so it mirrors cleanly in Urdu (RTL); the photo's position inside
+   the frame is physical (left/top), which is correct in both directions. */
+
+.frame {
+  position: relative;
+  width: min(100%, 17.5rem);
+  aspect-ratio: 7 / 9;
+  margin-inline: auto;
+  overflow: hidden;
+  border-radius: var(--radius);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  /* Keep the page from scrolling or zooming while a finger moves the photo. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab;
+}
+
+.frame:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 3px;
+}
+
+.dragging {
+  cursor: grabbing;
+}
+
+.static {
+  cursor: default;
+  touch-action: auto;
+}
+
+.photo {
+  position: absolute;
+  display: block;
+  max-width: none;
+  max-height: none;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.staticPhoto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Reset and arrow keys glide; dragging and the slider follow the hand. */
+.smooth {
+  transition:
+    left 200ms ease-out,
+    top 200ms ease-out,
+    width 200ms ease-out,
+    height 200ms ease-out;
+}
+
+/* A soft oval where a face sits in a passport-style portrait, with the area
+   outside it very gently dimmed. Purely a guide: it is never exported. */
+.guide {
+  position: absolute;
+  inset-inline-start: 25%;
+  width: 50%;
+  top: 18%;
+  height: 52%;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(255, 253, 248, 0.85);
+  box-shadow:
+    0 0 0 1px rgba(42, 38, 32, 0.12),
+    0 0 0 999px rgba(42, 38, 32, 0.2);
+  pointer-events: none;
+  opacity: 0.8;
+  transition: opacity 200ms ease-out;
+}
+
+.frame:hover .guide,
+.frame:focus-visible .guide,
+.dragging .guide {
+  opacity: 1;
+}
+
+.instructions {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  text-align: center;
+  max-width: 22rem;
+  margin-inline: auto;
+}
+
+.zoomRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: min(100%, 17.5rem);
+  margin-inline: auto;
+}
+
+.zoomLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.zoomGlyph {
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  inline-size: 1ch;
+  text-align: center;
+}
+
+.zoomRange {
+  flex: 1;
+  min-inline-size: 0;
+  accent-color: var(--accent);
+  /* A comfortable touch target on phones. */
+  block-size: 2rem;
+  margin: 0;
+  cursor: pointer;
+}
+
+.actions {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  max-width: 22rem;
+  margin-inline: auto;
+}
+
+/* The native file input stays in the DOM (it is what the form submits and it
+   still works without JavaScript) but is drawn as the button-styled label
+   that follows it. */
+.fileInput {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.fileInput:focus-visible + .chooseButton {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 2px;
+}
+
+.chooseButton {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .smooth,
+  .guide {
+    transition: none;
+  }
+}
+
+/* Quiet, forgiving secondary actions: present, but never competing with the
+   photo or the main button. */
+.secondaryActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem 1rem;
+  margin-block-start: -0.35rem;
+}
+
+.textButton {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0.4rem 0.35rem;
+  min-block-size: 2.25rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: var(--accent-soft);
+  text-underline-offset: 0.25em;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.textButton:hover {
+  color: var(--accent-hover);
+  text-decoration-color: currentColor;
+}
+
+.textButton:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 2px;
+}

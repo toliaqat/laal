@@ -16,8 +16,14 @@ import {
  *   - strips EXIF/GPS metadata (a death/repatriation context — location leaks
  *     matter) by not carrying metadata through sharp,
  *   - neutralizes malicious payloads hidden in image containers,
- *   - normalizes to a sensible size and format (WebP).
- * The browser preview is convenience only; this module is the source of truth.
+ *   - normalizes to a sensible size and format (WebP),
+ *   - frames it as a 7:9 (width:height) passport-style portrait, the shape it
+ *     is shown in everywhere.
+ * The browser cropper (components/cover-image-input.tsx) normally sends an
+ * already-framed 700x900 JPEG, which passes through the resize unchanged in
+ * shape. Anything else — a no-JS submit, an old client, a direct request — is
+ * cover-cropped here, keeping the most salient region (usually the face).
+ * The browser side is convenience only; this module is the source of truth.
  */
 
 // Generous cap: the client downscales before upload, so this only catches
@@ -25,7 +31,10 @@ import {
 // so this friendly check fires before the framework's 413.
 const MAX_BYTES = 20 * 1024 * 1024; // 20MB
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_DIMENSION = 1600;
+// Portrait output size, 7:9. Keep in sync with PORTRAIT_SIZE in
+// lib/portrait-crop.ts (not imported, so this server module stays tiny).
+const PORTRAIT_WIDTH = 700;
+const PORTRAIT_HEIGHT = 900;
 
 /** True if the form field holds a non-empty file. */
 export function hasCoverFile(value: FormDataEntryValue | null): boolean {
@@ -54,9 +63,9 @@ export function assertValidCoverFile(value: FormDataEntryValue | null): File {
 }
 
 /**
- * Re-encode, resize, and upload a cover image to the public bucket. Returns the
- * stable public URL to store in campaigns.cover_image_url. Caller must have
- * authorized the upload (campaign ownership).
+ * Re-encode, crop to a 7:9 portrait, and upload a cover image to the public
+ * bucket. Returns the stable public URL to store in campaigns.cover_image_url.
+ * Caller must have authorized the upload (campaign ownership).
  */
 export async function uploadCoverImage(
   campaignId: string,
@@ -65,9 +74,15 @@ export async function uploadCoverImage(
   const input = Buffer.from(await file.arrayBuffer());
   const output = await sharp(input)
     .rotate() // apply EXIF orientation, then drop all metadata
-    .resize(MAX_DIMENSION, MAX_DIMENSION, {
-      fit: 'inside',
-      withoutEnlargement: true,
+    // Always exactly 700x900. `cover` fills the frame and trims the excess;
+    // the attention strategy trims around the most salient region (skin
+    // tones, contrast, saturation), which for a portrait is usually the face,
+    // rather than blindly around the centre. Small images are enlarged so every
+    // stored cover has the same shape and size; a frame the client already
+    // cropped to 7:9 has nothing to trim and is only resampled.
+    .resize(PORTRAIT_WIDTH, PORTRAIT_HEIGHT, {
+      fit: 'cover',
+      position: sharp.strategy.attention,
     })
     .webp({ quality: 82 })
     .toBuffer();

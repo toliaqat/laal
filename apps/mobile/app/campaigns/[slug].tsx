@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Pressable,
   ScrollView,
   Share,
@@ -18,6 +17,7 @@ import type { Campaign, CampaignTrust, CampaignUpdate } from '@laal/types';
 import { supabase, WEB_APP_URL } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { formatRelative } from '@/lib/format';
+import { PersonPortrait } from '@/components/person-portrait';
 import { ProgressBar } from '@/components/progress-bar';
 import { PrimaryButton, ReviewedChip, formatMoney } from '@/components/ui';
 import { accentShadow, colors, radius, serif, spacing } from '@/lib/theme';
@@ -82,6 +82,9 @@ function statusKey(status: Campaign['status']): string | null {
       return 'mobile.detail.statusNotLive';
   }
 }
+
+/** 7:9 passport-style portrait, 140 x 180. */
+const PORTRAIT_WIDTH = 140;
 
 export default function CampaignDetailScreen() {
   const { t, i18n } = useTranslation();
@@ -322,6 +325,21 @@ export default function CampaignDetailScreen() {
             <Text style={styles.followText}>{t('mobile.detail.share')}</Text>
           </Pressable>
         </View>
+        {/* Passport-style 7:9 portrait at the inline start (it moves to the
+            right in Urdu), above the title and memorial line. Only shown when
+            a photo was uploaded; if it fails to load, initials fill the same
+            frame. Announced as "Photo of {name}" even though the memorial line
+            names them: it is the main image on this screen, and a screen-reader
+            user should know a photo of the person is there. */}
+        {campaign.cover_image_url ? (
+          <PersonPortrait
+            name={campaign.deceased_name}
+            photoUrl={campaign.cover_image_url}
+            width={PORTRAIT_WIDTH}
+            cornerRadius={radius.md}
+            style={styles.portrait}
+          />
+        ) : null}
         <Text style={styles.title}>{campaign.title}</Text>
         <Text style={styles.memory}>
           {t('mobile.common.inMemoryOf', { name: campaign.deceased_name })}
@@ -344,16 +362,6 @@ export default function CampaignDetailScreen() {
                 })
               : t('mobile.detail.startedBy', { name: starterName })}
           </Text>
-        ) : null}
-
-        {campaign.cover_image_url ? (
-          <Image
-            source={{ uri: campaign.cover_image_url }}
-            style={styles.cover}
-            resizeMode="cover"
-            accessible
-            accessibilityLabel={campaign.deceased_name}
-          />
         ) : null}
 
         <View style={styles.progressWrap}>
@@ -525,14 +533,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   startedBy: { fontSize: 13, color: colors.muted },
-  // 16:9, matching the web cover cap so a portrait photo can't eat the screen.
-  cover: {
-    width: '100%',
-    aspectRatio: 16 / 9,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface2,
-    marginTop: spacing.xs,
-  },
+  // alignSelf flex-start = the inline start, so it mirrors under RTL.
+  portrait: { alignSelf: 'flex-start', marginTop: spacing.xs },
   progressWrap: { marginTop: spacing.sm, gap: spacing.sm },
   amounts: { flexDirection: 'row', alignItems: 'baseline', gap: 5 },
   raised: { fontSize: 16, fontWeight: '700', color: colors.ink },
