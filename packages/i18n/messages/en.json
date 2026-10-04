@@ -272,7 +272,7 @@
     "thankYou": {
       "metaTitle": "Thank you for your kindness — Laal",
       "title": "Thank you for protecting someone precious.",
-      "body1": "Your contribution is held securely and goes to the verified organisation arranging the burial or the journey home.",
+      "body1": "Your contribution goes only to the verified organisation arranging the burial or the journey home.",
       "body2": "You helped remind someone they are not alone. On behalf of the family, thank you.",
       "returnCta": "Return to the fundraiser",
       "paidBody": "Your support of {amount} for {title} has been received.",
@@ -283,7 +283,7 @@
       "receiptSent": "A receipt is on its way to the email address you gave.",
       "receiptNone": "You didn’t add an email address, so there’s no receipt to send — your support still counts.",
       "nextHeading": "What happens next",
-      "next1": "Your contribution is held securely by Laal — never in anyone’s personal account.",
+      "next1": "Your contribution never goes into anyone’s personal account.",
       "next2": "The fundraiser is reviewed and the need verified before anything is released.",
       "next3": "Funds are then released to the verified partner organisation, and the fundraiser's total goes up.",
       "shareHeading": "Reach one more person",
