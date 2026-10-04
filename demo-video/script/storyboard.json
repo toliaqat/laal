@@ -56,11 +56,11 @@
       "title": "Home — the promise",
       "onscreen": "Landing page. Hero settles, then a slow scroll through the three values and 'how it works'.",
       "lower_third": "Reviewed · Paid only to verified partners · Secure",
-      "narration": "This is Laal. Every fundraiser is reviewed before it goes live. The money never goes to an individual. It is held by Laal and released only to a verified partner, such as a funeral home, that carries out the repatriation. And giving takes seconds, with no account needed.",
+      "narration": "This is Laal. Every fundraiser is reviewed before it goes live. The money never goes to an individual, only to a verified partner, such as a funeral home, that carries out the repatriation. And giving takes seconds, with no account needed.",
       "min_seconds": 12,
       "ur": {
         "lower_third": "ریویو شدہ · صرف ویریفائیڈ پارٹنرز کو ادائیگی · محفوظ",
-        "narration": "یہ لال ہے۔ ہر کیمپین لائیو ہونے سے پہلے ریویو کی جاتی ہے۔ پیسے کبھی کسی فرد کو نہیں دیے جاتے۔ وہ لال کے پاس محفوظ رہتے ہیں اور صرف ایک ویریفائیڈ پارٹنر، جیسے فیونرل ہوم، کو ریلیز کیے جاتے ہیں، جہاں باڈی کو گھر واپس لانے کا انتظام کیا جاتا ہے۔ اور سپورٹ کرنے میں چند سیکنڈ لگتے ہیں، کسی اکاؤنٹ کے بغیر۔"
+        "narration": "یہ لال ہے۔ ہر کیمپین لائیو ہونے سے پہلے ریویو کی جاتی ہے۔ پیسے کبھی کسی فرد کو نہیں دیے جاتے، بلکہ صرف ایک ویریفائیڈ پارٹنر، جیسے فیونرل ہوم، تک پہنچتے ہیں، جہاں باڈی کو گھر واپس لانے کا انتظام کیا جاتا ہے۔ اور سپورٹ کرنے میں چند سیکنڈ لگتے ہیں، کسی اکاؤنٹ کے بغیر۔"
       }
     },
     {
@@ -94,12 +94,12 @@
       "kind": "screen",
       "title": "Help Now — supporting a family",
       "onscreen": "Click 'Help Now'. Choose €50, type a name and a message of condolence, submit. Stripe Checkout opens; card details are entered and paid.",
-      "lower_third": "Held until verified · Released only to the partner · Laal keeps 0%",
-      "narration": "Helping takes under a minute. Choose an amount, add your name and a few words for the family, and pay securely through Stripe. There is no account to create. The money does not go to anyone's pocket: it is held safely by Laal until the fundraiser is verified, then released to the partner organisation. Laal keeps nothing.",
+      "lower_third": "Paid only after verification · Straight to the partner · Laal keeps 0%",
+      "narration": "Helping takes under a minute. Choose an amount, add your name and a few words for the family, and pay securely through Stripe. There is no account to create. The money does not go to anyone's pocket: once the fundraiser is verified, it goes straight to the partner organisation. Laal keeps nothing.",
       "min_seconds": 22,
       "ur": {
-        "lower_third": "ویریفائی ہونے تک محفوظ · صرف پارٹنر کو ریلیز · لال کچھ نہیں رکھتا",
-        "narration": "مدد کرنے میں ایک منٹ سے بھی کم لگتا ہے۔ رقم چنیں، اپنا نام اور خاندان کے لیے چند الفاظ لکھیں، اور اسٹرائپ کے ذریعے محفوظ طریقے سے ادائیگی کریں۔ کوئی اکاؤنٹ بنانے کی ضرورت نہیں۔ پیسے کسی کی جیب میں نہیں جاتے: وہ لال کے پاس محفوظ رہتے ہیں جب تک کیمپین ویریفائی نہ ہو جائے، اور پھر پارٹنر آرگنائزیشن کو ریلیز کیے جاتے ہیں۔ لال کا اپنا کوئی حصہ نہیں ہوتا۔"
+        "lower_third": "ویریفکیشن کے بعد ہی ادائیگی · سیدھے پارٹنر کو · لال کچھ نہیں رکھتا",
+        "narration": "مدد کرنے میں ایک منٹ سے بھی کم لگتا ہے۔ رقم چنیں، اپنا نام اور خاندان کے لیے چند الفاظ لکھیں، اور اسٹرائپ کے ذریعے محفوظ طریقے سے ادائیگی کریں۔ کوئی اکاؤنٹ بنانے کی ضرورت نہیں۔ پیسے کسی کی جیب میں نہیں جاتے: کیمپین ویریفائی ہونے کے بعد وہ سیدھے پارٹنر آرگنائزیشن کو جاتے ہیں۔ لال کا اپنا کوئی حصہ نہیں ہوتا۔"
       }
     },
     {
