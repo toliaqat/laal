@@ -152,7 +152,7 @@ def main():
     graph.write_text(";\n".join(fc) + "\n")
     quality = ["-crf", "28", "-preset", "ultrafast"] if args.fast else ["-crf", "18", "-preset", "slow"]
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-nostats", *inputs,
-           "-filter_complex_script", str(graph), "-map", "[vout]", "-map", "[aout]",
+           "-/filter_complex", str(graph), "-map", "[vout]", "-map", "[aout]",
            "-c:v", "libx264", *quality, "-pix_fmt", "yuv420p", "-r", str(FPS),
            "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", "-t", f"{total:.3f}", args.out]
     (BUILD / "ffmpeg-cmd.sh").write_text(" \\\n  ".join(subprocess.list2cmdline([c]) for c in cmd) + "\n")
