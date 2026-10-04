@@ -17,7 +17,7 @@
 # app uses to upload cover images). Requires the AWS CLI.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION="${DEMO_VERSION:-v2}"
+VERSION="${DEMO_VERSION:-v3}"
 
 # Read only the R2_* lines (the file is not shell-safe as a whole: values with
 # spaces and angle brackets).

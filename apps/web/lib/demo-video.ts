@@ -18,7 +18,7 @@ import { R2_PUBLIC_BASE_URL_IF_SET } from '@/lib/env';
  * with a one-year immutable cache, so the name must change for viewers to see
  * the new cut. Keep in sync with publish.sh.
  */
-const VERSION = 'v2';
+const VERSION = 'v3';
 
 export type DemoVideo = {
   /** Full walkthrough, 1080p, with sound. */
